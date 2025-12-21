@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# Copy local browser_use package files
+COPY pyproject.toml README.md ./
+COPY browser_use/ browser_use/
+
+# Copy flask requirements
+COPY flask_app/requirements.txt ./
+
+# Install flask requirements and local browser_use package
+# We install requirements first (which might pull browser-use from PyPI)
+# Then we install the local package to ensure we use the local version
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir .
+
+# Copy flask application code
+# Keep the flask_app package under the flask_app directory so imports like flask_app.* keep working.
+COPY flask_app/ flask_app/
+
+ENV FLASK_APP=flask_app/app.py \
+    FLASK_RUN_HOST=0.0.0.0 \
+    FLASK_RUN_PORT=5005
+
+# Force rebuild to apply latest fixes
+CMD ["flask", "run"]

@@ -1,0 +1,43 @@
+services:
+  # Main application (from parent docker-compose.yml)
+  browser-agent:
+    extends:
+      file: ../docker-compose.yml
+      service: browser-agent
+    networks:
+      - multi_agent_network
+    depends_on:
+      - browser
+      - shopping
+
+    environment:
+      # Disable model sync to the (absent) Multi-Agent-Platform "web" service to avoid NameResolutionError
+      - MULTI_AGENT_PLATFORM_BASE=
+      # Configure WebArena internal URLs
+      - WEBARENA_SHOPPING_URL=http://shopping:80
+      # - WEBARENA_SHOPPING_ADMIN_URL=http://shopping_admin:80
+      # - WEBARENA_GITLAB_URL=http://gitlab:8023
+      # - WEBARENA_REDDIT_URL=http://forum:80
+
+
+  browser:
+    extends:
+      file: ../docker-compose.yml
+      service: browser
+    networks:
+      - multi_agent_network
+
+  # WebArena Services
+  shopping:
+    image: shopping_final_0712
+    container_name: shopping
+    ports:
+      - "7770:80"
+    networks:
+      - multi_agent_network
+
+
+networks:
+  multi_agent_network:
+    external: true
+    name: ${MULTI_AGENT_NETWORK:-multi_agent_platform_net}
