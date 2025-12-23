@@ -3,80 +3,98 @@
 ## 目的と全体像
 - このリポジトリは `browser_use` のフルソースと、Flask ベースのブラウザ操作エージェント UI/API (`flask_app/`) を同梱し、他エージェントからの会話ログを解析してブラウザタスクを自動実行できるようにしています。
 - 主要な変更点は `flask_app/services/agent_controller.py` の `BrowserAgentController` と `flask_app/routes/` の HTTP エンドポイント群です。Gemini ベースの LLM、Chrome DevTools (CDP) セッション、EventBus を常駐させ、SSE で UI に進捗を配信します。
-- `IMPLEMENTATION_SUMMARY.md` と `docs/conversation_history_endpoint.md` に最新仕様を残してあるので、フローを変える場合は必ず両方を更新してください。
+- `IMPLEMENTATION_SUMMARY.md` は本ファイルに統合されました。最新の仕様はこのファイルを参照してください。
 
 ## ディレクトリ構成の要点
-- `browser_use/` : OSS 本体。`agent/`, `controller/`, `browser/`, `llm/`, `tokens/`, `tools/`, `telemetry/`, `mcp/` などに機能が分類されています。既存ロジックに倣い最も近いサブパッケージへ追加してください。
-- `flask_app/` : Web サーバー、SSE、静的 UI、Docker `Dockerfile.flask`、`requirements.txt` を含むアプリ本体。`core/` (設定/環境), `services/` (実行ロジック), `routes/` (HTTP), `prompts/` (system prompt) に分割しています。`templates/index.html` + `static/css/style.css` が UI です。
-- `docs/` : Mintlify 互換ドキュメント。`docs/conversation_history_endpoint.md` は新規エンドポイントの仕様。プレビューは `cd docs && npx mintlify dev` を使用。
-- `examples/` : `examples/api/conversation_history_check_example.py` などサンプル集。再利用が基本方針。
-- `docker/` とトップレベル `Dockerfile*` : Chrome/VNC コンテナと Flask コンテナのビルド設定。`docker-compose.yml` は `browser-agent` + `browser` + 共有ネットワーク (`MULTI_AGENT_NETWORK`) を前提にしています。
-- `bin/` : `setup.sh`, `test.sh`, `lint.sh`。`uv` ベースの開発環境を前提にしており、プロジェクトルートでの実行を想定。
-- `flask_app/prompts/system_prompt_browser_agent.md` : Flask アプリが読み込むカスタム system prompt。`flask_app/prompts/system_prompt.py` の `_build_custom_system_prompt()` から `max_actions`/`current_datetime` を埋め込みます。
+- `browser_use/` : OSS 本体。`agent/`, `controller/`, `browser/`, `llm/`, `tokens/`, `tools/`, `telemetry/`, `mcp/` などに機能が分類されています。
+  - `browser_use/agent/scratchpad.py`: エージェントが構造化データを一時保存するための「メモ帳」機能。
+- `flask_app/` : Web サーバー、SSE、静的 UI、Docker `Dockerfile.flask`、`requirements.txt` を含むアプリ本体。
+  - `core/` (設定/環境), `services/` (実行ロジック), `routes/` (HTTP), `prompts/` (system prompt) に分割。
+  - `webarena/`: WebArena ベンチマーク実行環境とルート定義。
+  - `templates/index.html` + `static/css/style.css` が UI。
+- `docs/` : Mintlify 互換ドキュメント。プレビューは `cd docs && npx mintlify dev` を使用。
+- `examples/` : サンプル集。`examples/api/conversation_history_check_example.py` など。
+- `docker/` とトップレベル `Dockerfile*` : Chrome/VNC コンテナと Flask コンテナのビルド設定。
+- `bin/` : `setup.sh`, `test.sh`, `lint.sh`。`uv` ベースの開発環境を前提。
+- `flask_app/prompts/system_prompt_browser_agent.md` : Flask アプリが読み込むカスタム system prompt。
 
-## Runtime/Controller の仕組み (`flask_app/services/agent_controller.py` + `flask_app/routes/`)
-- `BrowserAgentController`
+## Runtime/Controller の仕組み
+- `BrowserAgentController` (`flask_app/services/agent_controller.py`)
   - CDP URL を検出 (`_resolve_cdp_url`) し、`BrowserSession` を常駐させるスレッド＋イベントループを持ちます。
-  - `GOOGLE_API_KEY` or `GEMINI_API_KEY`、`GOOGLE_GEMINI_MODEL`/`GEMINI_MODEL` に基づき `ChatGoogle` を生成し、`Agent` を初期化。日本語出力を強制する `_LANGUAGE_EXTENSION` と system prompt 差し替えをサポート。
-  - `max_actions_per_step` は `_DEFAULT_MAX_ACTIONS_PER_STEP` (10)。`BROWSER_DEFAULT_START_URL`/`system_prompt`/`_DEFAULT_EMBED_BROWSER_URL` を使って開始ページをウォームアップ。
-  - `enqueue_follow_up`, `pause`, `resume`, `reset`, `ensure_start_page_ready` など状態管理 API を公開し、`_summarize_history` で完了メッセージをまとめます。
-  - EventBus (`bubus.EventBus`) + SSE で UI にステップ別ログを配信。`_format_step_plan`, `_format_result` で整形。
+  - `ChatGoogle` (Gemini) を生成し、`Agent` を初期化。
+  - `enqueue_follow_up`, `pause`, `resume`, `reset` など状態管理 API を公開。
+  - EventBus (`bubus.EventBus`) + SSE で UI にステップ別ログを配信。
 - CDP/ブラウザ
-  - `BROWSER_USE_CDP_URL` 明示指定推奨。未設定でも `BROWSER_USE_CDP_CANDIDATES` を巡回し、自動発見 → WebDriver セッション掃除まで行う。
-  - `EMBED_BROWSER_URL` を `noVNC` に向け、クエリ正規化で `scale=auto` などを強制。Docker Compose では `browser` サービスの 7900 ポートを埋込み iframe に表示。
-- 会話解析 (`_analyze_conversation_history_async`)
-  - 受け取った履歴を日本語プロンプトに変換し、LLM 応答から JSON を抽出。Markdown コードブロックや整形崩れを許容する正規表現で解析します。
-  - パース失敗や LLM 初期化失敗時は `needs_action=false` で安全にフォールバックし、UI/呼び出し元へ理由を返します。
+  - `BROWSER_USE_CDP_URL` 明示指定推奨。
+  - `EMBED_BROWSER_URL` を `noVNC` に向け、iframe に表示。
+  - **CDP Session Strategy**: WebArena バッチ実行時の安定性向上のため、デフォルトで Chrome インスタンスごとの共有ソケットを使用。専用ソケット (`BROWSER_USE_DEDICATED_SOCKET_PER_TARGET=true`) はオプション。
+
+## 主要機能と実装詳細
+
+### 1. WebArena Automation
+ローカル環境で WebArena ベンチマーク (Shopping, Shopping Admin, Reddit, GitLab) を実行・評価する機能です。
+- **Batch Runner**: `/webarena/run_batch` エンドポイントにより、フィルタリングされたタスクを順次実行します。UI 上では "表示中タスクを順番に実行" ボタンでトリガーされます。
+- **Environment**: 未使用の MAP URL フィールドを削除し、実在する環境のみをサポート。
+- **Safety**: 各タスク実行前にブラウザセッションをリセットし、前のタスクのタブを閉じてから新規タブで開始します (`ensure_start_page_ready`)。
+- **Vision**: WebArena 実行時はスクリーンショット解析 (Vision) が強制的に有効化されます。
+- **Step Limit**: WebArena タスクは `WEBARENA_AGENT_MAX_STEPS` (デフォルト 20) で制限されます。
+
+### 2. Conversation History Check Endpoint
+他のエージェントから会話履歴を受け取り、ブラウザ操作が必要かを判断・実行するための機能です。
+- **Endpoint**: `/api/check-conversation-history` (alias `/api/conversations/review`)
+- **Logic**:
+  1. `flask_app/services/conversation_review.py` が Gemini LLM を使用して履歴を分析。
+  2. `needs_action` (操作必要), `action_type`, `task_description` 等を JSON で抽出。
+  3. 問題解決のためにブラウザ操作が必要と判断された場合、既存の `BrowserAgentController` を使用してタスクを実行可能（現在は分析結果の返却までを主担当とする）。
+- **Optimization**:
+  - `/api/chat` や `/api/agent-relay` の初回プロンプトでもこの分析が走り、ブラウザ操作不要 (`needs_action=false`) の場合はテキストのみで高速に応答します。
+  - LLM に渡すコンテキストは「最初のユーザー入力 + 最新の5メッセージ」にトリミングされます。
+
+### 3. Scratchpad (外部メモ機能)
+エージェントの Context Window (短期記憶) だけに頼らず、収集した構造化データを一時保存する「メモ帳」領域です。
+- **Purpose**: 「店名・価格・評価」のようなデータを構造化して保持し、タスク終了時にまとめて回答生成に使用することで、情報の取りこぼしを防ぎます。
+- **Integration**: `AgentState` に `scratchpad` オブジェクトが含まれます。
+- **Tools**:
+  - `scratchpad_add`: 新規エントリ追加
+  - `scratchpad_update`: 既存エントリ更新 (マージ可能)
+  - `scratchpad_remove`: エントリ削除
+  - `scratchpad_get`: 情報取得 (サマリー生成)
+  - `scratchpad_clear`: 全削除
 
 ## HTTP API とフロントエンド
-- `GET /` : noVNC iframe + チャット UI を表示。初回アクセス時に `BrowserAgentController.ensure_start_page_ready()` でブラウザをウォームアップ。
-- `GET /api/history` : 会話履歴 (`_copy_history()`).
-- `GET /api/stream` : Server-Sent Events。`MessageBroadcaster` で `message/update/status/reset` を push。
-- `POST /api/chat` : UI からの通常実行。`new_task` 指定で履歴を切り替え、`skip_conversation_review` を true にすると会話分析をスキップして即時実行。完了後 `_summarize_history()` を返却し、失敗時も履歴にメッセージを積み、SSE ステータスを更新。
-- `POST /api/agent-relay` : 他エージェント用。エージェント稼働中なら `enqueue_follow_up()`、アイドル時は履歴非記録モードで即時実行。返り値に `steps`, `usage` などを含めます。
-- `POST /api/reset|pause|resume` : コントローラ状態操作。
-- `POST /api/conversations/review` (alias `/api/check-conversation-history`) : 会話履歴 `{"history":[{"role","content"}]}` を受信 → `_analyze_conversation_history()` → 「一言あった方が良い」場合は `should_reply`/`reply`/`addressed_agents` を返し、必要なら `controller.run()` を発火。`analysis`, `action_taken`, `run_summary`, `agent_history` を返す。409 で「実行中」通知。
-- すべてのレスポンスに緩い CORS を付与 (`_handle_cors_preflight`, `_set_cors_headers`)。
-- `templates/index.html` は日本語 UI、`static/css/style.css`/JS で SSE 接続、思考中インジケータ、Pause/Reset ボタン等を制御。
+- `GET /` : noVNC iframe + チャット UI。
+- `GET /api/stream` : SSE (Server-Sent Events) でログやステータスを配信。
+- `POST /api/chat` : UI からの通常実行。`skip_conversation_review=true` で分析スキップ可能。
+- `POST /api/agent-relay` : 他エージェント用。アイドル時は即時実行、稼働中はキューイング。
+- `POST /api/check-conversation-history` : 会話履歴分析。
+- `GET /webarena/tasks` : WebArena タスク一覧取得。
+- `POST /webarena/run` : WebArena 単体タスク実行。
+- `POST /webarena/run_batch` : WebArena バッチ実行。
 
 ## LLM・プロンプト関連
-- `flask_app/prompts/system_prompt_browser_agent.md` の `{max_actions}` `{current_datetime}` プレースホルダは自動置換されます。編集時は日本語応答ルールや検索ポリシー（Yahoo 強制など）を壊さないこと。
-- `flask_app/prompts/system_prompt.py` の `_LANGUAGE_EXTENSION` で追加指示を付与。`GOOGLE_GEMINI_TEMPERATURE` が設定されていれば float で渡されます。
-- `browser_use/llm` には Anthropic/OpenAI/Groq/Ollama などのクライアントとテストがあります。Gemini 以外を使いたい場合はまずこの層を拡張し、Flask 側で差し替えられるようにする。
+- `flask_app/prompts/system_prompt_browser_agent.md`
+  - `{max_actions}`, `{current_datetime}` プレースホルダ対応。
+  - `<scratchpad>` セクションでメモ帳機能の使用法を定義。
+  - `read_file` アクションの禁止や、日本語応答の強制が含まれています。
+- `flask_app/prompts/system_prompt.py`: システムプロンプト構築ロジック。タイムゾーンを考慮した日時を注入します。
 
 ## ビルド・実行・検証
-- **セットアップ**: `./bin/setup.sh` で uv venv + 依存を全インストール。システム `python3.11` 以上が必須。
-- **ローカル起動 (直接)**:
-  1. `source .venv/bin/activate` or `uv run`.
-  2. `export FLASK_APP=flask_app/app.py` と Chrome CDP URL/LLM キー (`GOOGLE_API_KEY`, `BROWSER_USE_CDP_URL`) を設定。
-  3. `uv run flask run --host 0.0.0.0 --port 5005`.
-  4. 別途 Chrome (例: Docker `browser` サービス) を立て、`EMBED_BROWSER_URL` を iframe 用 noVNC に合わせる。
-- **ローカル起動 (docker compose)**: `docker compose up --build browser-agent browser`。`secrets.env` に鍵/設定を入れ、`MULTI_AGENT_NETWORK` で他サービスと接続。
-- **CLI からライブラリを確認**: `uv run browseruse --help`。
-- **Lint**: `./bin/lint.sh` → `uv run pre-commit run --all-files` (Ruff fmt/lint, Pyright, Codespell)。
+- **セットアップ**: `./bin/setup.sh` (uv venv + 依存インストール)。
+- **起動**:
+  - 直接: `uv run flask run --host 0.0.0.0 --port 5005` (別途 Chrome 必要)
+  - Docker: `docker compose up --build`
 - **テスト**:
-  - `./bin/test.sh` は `pytest --numprocesses auto tests/ci` を想定しているので、現状は `browser_use/**/tests` から対象を選んで `uv run pytest browser_use/agent/tests -m "not slow"` のように直接走らせること。
-  - 新規テストは `tests/unit/` 相当のパスか、該当モジュール配下 (例: `browser_use/llm/tests/`) に配置し、`pytest.ini` のマーカー (`unit`, `integration`, `slow`) を付与。
-  - 会話履歴エンドポイントはモックで完結するテストを `tests/unit/test_conversation_history_endpoint.py`（未作成なら追加）へ配置。`uv run pytest tests/unit/test_conversation_history_endpoint.py -v`.
+  - `./bin/test.sh` または個別に `uv run pytest tests/unit/test_conversation_history_endpoint.py -v` など。
+- **Lint**: `./bin/lint.sh`
 
 ## ドキュメント・サンプル
-- `IMPLEMENTATION_SUMMARY.md` には今回の API 追加の背景が整理されています。挙動を変えたら更新必須。
-- `docs/conversation_history_endpoint.md` : API 仕様、エラーハンドリング、curl 例。
-- `examples/api/conversation_history_check_example.py` : 5 種類のシナリオを CLI で一括実行。`requests` が必要。Flask サーバー起動後に使う。
-- その他 `examples/` 下のサブディレクトリは個別機能 (クラウド連携、MCP、UI、observability 等) ごとに整理。新機能はここに小さな参照実装を置く。
+- `docs/conversation_history_endpoint.md`: 履歴チェック API の詳細仕様。
+- `examples/api/conversation_history_check_example.py`: API 使用例。
 
 ## セキュリティ & 設定
-- `secrets.env.example` をコピーして `secrets.env` を作成 (Docker Compose 用)。API キーや OAuth 情報は絶対にコミットしない。
-- `BROWSER_USE_LOGGING_LEVEL` は `.env` で `debug` にするとエージェントのトレースが UI/ログに出ます。リリース時は `info` か `result` に戻す。
-- Chrome CDP を外部公開する場合はネットワーク ACL で閉じ、`browser` サービスの 9222/4444/7900 を信頼できるホストに限定。
-- LLM 応答の JSON は最小限のバリデーションのみなので、追加アクションを実行する箇所では `analysis['task_description']` の sanitize を徹底。必要なら allow-list を拡充する。
-- `AgentController` はプロセス終了時に clean up するため `atexit` を使っています。非同期コードを触る際は loop/thread の二重解放を避ける。
-
-## 貢献フローのヒント
-- フロントエンド変更時は `flask_app/static/css/style.css` と JS をまとめて確認し、スクリーンショット or 動画を残す。
-- API 変更は `docs/` と `examples/` の更新をセットで行い、`AGENTS.md` に運用手順を追記。
-- 長期ジョブや外部 API には `BROWSER_USE_LOGGING_LEVEL=debug` でトレースを採取し、`_broadcaster` を使った UI 通知を忘れない。
-- PR 前には `lint` → `pytest` → (必要なら) `uv run browseruse --help` で CLI が壊れていないか確認してください。
+- `secrets.env` に API キーを設定 (コミット禁止)。
+- `BROWSER_USE_LOGGING_LEVEL` でログレベル制御。
+- LLM 応答の JSON パースは `flask_app/services/conversation_review.py` で堅牢に行われ、Markdown ブロック除去などに対応しています。
 
 ## Critical Instruction / 重要指示
 どれだけ時間とコストをかけてもよいので、確実に目標が達成されるようにしてほしい。
