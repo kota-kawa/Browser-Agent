@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from flask_app import app as flask_app_module
+from flask_app.routes import api_chat as api_chat_module
 
 
 class _StubController:
@@ -28,7 +29,7 @@ class _StubController:
 @pytest.mark.unit
 def test_agent_relay_enqueues_follow_up_when_running(monkeypatch):
 	controller = _StubController()
-	monkeypatch.setattr(flask_app_module, '_get_agent_controller', lambda: controller)
+	monkeypatch.setattr(api_chat_module, 'get_agent_controller', lambda: controller)
 	flask_app_module.app.config['TESTING'] = True
 
 	with flask_app_module.app.test_client() as client:
@@ -46,7 +47,7 @@ def test_agent_relay_enqueues_follow_up_when_running(monkeypatch):
 @pytest.mark.unit
 def test_agent_relay_resumes_when_paused(monkeypatch):
 	controller = _StubController(paused=True)
-	monkeypatch.setattr(flask_app_module, '_get_agent_controller', lambda: controller)
+	monkeypatch.setattr(api_chat_module, 'get_agent_controller', lambda: controller)
 	flask_app_module.app.config['TESTING'] = True
 
 	with flask_app_module.app.test_client() as client:

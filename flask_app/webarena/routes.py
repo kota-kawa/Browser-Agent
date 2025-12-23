@@ -14,8 +14,8 @@ from urllib.parse import urlparse
 
 from flask import jsonify, render_template, request
 
-from flask_app.env_utils import _BROWSER_URL, _WEBARENA_MAX_STEPS, _normalize_start_url
-from flask_app.formatting import _format_history_messages
+from flask_app.core.env import _BROWSER_URL, _WEBARENA_MAX_STEPS, _normalize_start_url
+from flask_app.services.formatting import _format_history_messages
 
 from . import webarena_bp
 
@@ -525,16 +525,16 @@ def run_task():
 	try:
 		# Import here to avoid circular dependency
 		try:
-			from flask_app.app import _get_agent_controller
+			from flask_app.services.agent_runtime import get_agent_controller
 		except ImportError:
 			# Fallback for testing where app might not be initialized as expected
 			from flask import current_app
 
-			if hasattr(current_app, '_get_agent_controller'):
-				_get_agent_controller = current_app._get_agent_controller
+			if hasattr(current_app, 'get_agent_controller'):
+				get_agent_controller = current_app.get_agent_controller
 			else:
 				raise
-		controller = _get_agent_controller()
+		controller = get_agent_controller()
 
 		intent = ''
 		current_task = None
@@ -602,16 +602,16 @@ def run_batch():
 		return jsonify({'error': '実行可能なタスクがありません。'}), 400
 
 	try:
-		from flask_app.app import _get_agent_controller
+		from flask_app.services.agent_runtime import get_agent_controller
 	except ImportError:
 		from flask import current_app
 
-		if hasattr(current_app, '_get_agent_controller'):
-			_get_agent_controller = current_app._get_agent_controller
+		if hasattr(current_app, 'get_agent_controller'):
+			get_agent_controller = current_app.get_agent_controller
 		else:
 			raise
 
-	controller = _get_agent_controller()
+	controller = get_agent_controller()
 
 	if controller.is_running():
 		return jsonify({'error': 'エージェントは既に実行中です。'}), 409

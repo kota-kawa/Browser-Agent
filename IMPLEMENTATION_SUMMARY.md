@@ -7,19 +7,19 @@
   - Environment filter chips (Shopping / Shopping Admin / Reddit / GitLab) to show only relevant tasks.
   - “表示中タスクを順番に実行” button runs the currently filtered task set sequentially.
   - Removed MAP URL field since that environment is not used.
-- Added a screenshot (vision) toggle to WebArena UI that defaults ON and is enforced server-side; only GPT/Gemini/Claude models can receive screenshots (`flask_app/app.py`, `flask_app/templates/webarena.html`, `flask_app/controller.py`, `flask_app/system_prompt.py`).
+- Added a screenshot (vision) toggle to WebArena UI that defaults ON and is enforced server-side; only GPT/Gemini/Claude models can receive screenshots (`flask_app/routes/api_models.py`, `flask_app/templates/webarena.html`, `flask_app/services/agent_controller.py`, `flask_app/prompts/system_prompt.py`).
 - Added per-task reset hook: before every WebArena task (single or batch) the browser session is reset and optional external reset hooks (`WEBARENA_RESET_COMMAND` or `WEBARENA_RESET_URL`) are invoked to restore backend state (cart, posts, etc.).
-- Extra safety for consecutive runs: when moving to the next WebArena task the agent closes all previously opened tabs and reloads the configured start page so each task starts from a single, refreshed tab (`flask_app/controller.py`, `flask_app/webarena/routes.py`).
+- Extra safety for consecutive runs: when moving to the next WebArena task the agent closes all previously opened tabs and reloads the configured start page so each task starts from a single, refreshed tab (`flask_app/services/agent_controller.py`, `flask_app/webarena/routes.py`).
 - WebArena-only runs now cap the agent at 20 steps (configurable via `WEBARENA_AGENT_MAX_STEPS`, default 20) while the general UI/API uses `AGENT_MAX_STEPS` (default 20).
 
 ## Overview
 This implementation adds a new endpoint `/api/check-conversation-history` that allows other agents to send conversation history for analysis. The endpoint uses LLM (Gemini) to determine if there are problems that can be solved with browser operations, and automatically executes browser tasks if needed. In addition, the first prompt of `/api/chat` and `/api/agent-relay` is now analyzed to optionally return a text-only reply when browser operations are unnecessary. Conversation context handed to the LLM is trimmed to the very first user input plus the most recent five messages so prompts stay compact while preserving intent.
 
 ## Additional Behavior Adjustments
-- Browser agent tools now exclude the `read_file` action and the system prompt explicitly forbids it, preventing the LLM from generating or selecting `read_file` tasks (flask_app/controller.py, flask_app/system_prompt_browser_agent.md).
-- System prompt strengthens “act-first” guidance so the browser agent proceeds without unnecessary確認質問 when orchestrator-provided tasks are sufficiently clear, using reasonable defaults for general info gathering (flask_app/system_prompt_browser_agent.md).
-- System prompt now hard-requires the `action` field with at least one action (fallback to `wait` when unsure) to eliminate validation errors caused by responses that only contained `thinking` (flask_app/system_prompt_browser_agent.md).
-- System prompt now treats the timezone-aware `current_datetime` line as authoritative “today” and mandates that time-sensitive searches (weather/news/events/prices) include the current year/month/day to avoid past-year results (flask_app/system_prompt.py, flask_app/system_prompt_browser_agent.md).
+- Browser agent tools now exclude the `read_file` action and the system prompt explicitly forbids it, preventing the LLM from generating or selecting `read_file` tasks (flask_app/services/agent_controller.py, flask_app/prompts/system_prompt_browser_agent.md).
+- System prompt strengthens “act-first” guidance so the browser agent proceeds without unnecessary確認質問 when orchestrator-provided tasks are sufficiently clear, using reasonable defaults for general info gathering (flask_app/prompts/system_prompt_browser_agent.md).
+- System prompt now hard-requires the `action` field with at least one action (fallback to `wait` when unsure) to eliminate validation errors caused by responses that only contained `thinking` (flask_app/prompts/system_prompt_browser_agent.md).
+- System prompt now treats the timezone-aware `current_datetime` line as authoritative “today” and mandates that time-sensitive searches (weather/news/events/prices) include the current year/month/day to avoid past-year results (flask_app/prompts/system_prompt.py, flask_app/prompts/system_prompt_browser_agent.md).
 - CDP session strategy now defaults to shared sockets per Chrome instance to avoid DevTools hub limits during long WebArena batches. Dedicated per-tab sockets remain opt-in via `BROWSER_USE_DEDICATED_SOCKET_PER_TARGET=true`; failures to open a dedicated socket (HTTP 400 / “Too many websocket connections”) automatically fall back to the shared socket for resilience (browser_use/browser/session.py, crash_watchdog.py, watchdog_base.py).
 
 ## Problem Statement (Japanese)
@@ -31,10 +31,11 @@ Translation: Sometimes conversation history is sent from other agents. Create a 
 
 ### Files Modified
 
-1. **flask_app/app.py** - Main implementation
-   - Added `_analyze_conversation_history_async()` function (lines 1735-1837)
-   - Added `_analyze_conversation_history()` synchronous wrapper (lines 1840-1846)
-   - Added `/api/check-conversation-history` endpoint (lines 1849-1922)
+1. **flask_app/services/conversation_review.py** - LLM analysis for conversation history
+   - Added `_analyze_conversation_history_async()` and `_analyze_conversation_history()` helpers
+2. **flask_app/routes/api_conversation.py** - Conversation history endpoint
+   - Added `/api/check-conversation-history` and `/api/conversations/review` endpoints
+3. **flask_app/routes/api_chat.py** - Chat execution endpoints
    - Added first-prompt text-only handling for `/api/chat` and `/api/agent-relay` when `needs_action=false`
 
 ### Files Created
@@ -74,7 +75,7 @@ The LLM is prompted to output JSON, and the implementation includes robust parsi
 
 ### 3. Integration with Existing Browser Agent
 When action is needed:
-- Uses existing `_get_agent_controller()` to get the browser agent
+- Uses existing `get_agent_controller()` to get the browser agent
 - Executes tasks using the existing `controller.run()` method
 - Uses existing `_summarize_history()` to format results
 - Maintains compatibility with the existing codebase
@@ -159,9 +160,8 @@ Comprehensive error handling for:
 - This maintains compatibility with Flask's synchronous request handling
 
 ### 2. Minimal Changes to Existing Code
-- No modifications to existing endpoints or functions
-- Only additions at the end of the file
-- Reuses existing functions like `_create_gemini_llm()`, `_get_agent_controller()`, and `_summarize_history()`
+- Behavior stays the same; endpoints and helpers were refactored into `routes/` and `services/`
+- Reuses existing controller flow via `get_agent_controller()` and `_summarize_history()`
 
 ### 3. Japanese Language Support
 - All prompts, error messages, and documentation in Japanese
@@ -272,7 +272,7 @@ Scratchpadはエージェントの記憶（Context Window）だけに頼らず�
 4. **browser_use/agent/service.py**
    - `multi_act`メソッドで`scratchpad=self.state.scratchpad`を渡すように変更
 
-5. **flask_app/system_prompt_browser_agent.md**
+5. **flask_app/prompts/system_prompt_browser_agent.md**
    - `<scratchpad>`セクションを追加（使用方法の説明）
    - `<action_schemas>`にScratchpadアクションのスキーマを追加
 
