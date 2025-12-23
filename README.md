@@ -1,7 +1,7 @@
 # Browser-Agent
 
 <p align="center">
-  <img src="static/Browser-Agent-Icon.png" width="100" alt="Browser-Agent Icon">
+  <img src="static/Browser-Agent-Icon.png" width="400" alt="Browser-Agent Icon">
 </p>
 
 A powerful browser automation agent with a Flask-based web interface, powered by modern LLMs. This project allows you to control a browser using natural language, visualize the execution in real-time, and even run benchmarks like WebArena.
