@@ -33,7 +33,7 @@ A powerful browser automation agent with a Flask-based web interface, powered by
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/browser-agent.git
+git clone https://github.com/kota-kawa/Browser-Agent.git
 cd browser-agent
 ```
 
