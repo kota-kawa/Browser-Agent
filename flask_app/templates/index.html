@@ -48,7 +48,6 @@
           <header class="chat-header">
             <div class="chat-header-main">
               <h1>チャット</h1>
-              <div id="status" class="status" role="status" aria-live="polite" data-variant="muted"></div>
             </div>
             <div class="chat-header-side">
               <div class="model-selector-group">
@@ -559,7 +558,7 @@
               isPaused = false;
               updatePauseButtonState();
               if (statusPayload.run_summary) {
-                setStatus(statusPayload.run_summary, 'success');
+                // Suppress the top completion banner for finished tasks.
               }
             }
           } catch (error) {
@@ -630,10 +629,12 @@
           }
           const agentStillRunning = response.status === 202 || data.agent_running === true;
           shouldContinueRunning = Boolean(agentStillRunning);
-          const runSummary =
-            data.run_summary ||
-            (agentStillRunning ? 'エージェントが実行を継続しています。' : '完了しました。');
-          setStatus(runSummary, agentStillRunning ? 'progress' : 'success');
+          if (agentStillRunning) {
+            const runSummary = data.run_summary || 'エージェントが実行を継続しています。';
+            setStatus(runSummary, 'progress');
+          } else {
+            setStatus('', 'muted');
+          }
         } catch (error) {
           if (!promptInput.value.trim()) {
             promptInput.value = submittedPromptValue;
