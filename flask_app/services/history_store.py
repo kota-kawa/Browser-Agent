@@ -26,12 +26,7 @@ def _make_message(role: str, content: str) -> dict[str, str | int]:
 
 
 def _initial_history() -> list[dict[str, str | int]]:
-	return [
-		_make_message(
-			'assistant',
-			'ブラウザ操作エージェントへようこそ。GeminiのAPIキー（環境変数 GOOGLE_API_KEY または GEMINI_API_KEY）とCDP URLを設定すると、左側のチャットから自然言語でChromeを操作できます。',
-		)
-	]
+	return []
 
 
 class MessageBroadcaster:
