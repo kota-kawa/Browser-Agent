@@ -161,7 +161,7 @@ class OldConfig:
 
 	@property
 	def DEFAULT_LLM(self) -> str:
-		return os.getenv('DEFAULT_LLM', 'google_gemini_2_5_flash')
+		return os.getenv('DEFAULT_LLM', 'groq_openai/gpt-oss-20b')
 
 	# Runtime hints
 	@property
@@ -212,7 +212,7 @@ class FlatEnvConfig(BaseSettings):
 	AZURE_OPENAI_ENDPOINT: str = Field(default='')
 	AZURE_OPENAI_KEY: str = Field(default='')
 	SKIP_LLM_API_KEY_VERIFICATION: bool = Field(default=False)
-	DEFAULT_LLM: str = Field(default='google_gemini_2_5_flash')
+	DEFAULT_LLM: str = Field(default='groq_openai/gpt-oss-20b')
 
 	# Runtime hints
 	IN_DOCKER: bool | None = Field(default=None)
@@ -295,8 +295,8 @@ def create_default_config() -> DBStyleConfigJSON:
 	new_config.llm[llm_id] = LLMEntry(
 		id=llm_id,
 		default=True,
-		model='gemini-2.5-flash',
-		api_key='your-google-api-key-here',
+		model='openai/gpt-oss-20b',
+		api_key='your-groq-api-key-here',
 	)
 
 	# Create default agent entry
