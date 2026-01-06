@@ -1,1 +1,1 @@
-"""Core configuration and environment utilities for the Flask app."""
+"""Core configuration and environment utilities for the FastAPI app."""

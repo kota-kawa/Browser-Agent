@@ -4,11 +4,11 @@
   <img src="static/Browser-Agent-Icon.png" width="800" alt="Browser-Agent Icon">
 </p>
 
-A powerful browser automation agent with a Flask-based web interface, powered by modern LLMs. This project allows you to control a browser using natural language, visualize the execution in real-time, and even run benchmarks like WebArena.
+A powerful browser automation agent with a FastAPI-based web interface, powered by modern LLMs. This project allows you to control a browser using natural language, visualize the execution in real-time, and even run benchmarks like WebArena.
 
 ## 🚀 Overview
 
-`Browser-Agent` integrates the `browser_use` library with a robust Flask backend to provide:
+`Browser-Agent` integrates the `browser_use` library with a robust FastAPI backend to provide:
 - **Natural Language Control**: Instruct the browser to perform tasks like "Search for the cheapest flight to Tokyo" or "Log into my account and check messages".
 - **Real-time Visualization**: Watch the agent's actions live via a noVNC stream and see step-by-step logs in the UI.
 - **Multi-LLM Support**: Compatible with Gemini, OpenAI, Anthropic, DeepSeek, and more.
@@ -45,7 +45,7 @@ cp secrets.env.example secrets.env
 Edit `secrets.env` and add your LLM provider keys (e.g., `GOOGLE_API_KEY`, `OPENAI_API_KEY`).
 
 ### 3. Run with Docker (Recommended)
-This will start the Flask app, a Chrome instance, and the VNC server.
+This will start the FastAPI app, a Chrome instance, and the VNC server.
 ```bash
 docker-compose up --build
 ```
@@ -66,7 +66,7 @@ pip install -r flask_app/requirements.txt
 **Start the Application:**
 Make sure you have a Chrome instance running with remote debugging enabled, or set `BROWSER_USE_CDP_URL` to a remote CDP endpoint.
 ```bash
-uv run flask run --host 0.0.0.0 --port 5005
+uv run uvicorn flask_app.app:app --host 0.0.0.0 --port 5005
 ```
 
 ## 📖 Usage
@@ -90,7 +90,7 @@ Navigate to the "WebArena" tab in the UI or use the API to run standard benchmar
 ```
 /
 ├── browser_use/       # Core agent logic, DOM manipulation, tools
-├── flask_app/         # Flask web server, API routes, UI templates
+├── flask_app/         # FastAPI web server, API routes, UI templates
 │   ├── core/          # Config and environment setup
 │   ├── services/      # Business logic (Agent Controller, History)
 │   ├── routes/        # API endpoints

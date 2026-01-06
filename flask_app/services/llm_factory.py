@@ -9,11 +9,7 @@ from ..core.exceptions import AgentControllerError
 
 # Correctly handle imports, including adding the project root to sys.path if necessary
 try:
-	from browser_use.llm.anthropic.chat import ChatAnthropic
 	from browser_use.llm.base import BaseChatModel
-	from browser_use.llm.google.chat import ChatGoogle
-	from browser_use.llm.groq.chat import ChatGroq
-	from browser_use.llm.openai.chat import ChatOpenAI
 	from browser_use.model_selection import PROVIDER_DEFAULTS, apply_model_selection, update_override
 except ModuleNotFoundError:
 	import sys
@@ -21,11 +17,7 @@ except ModuleNotFoundError:
 	ROOT_DIR = Path(__file__).resolve().parents[2]
 	if str(ROOT_DIR) not in sys.path:
 		sys.path.insert(0, str(ROOT_DIR))
-	from browser_use.llm.anthropic.chat import ChatAnthropic
 	from browser_use.llm.base import BaseChatModel
-	from browser_use.llm.google.chat import ChatGoogle
-	from browser_use.llm.groq.chat import ChatGroq
-	from browser_use.llm.openai.chat import ChatOpenAI
 	from browser_use.model_selection import PROVIDER_DEFAULTS, apply_model_selection, update_override
 
 
@@ -56,14 +48,30 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 	# Instantiate the correct client based on the provider
 	if provider == 'gemini':
 		logger.info(f'Using Google (Gemini) model: {model}')
+		try:
+			from browser_use.llm.google.chat import ChatGoogle
+		except ModuleNotFoundError as exc:
+			raise AgentControllerError('Gemini 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
 		return ChatGoogle(**llm_kwargs)
 	if provider == 'claude':
 		logger.info(f'Using Anthropic (Claude) model: {model}')
+		try:
+			from browser_use.llm.anthropic.chat import ChatAnthropic
+		except ModuleNotFoundError as exc:
+			raise AgentControllerError('Claude 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
 		return ChatAnthropic(**llm_kwargs)
 	if provider == 'groq':
 		logger.info(f'Using Groq model: {model}')
+		try:
+			from browser_use.llm.groq.chat import ChatGroq
+		except ModuleNotFoundError as exc:
+			raise AgentControllerError('Groq 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
 		return ChatGroq(**llm_kwargs)
 
 	# Default to OpenAI for any other case, including 'openai' provider
 	logger.info(f'Using OpenAI model: {model} with base_url: {base_url}')
+	try:
+		from browser_use.llm.openai.chat import ChatOpenAI
+	except ModuleNotFoundError as exc:
+		raise AgentControllerError('OpenAI 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
 	return ChatOpenAI(**llm_kwargs)

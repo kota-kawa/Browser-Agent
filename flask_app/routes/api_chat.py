@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Blueprint, jsonify, request
-from flask.typing import ResponseReturnValue
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 
 from ..core.config import logger
 from ..core.exceptions import AgentControllerError
@@ -16,20 +16,21 @@ from ..services.history_store import (
 	_copy_history,
 	_update_history_message,
 )
+from .utils import read_json_payload
 
-api_chat_bp = Blueprint('api_chat', __name__)
+router = APIRouter()
 
 
-@api_chat_bp.post('/api/chat')
-def chat() -> ResponseReturnValue:
-	payload = request.get_json(silent=True) or {}
+@router.post('/api/chat')
+async def chat(request: Request) -> JSONResponse:
+	payload = await read_json_payload(request)
 	prompt = (payload.get('prompt') or '').strip()
 	start_new_task = bool(payload.get('new_task'))
 	# Trusted callers can bypass the initial AI review when they already planned concrete steps.
 	skip_conversation_review = bool(payload.get('skip_conversation_review'))
 
 	if not prompt:
-		return jsonify({'error': 'プロンプトを入力してください。'}), 400
+		return JSONResponse({'error': 'プロンプトを入力してください。'}, status_code=400)
 
 	try:
 		controller = get_agent_controller()
@@ -47,7 +48,7 @@ def chat() -> ResponseReturnValue:
 				},
 			}
 		)
-		return jsonify({'messages': _copy_history(), 'run_summary': message}), 200
+		return JSONResponse({'messages': _copy_history(), 'run_summary': message})
 	except Exception as exc:
 		_append_history_message('user', prompt)
 		logger.exception('Unexpected error while running browser agent')
@@ -62,22 +63,20 @@ def chat() -> ResponseReturnValue:
 				},
 			}
 		)
-		return jsonify({'messages': _copy_history(), 'run_summary': error_message}), 200
+		return JSONResponse({'messages': _copy_history(), 'run_summary': error_message})
 
 	if start_new_task:
 		if controller.is_running():
 			_append_history_message('user', prompt)
 			message = 'エージェント実行中は新しいタスクを開始できません。現在の実行が完了するまでお待ちください。'
 			_append_history_message('assistant', message)
-			return (
-				jsonify(
-					{
-						'messages': _copy_history(),
-						'run_summary': message,
-						'agent_running': True,
-					}
-				),
-				409,
+			return JSONResponse(
+				{
+					'messages': _copy_history(),
+					'run_summary': message,
+					'agent_running': True,
+				},
+				status_code=409,
 			)
 		try:
 			controller.prepare_for_new_task()
@@ -85,7 +84,7 @@ def chat() -> ResponseReturnValue:
 			_append_history_message('user', prompt)
 			message = finalize_summary(f'新しいタスクを開始できませんでした: {exc}')
 			_append_history_message('assistant', message)
-			return jsonify({'messages': _copy_history(), 'run_summary': message}), 400
+			return JSONResponse({'messages': _copy_history(), 'run_summary': message}, status_code=400)
 
 	_append_history_message('user', prompt)
 
@@ -105,7 +104,7 @@ def chat() -> ResponseReturnValue:
 					},
 				}
 			)
-			return jsonify({'messages': _copy_history(), 'run_summary': reply}), 200
+			return JSONResponse({'messages': _copy_history(), 'run_summary': reply})
 
 	if controller.is_running():
 		was_paused = controller.is_paused()
@@ -117,26 +116,21 @@ def chat() -> ResponseReturnValue:
 			message = f'フォローアップの指示の適用に失敗しました: {exc}'
 			logger.warning(message)
 			_append_history_message('assistant', message)
-			return (
-				jsonify({'messages': _copy_history(), 'run_summary': message, 'queued': False}),
-				200,
-			)
+			return JSONResponse({'messages': _copy_history(), 'run_summary': message, 'queued': False})
 
 		if was_paused:
 			ack_message = 'エージェントは一時停止中でした。新しい指示で実行を再開します。'
 		else:
 			ack_message = 'フォローアップの指示を受け付けました。現在の実行に反映します。'
 		_append_history_message('assistant', ack_message)
-		return (
-			jsonify(
-				{
-					'messages': _copy_history(),
-					'run_summary': ack_message,
-					'queued': True,
-					'agent_running': True,
-				}
-			),
-			202,
+		return JSONResponse(
+			{
+				'messages': _copy_history(),
+				'run_summary': ack_message,
+				'queued': True,
+				'agent_running': True,
+			},
+			status_code=202,
 		)
 
 	def on_complete(result_or_error: Any) -> None:
@@ -237,7 +231,7 @@ def chat() -> ResponseReturnValue:
 				},
 			}
 		)
-		return jsonify({'messages': _copy_history(), 'run_summary': message}), 200
+		return JSONResponse({'messages': _copy_history(), 'run_summary': message})
 	except Exception as exc:
 		logger.exception('Unexpected error while running browser agent')
 		error_message = finalize_summary(f'エージェントの実行中に予期しないエラーが発生しました: {exc}')
@@ -251,33 +245,33 @@ def chat() -> ResponseReturnValue:
 				},
 			}
 		)
-		return jsonify({'messages': _copy_history(), 'run_summary': error_message}), 200
+		return JSONResponse({'messages': _copy_history(), 'run_summary': error_message})
 
 	# Return immediately with 202 Accepted
-	return jsonify({'messages': _copy_history(), 'run_summary': '', 'agent_running': True}), 202
+	return JSONResponse({'messages': _copy_history(), 'run_summary': '', 'agent_running': True}, status_code=202)
 
 
-@api_chat_bp.post('/api/agent-relay')
-def agent_relay() -> ResponseReturnValue:
+@router.post('/api/agent-relay')
+async def agent_relay(request: Request) -> JSONResponse:
 	"""
 	Endpoint for receiving requests from external agents without updating the main chat history.
 	Expected JSON payload:
 	- prompt: instruction for the browser agent
 	"""
-	payload = request.get_json(silent=True) or {}
+	payload = await read_json_payload(request)
 	prompt = (payload.get('prompt') or '').strip()
 
 	if not prompt:
-		return jsonify({'error': 'プロンプトを入力してください。'}), 400
+		return JSONResponse({'error': 'プロンプトを入力してください。'}, status_code=400)
 
 	try:
 		controller = get_agent_controller()
 	except AgentControllerError as exc:
 		logger.warning('Failed to initialize agent controller for agent relay: %s', exc)
-		return jsonify({'error': f'エージェントの初期化に失敗しました: {exc}'}), 503
+		return JSONResponse({'error': f'エージェントの初期化に失敗しました: {exc}'}, status_code=503)
 	except Exception as exc:
 		logger.exception('Unexpected error while preparing agent controller for agent relay')
-		return jsonify({'error': f'エージェントの初期化中に予期しないエラーが発生しました: {exc}'}), 500
+		return JSONResponse({'error': f'エージェントの初期化中に予期しないエラーが発生しました: {exc}'}, status_code=500)
 
 	# First prompt of a task: decide if browser actions are needed
 	if not controller.is_running() and not controller.has_handled_initial_prompt():
@@ -286,7 +280,7 @@ def agent_relay() -> ResponseReturnValue:
 			reply = analysis.get('reply') or analysis.get('reason') or 'ブラウザ操作は不要と判断しました。'
 			controller.mark_initial_prompt_handled()
 			return (
-				jsonify(
+				JSONResponse(
 					{
 						'summary': reply,
 						'steps': [],
@@ -296,7 +290,6 @@ def agent_relay() -> ResponseReturnValue:
 						'action_taken': False,
 					}
 				),
-				200,
 			)
 
 	if controller.is_running():
@@ -307,38 +300,30 @@ def agent_relay() -> ResponseReturnValue:
 				controller.resume()
 		except AgentControllerError as exc:
 			logger.warning('Failed to enqueue follow-up instruction via agent relay: %s', exc)
-			return (
-				jsonify({'error': f'フォローアップの指示の適用に失敗しました: {exc}'}),
-				400,
-			)
+			return JSONResponse({'error': f'フォローアップの指示の適用に失敗しました: {exc}'}, status_code=400)
 		except Exception as exc:
 			logger.exception('Unexpected error while enqueueing follow-up instruction via agent relay')
-			return (
-				jsonify({'error': f'フォローアップ指示の処理中に予期しないエラーが発生しました: {exc}'}),
-				500,
-			)
+			return JSONResponse({'error': f'フォローアップ指示の処理中に予期しないエラーが発生しました: {exc}'}, status_code=500)
 
 		ack_message = 'フォローアップの指示を受け付けました。現在の実行に反映します。'
-		return (
-			jsonify(
-				{
-					'status': 'follow_up_enqueued',
-					'message': ack_message,
-					'agent_running': True,
-					'queued': True,
-				}
-			),
-			202,
+		return JSONResponse(
+			{
+				'status': 'follow_up_enqueued',
+				'message': ack_message,
+				'agent_running': True,
+				'queued': True,
+			},
+			status_code=202,
 		)
 
 	try:
 		run_result = controller.run(prompt, record_history=False)
 	except AgentControllerError as exc:
 		logger.warning('Failed to execute agent relay request: %s', exc)
-		return jsonify({'error': f'エージェントの実行に失敗しました: {exc}'}), 500
+		return JSONResponse({'error': f'エージェントの実行に失敗しました: {exc}'}, status_code=500)
 	except Exception as exc:
 		logger.exception('Unexpected error while executing agent relay request')
-		return jsonify({'error': f'予期しないエラーが発生しました: {exc}'}), 500
+		return JSONResponse({'error': f'予期しないエラーが発生しました: {exc}'}, status_code=500)
 
 	agent_history = run_result.filtered_history or run_result.history
 	summary_message = _summarize_history(agent_history)
@@ -358,4 +343,4 @@ def agent_relay() -> ResponseReturnValue:
 		except AttributeError:
 			response_data['usage'] = usage
 
-	return jsonify(response_data), 200
+	return JSONResponse(response_data)

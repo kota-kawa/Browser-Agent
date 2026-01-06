@@ -1,36 +1,34 @@
 from __future__ import annotations
 
-from flask import Blueprint, render_template, send_from_directory
-from flask.typing import ResponseReturnValue
+from fastapi import APIRouter, Request
+from fastapi.responses import FileResponse
+from fastapi.templating import Jinja2Templates
 
-from ..core.config import APP_STATIC_DIR, logger
+from ..core.config import APP_STATIC_DIR, APP_TEMPLATE_DIR, logger
 from ..core.env import _BROWSER_URL
 from ..core.exceptions import AgentControllerError
 from ..services.agent_runtime import get_agent_controller
 
-ui_bp = Blueprint('ui', __name__)
+templates = Jinja2Templates(directory=str(APP_TEMPLATE_DIR))
+router = APIRouter()
 
 
-@ui_bp.route('/favicon.ico')
-def favicon() -> ResponseReturnValue:
+@router.get('/favicon.ico')
+def favicon() -> FileResponse:
 	"""Serve the browser agent favicon for root requests."""
 
-	return send_from_directory(
-		APP_STATIC_DIR / 'icons',
-		'browser-agent.ico',
-		mimetype='image/x-icon',
-	)
+	return FileResponse(APP_STATIC_DIR / 'icons' / 'browser-agent.ico', media_type='image/x-icon')
 
 
-@ui_bp.route('/favicon.png')
-def favicon_png() -> ResponseReturnValue:
+@router.get('/favicon.png')
+def favicon_png() -> FileResponse:
 	"""Serve the png favicon variant for clients that request it."""
 
-	return send_from_directory(APP_STATIC_DIR / 'icons', 'browser-agent.png')
+	return FileResponse(APP_STATIC_DIR / 'icons' / 'browser-agent.png')
 
 
-@ui_bp.route('/')
-def index() -> str:
+@router.get('/')
+def index(request: Request):
 	try:
 		controller = get_agent_controller()
 	except AgentControllerError:
@@ -45,4 +43,4 @@ def index() -> str:
 		except Exception:
 			logger.debug('Failed to warm up browser start page on index load', exc_info=True)
 
-	return render_template('index.html', browser_url=_BROWSER_URL)
+	return templates.TemplateResponse('index.html', {'request': request, 'browser_url': _BROWSER_URL})

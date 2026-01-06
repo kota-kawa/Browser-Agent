@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Any
 
 from browser_use.model_selection import apply_model_selection, update_override
-from flask import Blueprint, jsonify, request
-from flask.typing import ResponseReturnValue
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 
 from ..core.config import logger
 from ..core.models import SUPPORTED_MODELS
@@ -18,14 +18,15 @@ from ..services.agent_runtime import (
 	vision_state,
 )
 from ..services.history_store import _broadcaster
+from .utils import read_json_payload
 
-api_models_bp = Blueprint('api_models', __name__)
+router = APIRouter()
 
 
-@api_models_bp.get('/api/models')
-def get_models() -> ResponseReturnValue:
+@router.get('/api/models')
+def get_models() -> JSONResponse:
 	current = apply_model_selection('browser')
-	return jsonify(
+	return JSONResponse(
 		{
 			'models': SUPPORTED_MODELS,
 			'current': {'provider': current['provider'], 'model': current['model'], 'base_url': current.get('base_url', '')},
@@ -33,29 +34,29 @@ def get_models() -> ResponseReturnValue:
 	)
 
 
-@api_models_bp.get('/api/vision')
-def get_vision() -> ResponseReturnValue:
+@router.get('/api/vision')
+def get_vision() -> JSONResponse:
 	"""Return current vision (screenshot) preference and effective status."""
 
-	return jsonify(vision_state())
+	return JSONResponse(vision_state())
 
 
-@api_models_bp.post('/api/vision')
-def set_vision() -> ResponseReturnValue:
-	payload = request.get_json(silent=True) or {}
+@router.post('/api/vision')
+async def set_vision(request: Request) -> JSONResponse:
+	payload = await read_json_payload(request)
 	if not isinstance(payload, dict) or 'enabled' not in payload:
-		return jsonify({'error': 'enabled フラグを指定してください。'}), 400
+		return JSONResponse({'error': 'enabled フラグを指定してください。'}, status_code=400)
 
 	enabled = bool(payload.get('enabled'))
 	state = set_vision_pref(enabled)
-	return jsonify(state)
+	return JSONResponse(state)
 
 
-@api_models_bp.post('/model_settings')
-def update_model_settings() -> ResponseReturnValue:
+@router.post('/model_settings')
+async def update_model_settings(request: Request) -> JSONResponse:
 	"""Update LLM selection and recycle controller without restart."""
 
-	payload = request.get_json(silent=True) or {}
+	payload = await read_json_payload(request)
 	selection = payload if isinstance(payload, dict) else {}
 	applied: dict[str, Any] | None = None
 	try:
@@ -95,5 +96,5 @@ def update_model_settings() -> ResponseReturnValue:
 			)
 	except Exception as exc:
 		logger.exception('Failed to apply model settings: %s', exc)
-		return jsonify({'error': 'モデル設定の更新に失敗しました。'}), 500
-	return jsonify({'status': 'ok', 'applied': applied if applied else selection or 'from_file'})
+		return JSONResponse({'error': 'モデル設定の更新に失敗しました。'}, status_code=500)
+	return JSONResponse({'status': 'ok', 'applied': applied if applied else selection or 'from_file'})

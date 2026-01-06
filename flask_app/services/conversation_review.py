@@ -377,9 +377,9 @@ def _analyze_conversation_history(
 	"""
 	Synchronous wrapper for async conversation history analysis.
 
-	Note: Uses asyncio.run() to create a new event loop since this is called
-	from Flask's synchronous request context. Falls back to manual loop creation
-	if an event loop is already running (e.g., in tests).
+	Note: Uses asyncio.run() to create a new event loop since this can be called
+	from a synchronous request context. Falls back to manual loop creation if an
+	event loop is already running (e.g., in tests).
 	"""
 	if loop and loop.is_running():
 		try:

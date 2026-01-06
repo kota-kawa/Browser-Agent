@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=S%C3%B6hne:wght@400;500;600&family=S%C3%B6hne+Mono:wght@400;500&display=swap"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <link rel="stylesheet" href="{{ request.url_for('static', path='css/style.css') }}" />
   </head>
   <body>
     <div class="wa-layout">

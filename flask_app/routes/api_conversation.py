@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-from flask import Blueprint, jsonify, request
-from flask.typing import ResponseReturnValue
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 
 from ..services.agent_runtime import get_controller_if_initialized
 from ..services.conversation_review import _analyze_conversation_history
+from .utils import read_json_payload
 
-api_conversation_bp = Blueprint('api_conversation', __name__)
+router = APIRouter()
 
 
-@api_conversation_bp.post('/api/conversations/review')
-@api_conversation_bp.post('/api/check-conversation-history')  # backward compatibility
-def check_conversation_history() -> ResponseReturnValue:
+@router.post('/api/conversations/review')
+@router.post('/api/check-conversation-history')  # backward compatibility
+async def check_conversation_history(request: Request) -> JSONResponse:
 	"""
 	Endpoint to receive and analyze conversation history from other agents.
 
@@ -23,14 +24,14 @@ def check_conversation_history() -> ResponseReturnValue:
 	- action_taken: whether any browser action was initiated
 	- run_summary: summary of the action taken (if any)
 	"""
-	payload = request.get_json(silent=True) or {}
+	payload = await read_json_payload(request)
 	conversation_history = payload.get('history') or payload.get('conversation_history') or payload.get('messages') or []
 
 	if not conversation_history:
-		return jsonify({'error': '会話履歴が提供されていません。'}), 400
+		return JSONResponse({'error': '会話履歴が提供されていません。'}, status_code=400)
 
 	if not isinstance(conversation_history, list):
-		return jsonify({'error': '会話履歴はリスト形式である必要があります。'}), 400
+		return JSONResponse({'error': '会話履歴はリスト形式である必要があります。'}, status_code=400)
 
 	# Try to use existing controller loop to avoid creating short-lived loops
 	controller = get_controller_if_initialized()
@@ -61,4 +62,4 @@ def check_conversation_history() -> ResponseReturnValue:
 		response_data['action_taken'] = False
 		response_data['run_summary'] = f'ブラウザ操作が提案されましたが、自動実行は無効化されています: {task_description}'
 
-	return jsonify(response_data), 200
+	return JSONResponse(response_data)

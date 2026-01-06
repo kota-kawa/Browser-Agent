@@ -1,1 +1,1 @@
-"""Flask demo application package for browser-use."""
+"""FastAPI application package for browser-use."""

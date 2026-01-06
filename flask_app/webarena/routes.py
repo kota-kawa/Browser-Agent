@@ -12,14 +12,20 @@ from contextlib import suppress
 from difflib import SequenceMatcher
 from urllib.parse import urlparse
 
-from flask import jsonify, render_template, request
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
 
+from flask_app.core.config import APP_TEMPLATE_DIR
 from flask_app.core.env import _BROWSER_URL, _WEBARENA_MAX_STEPS, _normalize_start_url
 from flask_app.services.formatting import _format_history_messages
+from flask_app.routes.utils import read_json_payload
 
-from . import webarena_bp
+from . import router
 
 logger = logging.getLogger(__name__)
+
+templates = Jinja2Templates(directory=str(APP_TEMPLATE_DIR))
 
 # Only these environments are provisioned locally
 SUPPORTED_SITES = {'shopping', 'shopping_admin', 'reddit', 'gitlab'}
@@ -73,12 +79,12 @@ RESET_URL = os.getenv('WEBARENA_RESET_URL')  # e.g., "http://localhost:7000/rese
 
 def _build_default_env_urls():
 	"""
-	When the Flask app runs inside Docker (/.dockerenv present), the agent and the
+	When the app runs inside Docker (/.dockerenv present), the agent and the
 	browser containers share the same user-defined network (`multi_agent_network`).
 	In that case the WebArena backends are reachable via their service names
 	(shopping, shopping_admin, gitlab, forum) rather than localhost:*.
 
-	When running the Flask app directly on the host machine, we still want to keep
+	When running the app directly on the host machine, we still want to keep
 	the existing localhost-based defaults so the UI works without Docker.
 	"""
 	in_container = os.path.exists('/.dockerenv') or os.environ.get('CONTAINERIZED') == '1'
@@ -114,21 +120,22 @@ def _build_default_env_urls():
 DEFAULT_ENV_URLS = _build_default_env_urls()
 
 
-@webarena_bp.route('/webarena')
-def index():
-	return render_template(
+@router.get('/webarena')
+def index(request: Request):
+	return templates.TemplateResponse(
 		'webarena.html',
-		browser_url=_BROWSER_URL,
-		env_urls=DEFAULT_ENV_URLS,
-		supported_sites=sorted(SUPPORTED_SITES),
+		{
+			'request': request,
+			'browser_url': _BROWSER_URL,
+			'env_urls': DEFAULT_ENV_URLS,
+			'supported_sites': sorted(SUPPORTED_SITES),
+		},
 	)
 
 
-@webarena_bp.route('/webarena/tasks')
-def get_tasks():
-	page = int(request.args.get('page', 1))
-	per_page = int(request.args.get('per_page', 50))
-	site_filter = request.args.get('site')
+@router.get('/webarena/tasks')
+def get_tasks(page: int = 1, per_page: int = 50, site: str | None = None):
+	site_filter = site
 
 	tasks = WEBARENA_TASKS
 	if site_filter and site_filter in SUPPORTED_SITES:
@@ -138,7 +145,7 @@ def get_tasks():
 
 	start = (page - 1) * per_page
 	end = start + per_page
-	return jsonify({'tasks': tasks[start:end], 'total': len(tasks), 'page': page, 'per_page': per_page})
+	return JSONResponse({'tasks': tasks[start:end], 'total': len(tasks), 'page': page, 'per_page': per_page})
 
 
 def _resolve_start_url(task, env_urls_override=None):
@@ -514,9 +521,9 @@ def _evaluate_result(history, task, controller):
 	return '\n'.join(results)
 
 
-@webarena_bp.route('/webarena/run', methods=['POST'])
-def run_task():
-	data = request.json or {}
+@router.post('/webarena/run')
+async def run_task(request: Request):
+	data = await read_json_payload(request)
 	task_id = data.get('task_id')
 	custom_task = data.get('custom_task')
 	env_urls_override = data.get('env_urls', {})
@@ -524,16 +531,7 @@ def run_task():
 
 	try:
 		# Import here to avoid circular dependency
-		try:
-			from flask_app.services.agent_runtime import get_agent_controller
-		except ImportError:
-			# Fallback for testing where app might not be initialized as expected
-			from flask import current_app
-
-			if hasattr(current_app, 'get_agent_controller'):
-				get_agent_controller = current_app.get_agent_controller
-			else:
-				raise
+		from flask_app.services.agent_runtime import get_agent_controller
 		controller = get_agent_controller()
 
 		intent = ''
@@ -551,10 +549,10 @@ def run_task():
 			intent = custom_task.get('intent')
 
 		if not intent:
-			return jsonify({'error': '有効なタスクではありません。'}), 400
+			return JSONResponse({'error': '有効なタスクではありません。'}, status_code=400)
 
 		if controller.is_running():
-			return jsonify({'error': 'エージェントは既に実行中です。'}), 409
+			return JSONResponse({'error': 'エージェントは既に実行中です。'}, status_code=409)
 
 		start_override = _apply_start_page_override(selected_site, env_urls_override)
 
@@ -569,22 +567,22 @@ def run_task():
 			payload = _run_single_task(temp_task, controller, env_urls_override, start_override)
 		else:
 			if not current_task:
-				return jsonify({'error': '有効なタスクではありません。'}), 400
+				return JSONResponse({'error': '有効なタスクではありません。'}, status_code=400)
 			payload = _run_single_task(current_task, controller, env_urls_override, start_override)
 
-		return jsonify(payload)
+		return JSONResponse(payload)
 
 	except Exception as e:
 		logger.exception('WebArena evaluation failed')
-		return jsonify({'error': str(e)}), 500
+		return JSONResponse({'error': str(e)}, status_code=500)
 
 
-@webarena_bp.route('/webarena/run_batch', methods=['POST'])
-def run_batch():
+@router.post('/webarena/run_batch')
+async def run_batch(request: Request):
 	"""
 	Run a batch of supported WebArena tasks sequentially (no manual prompt input).
 	"""
-	data = request.json or {}
+	data = await read_json_payload(request)
 	env_urls_override = data.get('env_urls', {})
 	selected_site = data.get('selected_site')
 	task_ids = data.get('task_ids')
@@ -599,22 +597,14 @@ def run_batch():
 		selected_tasks = [t for t in WEBARENA_TASKS if t.get('sites') and len(t['sites']) == 1 and selected_site in t['sites']]
 
 	if not selected_tasks:
-		return jsonify({'error': '実行可能なタスクがありません。'}), 400
+		return JSONResponse({'error': '実行可能なタスクがありません。'}, status_code=400)
 
-	try:
-		from flask_app.services.agent_runtime import get_agent_controller
-	except ImportError:
-		from flask import current_app
-
-		if hasattr(current_app, 'get_agent_controller'):
-			get_agent_controller = current_app.get_agent_controller
-		else:
-			raise
+	from flask_app.services.agent_runtime import get_agent_controller
 
 	controller = get_agent_controller()
 
 	if controller.is_running():
-		return jsonify({'error': 'エージェントは既に実行中です。'}), 409
+		return JSONResponse({'error': 'エージェントは既に実行中です。'}, status_code=409)
 
 	start_override = _apply_start_page_override(selected_site, env_urls_override)
 
@@ -663,16 +653,16 @@ def run_batch():
 	except Exception as e:
 		logger.error('Failed to save batch results to file: %s', e)
 
-	return jsonify(response_data)
+	return JSONResponse(response_data)
 
 
-@webarena_bp.route('/webarena/save_results', methods=['POST'])
-def save_results():
-	data = request.json or {}
+@router.post('/webarena/save_results')
+async def save_results(request: Request):
+	data = await read_json_payload(request)
 	results = data.get('results', [])
 
 	if not results:
-		return jsonify({'error': 'No results provided'}), 400
+		return JSONResponse({'error': 'No results provided'}, status_code=400)
 
 	# Reconstruct selected_tasks from result IDs for metric calculation
 	task_map = {t['task_id']: t for t in WEBARENA_TASKS}
@@ -705,7 +695,7 @@ def save_results():
 		with open(output_file, 'w', encoding='utf-8') as f:
 			json.dump({**response_data, 'timestamp': datetime.datetime.now().isoformat()}, f, ensure_ascii=False, indent=2)
 		logger.info('Saved batch results to %s', output_file)
-		return jsonify({'success': True, 'path': output_file})
+		return JSONResponse({'success': True, 'path': output_file})
 	except Exception as e:
 		logger.error('Failed to save batch results to file: %s', e)
-		return jsonify({'error': str(e)}), 500
+		return JSONResponse({'error': str(e)}, status_code=500)

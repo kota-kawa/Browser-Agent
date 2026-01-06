@@ -3,21 +3,21 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from flask import Blueprint, Response, jsonify, stream_with_context
-from flask.typing import ResponseReturnValue
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from ..services.history_store import _broadcaster, _copy_history
 
-api_history_bp = Blueprint('api_history', __name__)
+router = APIRouter()
 
 
-@api_history_bp.get('/api/history')
-def history() -> ResponseReturnValue:
-	return jsonify({'messages': _copy_history()}), 200
+@router.get('/api/history')
+def history() -> JSONResponse:
+	return JSONResponse({'messages': _copy_history()})
 
 
-@api_history_bp.get('/api/stream')
-def stream() -> ResponseReturnValue:
+@router.get('/api/stream')
+def stream() -> StreamingResponse:
 	listener = _broadcaster.subscribe()
 
 	def event_stream() -> Any:
@@ -31,4 +31,4 @@ def stream() -> ResponseReturnValue:
 			_broadcaster.unsubscribe(listener)
 
 	headers = {'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
-	return Response(stream_with_context(event_stream()), mimetype='text/event-stream', headers=headers)
+	return StreamingResponse(event_stream(), media_type='text/event-stream', headers=headers)

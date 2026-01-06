@@ -73,7 +73,7 @@ class BrowserAgentController:
 		self._state_lock = threading.Lock()
 		self._browser_session: BrowserSession | None = None
 		self._shutdown = False
-		self._logger = logging.getLogger('browser_use.flask.agent')
+		self._logger = logging.getLogger('browser_use.web.agent')
 		self._cdp_cleanup = cdp_cleanup
 		self._llm = _create_selected_llm()
 		self._agent: Agent | None = None

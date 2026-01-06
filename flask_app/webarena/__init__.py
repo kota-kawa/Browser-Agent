@@ -1,5 +1,5 @@
-from flask import Blueprint
+from fastapi import APIRouter
 
-webarena_bp = Blueprint('webarena', __name__, template_folder='../templates')
+router = APIRouter()
 
 from . import routes
