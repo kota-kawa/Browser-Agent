@@ -6,7 +6,7 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
-import requests
+import httpx
 from browser_use.model_selection import apply_model_selection
 
 from ..core.cdp import _consume_cdp_session_cleanup, _resolve_cdp_url
@@ -123,10 +123,10 @@ def notify_platform(selection: dict[str, Any]) -> None:
 		url = f'{_PLATFORM_BASE}/api/model_settings'
 		payload = {'selection': {'browser': selection}}
 		headers = {'X-Agent-Origin': 'browser'}
-		resp = requests.post(url, json=payload, headers=headers, timeout=2.0)
-		if not resp.ok:
+		resp = httpx.post(url, json=payload, headers=headers, timeout=2.0)
+		if resp.is_error:
 			logger.info('Platform model sync skipped (%s %s)', resp.status_code, resp.text)
-	except requests.exceptions.RequestException as exc:
+	except httpx.RequestError as exc:
 		logger.info('Platform model sync skipped (%s)', exc)
 
 
