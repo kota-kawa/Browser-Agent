@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ブラウザ画面</title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="/favicon.png"
+      sizes="512x512"
+    />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="/favicon.ico"
+    />
+    <link
+      rel="shortcut icon"
+      href="/favicon.ico"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="/favicon.png"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="{{ request.url_for('static', path='css/style.css') }}" />
+    <style>
+        .full-screen-layout {
+            width: 100%;
+            height: calc(100vh - clamp(24px, 4vw, 40px));
+            height: calc(100dvh - clamp(24px, 4vw, 40px));
+            display: flex;
+            flex-direction: column;
+        }
+        .browser-pane {
+            flex: 1;
+            height: 100%;
+        }
+    </style>
+  </head>
+  <body>
+    <main class="full-screen-layout">
+      <section class="browser-pane" aria-label="ブラウザ画面">
+        <div class="browser-shell">
+          <div class="browser-toolbar" role="presentation">
+            <div class="browser-toolbar-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div class="browser-toolbar-title">リモートブラウザ</div>
+            <div class="browser-toolbar-url" title="{{ browser_url }}">{{ browser_url }}</div>
+          </div>
+          <iframe
+            src="{{ browser_url }}"
+            title="コンテナ内ブラウザ"
+          ></iframe>
+        </div>
+      </section>
+    </main>
+    <script>
+      // Ensure the embedded noVNC session fills the browser pane
+      const browserIframe = document.querySelector('.browser-pane iframe');
+      if (browserIframe) {
+        const shell = document.querySelector('.browser-shell');
+        const toolbar = shell?.querySelector('.browser-toolbar');
+
+        const syncIframeHeight = () => {
+          if (!shell) {
+            return;
+          }
+          const toolbarHeight = toolbar?.offsetHeight ?? 0;
+          const nextHeight = Math.max(shell.clientHeight - toolbarHeight, 0);
+          browserIframe.style.height = `${nextHeight}px`;
+        };
+
+        if (shell) {
+          if (typeof ResizeObserver !== 'undefined') {
+            const resizeObserver = new ResizeObserver(syncIframeHeight);
+            resizeObserver.observe(shell);
+          } else {
+            window.addEventListener('resize', syncIframeHeight);
+          }
+        }
+
+        syncIframeHeight();
+      }
+    </script>
+  </body>
+</html>

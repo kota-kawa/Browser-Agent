@@ -44,3 +44,22 @@ def index(request: Request):
 			logger.debug('Failed to warm up browser start page on index load', exc_info=True)
 
 	return templates.TemplateResponse('index.html', {'request': request, 'browser_url': _BROWSER_URL})
+
+
+@router.get('/agent-result')
+def agent_result(request: Request):
+	try:
+		controller = get_agent_controller()
+	except AgentControllerError:
+		controller = None
+	except Exception:
+		logger.debug('Unexpected error while preparing browser controller on agent_result load', exc_info=True)
+		controller = None
+
+	if controller is not None:
+		try:
+			controller.ensure_start_page_ready()
+		except Exception:
+			logger.debug('Failed to warm up browser start page on agent_result load', exc_info=True)
+
+	return templates.TemplateResponse('agent_result.html', {'request': request, 'browser_url': _BROWSER_URL})
