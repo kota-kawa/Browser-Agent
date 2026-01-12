@@ -19,7 +19,6 @@ A powerful browser automation agent with a FastAPI-based web interface, powered 
 - **Web Interface**: A clean, responsive UI to interact with the agent, view the browser screen, and monitor execution logs.
 - **Live Streaming**: Real-time feedback using Server-Sent Events (SSE) and VNC for browser visibility.
 - **Scratchpad**: A dedicated memory space for the agent to store and structure extracted data (e.g., prices, names, reviews) during tasks.
-- **Conversation Analysis**: An API endpoint (`/api/check-conversation-history`) to analyze chat history and determine if browser action is required.
 - **Docker Ready**: Fully containerized setup for easy deployment using Docker Compose.
 - **Extensible Architecture**: Modular design separating the core agent (`browser_use`), API services (`flask_app`), and UI.
 
@@ -82,7 +81,6 @@ Navigate to the "WebArena" tab in the UI or use the API to run standard benchmar
 ### API Endpoints
 - `POST /api/chat`: Send a task to the agent.
 - `GET /api/stream`: Subscribe to the event stream for logs.
-- `POST /api/check-conversation-history`: Analyze chat context for actionable tasks.
 - `POST /webarena/run`: Run a specific WebArena task.
 
 ## 📂 Project Structure
