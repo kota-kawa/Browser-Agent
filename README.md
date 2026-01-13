@@ -1,114 +1,116 @@
 # Browser-Agent
 
+日本語 | [English](README.en.md)
+
 <p align="center">
   <img src="static/Browser-Agent-Icon.png" width="800" alt="Browser-Agent Icon">
 </p>
 
-A powerful browser automation agent with a FastAPI-based web interface, powered by modern LLMs. This project allows you to control a browser using natural language, visualize the execution in real-time, and even run benchmarks like WebArena.
+最新のLLMを活用したFastAPIベースのWebインターフェース付きブラウザ自動化エージェントです。自然言語でブラウザを操作でき、実行状況をリアルタイムで可視化し、WebArenaのようなベンチマークも実行できます。
 
-## 🚀 Overview
+## 🚀 概要
 
-`Browser-Agent` integrates the `browser_use` library with a robust FastAPI backend to provide:
-- **Natural Language Control**: Instruct the browser to perform tasks like "Search for the cheapest flight to Tokyo" or "Log into my account and check messages".
-- **Real-time Visualization**: Watch the agent's actions live via a noVNC stream and see step-by-step logs in the UI.
-- **Multi-LLM Support**: Compatible with Gemini, OpenAI, Anthropic, DeepSeek, and more.
-- **WebArena Benchmarking**: Built-in tools to run and evaluate standard browser automation benchmarks.
+`Browser-Agent` は `browser_use` ライブラリと堅牢なFastAPIバックエンドを統合し、次の機能を提供します。
+- **自然言語操作**: 「東京行きの最安フライトを探して」や「アカウントにログインしてメッセージを確認して」といった指示でブラウザを操作します。
+- **リアルタイム可視化**: noVNCストリームでエージェントの動作を見ながら、UI上でステップごとのログを確認できます。
+- **マルチLLM対応**: Gemini、OpenAI、Anthropic、DeepSeek などに対応しています。
+- **WebArenaベンチマーク**: 標準的なブラウザ自動化ベンチマークを実行・評価するツールを内蔵しています。
 
-## ✨ Key Features
+## ✨ 主な機能
 
-- **Web Interface**: A clean, responsive UI to interact with the agent, view the browser screen, and monitor execution logs.
-- **Live Streaming**: Real-time feedback using Server-Sent Events (SSE) and VNC for browser visibility.
-- **Scratchpad**: A dedicated memory space for the agent to store and structure extracted data (e.g., prices, names, reviews) during tasks.
-- **Docker Ready**: Fully containerized setup for easy deployment using Docker Compose.
-- **Extensible Architecture**: Modular design separating the core agent (`browser_use`), API services (`flask_app`), and UI.
+- **Webインターフェース**: エージェントの操作、ブラウザ画面の確認、実行ログの監視を行える、クリーンでレスポンシブなUI。
+- **ライブストリーミング**: Server-Sent Events (SSE) とVNCでリアルタイムにフィードバック。
+- **Scratchpad**: タスク中に抽出したデータ（価格、名前、レビューなど）を構造化して保存する専用メモリ。
+- **Docker対応**: Docker Composeによる簡単なデプロイに対応。
+- **拡張可能なアーキテクチャ**: コアエージェント（`browser_use`）、APIサービス（`flask_app`）、UIを分離したモジュール設計。
 
-## 🛠️ Installation
+## 🛠️ インストール
 
-### Prerequisites
+### 前提条件
 - **Python 3.11+**
-- **Docker & Docker Compose** (recommended for full stack)
-- **uv** (recommended for local Python management)
-- **Google Chrome** (if running locally without Docker)
+- **Docker & Docker Compose**（フルスタック推奨）
+- **uv**（ローカルPython管理に推奨）
+- **Google Chrome**（Dockerなしでローカル実行する場合）
 
-### 1. Clone the Repository
+### 1. リポジトリをクローン
 ```bash
 git clone https://github.com/kota-kawa/Browser-Agent.git
 cd browser-agent
 ```
 
-### 2. Environment Setup
-Copy the example secrets file and configure your API keys.
+### 2. 環境設定
+サンプルのシークレットファイルをコピーしてAPIキーを設定します。
 ```bash
 cp secrets.env.example secrets.env
 ```
-Edit `secrets.env` and add your LLM provider keys (e.g., `GOOGLE_API_KEY`, `OPENAI_API_KEY`).
+`secrets.env` を編集し、LLMプロバイダのキー（例: `GOOGLE_API_KEY`, `OPENAI_API_KEY`）を追加してください。
 
-### 3. Run with Docker (Recommended)
-This will start the FastAPI app, a Chrome instance, and the VNC server.
+### 3. Dockerで実行（推奨）
+FastAPIアプリ、Chromeインスタンス、VNCサーバーが起動します。
 ```bash
 docker-compose up --build
 ```
-Access the UI at: http://localhost:5005
+UIのアクセス先: http://localhost:5005
 
-### 4. Run Locally
-If you prefer running without Docker:
+### 4. ローカルで実行
+Dockerなしで実行する場合:
 
-**Install Dependencies:**
+**依存関係のインストール:**
 ```bash
-# Using uv (recommended)
+# uv を使用（推奨）
 ./bin/setup.sh
 
-# Or using pip
+# または pip
 pip install -r flask_app/requirements.txt
 ```
 
-**Start the Application:**
-Make sure you have a Chrome instance running with remote debugging enabled, or set `BROWSER_USE_CDP_URL` to a remote CDP endpoint.
+**アプリの起動:**
+リモートデバッグを有効にしたChromeを起動するか、`BROWSER_USE_CDP_URL` にリモートCDPエンドポイントを指定してください。
 ```bash
 uv run uvicorn flask_app.app:app --host 0.0.0.0 --port 5005
 ```
 
-## 📖 Usage
+## 📖 使い方
 
 ### Web UI
-1. Open http://localhost:5005 in your browser.
-2. Type your instruction in the chat box (e.g., "Go to amazon.com and find a good mechanical keyboard").
-3. The agent will start executing the task. You can see the browser view on the left and the logs/chat on the right.
+1. ブラウザで http://localhost:5005 を開きます。
+2. チャットボックスに指示を入力します（例: "amazon.comに行って良いメカニカルキーボードを探して"）。
+3. エージェントがタスクを実行します。左側にブラウザ画面、右側にログとチャットが表示されます。
 
-### WebArena Benchmarks
-Navigate to the "WebArena" tab in the UI or use the API to run standard benchmark tasks to evaluate the agent's performance.
+### WebArena ベンチマーク
+UIの「WebArena」タブから、またはAPIを使って標準ベンチマークタスクを実行・評価できます。
 
-### API Endpoints
-- `POST /api/chat`: Send a task to the agent.
-- `GET /api/stream`: Subscribe to the event stream for logs.
-- `POST /webarena/run`: Run a specific WebArena task.
+### API エンドポイント
+- `POST /api/chat`: エージェントにタスクを送信します。
+- `GET /api/stream`: ログ用イベントストリームに接続します。
+- `POST /webarena/run`: WebArenaの特定タスクを実行します。
 
-## 📂 Project Structure
+## 📂 プロジェクト構成
 
 ```
 /
-├── browser_use/       # Core agent logic, DOM manipulation, tools
-├── flask_app/         # FastAPI web server, API routes, UI templates
-│   ├── core/          # Config and environment setup
-│   ├── services/      # Business logic (Agent Controller, History)
-│   ├── routes/        # API endpoints
-│   └── templates/     # HTML frontend
-├── docker-compose.yml # Container orchestration
-└── secrets.env        # API keys and configuration
+├── browser_use/       # コアエージェントロジック、DOM操作、ツール
+├── flask_app/         # FastAPI Webサーバー、APIルート、UIテンプレート
+│   ├── core/          # 設定と環境構築
+│   ├── services/      # ビジネスロジック（Agent Controller, History）
+│   ├── routes/        # APIエンドポイント
+│   └── templates/     # HTMLフロントエンド
+├── docker-compose.yml # コンテナオーケストレーション
+└── secrets.env        # APIキーと設定
 ```
 
-## 🧪 Development
+## 🧪 開発
 
-### Running Tests
+### テスト実行
 ```bash
 ./bin/test.sh
 ```
 
-### Linting
+### Lint
 ```bash
 ./bin/lint.sh
 ```
 
-## 📄 License
+## 📄 ライセンス
 
-See [LICENSE.md](LICENSE.md) for details.
+詳細は [LICENSE.md](LICENSE.md) を参照してください。
