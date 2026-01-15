@@ -53,7 +53,7 @@ body::before {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+  grid-template-columns: minmax(400px, 500px) minmax(0, 1fr);
   gap: clamp(16px, 2.4vw, 26px);
   width: min(1680px, 100%);
   margin: 0 auto;
@@ -941,7 +941,7 @@ button:not(:disabled) {
 
 @media (max-width: 1280px) {
   .layout {
-    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+    grid-template-columns: minmax(375px, 450px) minmax(0, 1fr);
   }
 }
 

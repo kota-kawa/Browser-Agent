@@ -155,6 +155,23 @@
       let isPaused = false;
       let statusClearTimer;
       let pendingSubmitMode = 'continue';
+      let messagesBusy = false;
+      let pendingAssistantResponse = false;
+      let assistantMessageCount = 0;
+      let assistantMessageCountAtSubmit = 0;
+      let thinkingShownAt = 0;
+      let thinkingHideTimer;
+      const MIN_THINKING_MS = 600;
+      const DEFAULT_BUSY_TITLE = 'AIが考えています';
+      const DEFAULT_BUSY_SUB = '見つけた情報から回答を組み立て中';
+      const FALLBACK_STEP_DETAIL = '次の操作を進行中です';
+      let busyMessageTitle = DEFAULT_BUSY_TITLE;
+      let busyMessageSub = DEFAULT_BUSY_SUB;
+      let thinkingTitleElement = null;
+      let thinkingSubElement = null;
+      let stepInProgress = false;
+      let currentStepNumber = null;
+      let currentStepDetail = '';
 
       function setStatus(message, variant = 'info') {
         if (!statusElement) {
@@ -195,12 +212,12 @@
 
         const title = document.createElement('span');
         title.className = 'thinking-title';
-        title.textContent = 'AIが考えています';
+        title.textContent = busyMessageTitle;
         labels.appendChild(title);
 
         const sub = document.createElement('span');
         sub.className = 'thinking-sub';
-        sub.textContent = '見つけた情報から回答を組み立て中';
+        sub.textContent = busyMessageSub;
         labels.appendChild(sub);
 
         header.appendChild(labels);
@@ -219,26 +236,80 @@
         }).replace(/\//g, '/');
         wrapper.appendChild(time);
 
+        thinkingTitleElement = title;
+        thinkingSubElement = sub;
+
         return wrapper;
+      }
+
+      function updateThinkingMessageContent(title, sub) {
+        busyMessageTitle = title || DEFAULT_BUSY_TITLE;
+        busyMessageSub = sub || DEFAULT_BUSY_SUB;
+        if (thinkingTitleElement) {
+          thinkingTitleElement.textContent = busyMessageTitle;
+        }
+        if (thinkingSubElement) {
+          thinkingSubElement.textContent = busyMessageSub;
+        }
+      }
+
+      function ensureThinkingMessage() {
+        if (!messagesElement) {
+          return;
+        }
+        if (!thinkingMessageElement) {
+          thinkingMessageElement = createThinkingMessage();
+        }
+        if (!thinkingMessageElement.isConnected) {
+          messagesElement.appendChild(thinkingMessageElement);
+        }
+      }
+
+      function removeThinkingMessage() {
+        if (thinkingMessageElement && thinkingMessageElement.isConnected) {
+          thinkingMessageElement.remove();
+        }
+        thinkingMessageElement = null;
+        thinkingTitleElement = null;
+        thinkingSubElement = null;
+        thinkingShownAt = 0;
       }
 
       function setMessagesBusy(isBusy) {
         if (!messagesElement) {
           return;
         }
+        if (thinkingHideTimer) {
+          clearTimeout(thinkingHideTimer);
+          thinkingHideTimer = undefined;
+        }
+        const wasBusy = messagesBusy;
+        messagesBusy = isBusy;
         if (isBusy) {
           messagesElement.setAttribute('aria-busy', 'true');
-          if (!thinkingMessageElement) {
-            thinkingMessageElement = createThinkingMessage();
-            messagesElement.appendChild(thinkingMessageElement);
-            messagesElement.scrollTop = messagesElement.scrollHeight;
+          if (!wasBusy) {
+            thinkingShownAt = Date.now();
           }
+          ensureThinkingMessage();
+          messagesElement.scrollTop = messagesElement.scrollHeight;
+          return;
+        }
+        messagesElement.setAttribute('aria-busy', 'false');
+        if (!thinkingMessageElement) {
+          thinkingShownAt = 0;
+          return;
+        }
+        const elapsed = Date.now() - (thinkingShownAt || Date.now());
+        const remaining = Math.max(0, MIN_THINKING_MS - elapsed);
+        if (remaining > 0) {
+          thinkingHideTimer = window.setTimeout(() => {
+            thinkingHideTimer = undefined;
+            if (!messagesBusy) {
+              removeThinkingMessage();
+            }
+          }, remaining);
         } else {
-          messagesElement.setAttribute('aria-busy', 'false');
-          if (thinkingMessageElement) {
-            thinkingMessageElement.remove();
-            thinkingMessageElement = null;
-          }
+          removeThinkingMessage();
         }
       }
 
@@ -269,6 +340,121 @@
           messagesElement.classList.add('is-empty');
         } else {
           messagesElement.classList.remove('is-empty');
+        }
+      }
+
+      function extractStepInfo(content) {
+        if (!content || typeof content !== 'string') {
+          return null;
+        }
+        const lines = content
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean);
+        if (!lines.length) {
+          return null;
+        }
+        const match = lines[0].match(/^ステップ(\d+)/);
+        if (!match) {
+          return null;
+        }
+        const stepNumber = Number(match[1]);
+        const currentStatus = lines.find((line) => line.startsWith('現在の状況:'));
+        const nextGoal = lines.find((line) => line.startsWith('次の目標:'));
+        const actionLine = lines.find((line) => line.startsWith('アクション:'));
+        const evaluationLine = lines.find((line) => line.startsWith('評価:'));
+        let detail = '';
+        if (currentStatus) {
+          detail = currentStatus.replace('現在の状況:', '').trim();
+        } else if (nextGoal) {
+          detail = `次の目標: ${nextGoal.replace('次の目標:', '').trim()}`;
+        } else if (actionLine) {
+          detail = `操作: ${actionLine.replace('アクション:', '').trim()}`;
+        } else if (evaluationLine) {
+          detail = `評価: ${evaluationLine.replace('評価:', '').trim()}`;
+        }
+        return { stepNumber, detail };
+      }
+
+      function isRunSummaryMessage(content) {
+        if (!content || typeof content !== 'string') {
+          return false;
+        }
+        if (!/^[✅⚠️ℹ️]/.test(content)) {
+          return false;
+        }
+        return content.includes('ステップでエージェントが実行されました');
+      }
+
+      function updateStepActivity(stepInfo) {
+        if (!stepInfo) {
+          return;
+        }
+        stepInProgress = true;
+        currentStepNumber = stepInfo.stepNumber;
+        currentStepDetail = stepInfo.detail || '';
+        updateBusyState();
+      }
+
+      function clearStepActivity() {
+        stepInProgress = false;
+        currentStepNumber = null;
+        currentStepDetail = '';
+        if (!pendingAssistantResponse) {
+          updateBusyState();
+        }
+      }
+
+      function updateBusyState() {
+        const shouldBusy = pendingAssistantResponse || stepInProgress;
+        if (shouldBusy) {
+          if (stepInProgress && currentStepNumber) {
+            const detail = currentStepDetail || FALLBACK_STEP_DETAIL;
+            updateThinkingMessageContent(`ステップ${currentStepNumber}を実行しています`, detail);
+          } else {
+            updateThinkingMessageContent(DEFAULT_BUSY_TITLE, DEFAULT_BUSY_SUB);
+          }
+        }
+        setMessagesBusy(shouldBusy);
+      }
+
+      function findLastStepInfo(messages) {
+        if (!Array.isArray(messages)) {
+          return null;
+        }
+        for (let index = messages.length - 1; index >= 0; index -= 1) {
+          const message = messages[index];
+          if (!message || message.role !== 'assistant') {
+            continue;
+          }
+          if (isRunSummaryMessage(message.content)) {
+            return null;
+          }
+          const stepInfo = extractStepInfo(message.content);
+          if (stepInfo) {
+            return stepInfo;
+          }
+        }
+        return null;
+      }
+
+      function countAssistantMessages(messages) {
+        let count = 0;
+        messages.forEach((message) => {
+          if (message && message.role === 'assistant') {
+            count += 1;
+          }
+        });
+        return count;
+      }
+
+      function resolvePendingAssistantResponse() {
+        if (!pendingAssistantResponse) {
+          return;
+        }
+        if (assistantMessageCount > assistantMessageCountAtSubmit) {
+          pendingAssistantResponse = false;
+          updateBusyState();
         }
       }
 
@@ -454,12 +640,39 @@
       }
 
       function renderMessages(messages) {
+        const existingThinking = thinkingMessageElement;
+        if (existingThinking && existingThinking.isConnected) {
+          existingThinking.remove();
+        }
         messagesElement.innerHTML = '';
         messages.forEach((message) => {
           messagesElement.appendChild(createMessageElement(message));
         });
+        if (messagesBusy) {
+          thinkingMessageElement = existingThinking || createThinkingMessage();
+          if (!thinkingMessageElement.isConnected) {
+            messagesElement.appendChild(thinkingMessageElement);
+          }
+        } else {
+          thinkingMessageElement = null;
+          thinkingTitleElement = null;
+          thinkingSubElement = null;
+        }
         messagesElement.scrollTop = messagesElement.scrollHeight;
         updateEmptyState();
+        assistantMessageCount = countAssistantMessages(messages);
+        const lastStepInfo = findLastStepInfo(messages);
+        if (lastStepInfo && (isRunning || pendingAssistantResponse)) {
+          stepInProgress = true;
+          currentStepNumber = lastStepInfo.stepNumber;
+          currentStepDetail = lastStepInfo.detail || '';
+        } else if (!isRunning && !pendingAssistantResponse) {
+          stepInProgress = false;
+          currentStepNumber = null;
+          currentStepDetail = '';
+        }
+        resolvePendingAssistantResponse();
+        updateBusyState();
       }
 
       function appendOrUpdateMessage(message) {
@@ -481,6 +694,18 @@
           messagesElement.scrollTop = messagesElement.scrollHeight;
         }
         updateEmptyState();
+        assistantMessageCount = countAssistantMessages(conversation);
+        if (message.role === 'assistant') {
+          const stepInfo = extractStepInfo(message.content);
+          if (stepInfo) {
+            updateStepActivity(stepInfo);
+          } else if (isRunSummaryMessage(message.content)) {
+            clearStepActivity();
+          }
+          if (existingIndex < 0) {
+            resolvePendingAssistantResponse();
+          }
+        }
       }
 
       function updatePauseButtonState() {
@@ -518,7 +743,11 @@
         conversation = [];
         renderMessages(conversation);
         setStatus('履歴をリセットしました。', 'success');
-        setMessagesBusy(false);
+        pendingAssistantResponse = false;
+        assistantMessageCount = 0;
+        assistantMessageCountAtSubmit = 0;
+        clearStepActivity();
+        updateBusyState();
         updatePauseButtonState();
         setConnectionState('connected');
         loadHistory();
@@ -560,6 +789,9 @@
               if (statusPayload.run_summary) {
                 // Suppress the top completion banner for finished tasks.
               }
+              pendingAssistantResponse = false;
+              clearStepActivity();
+              updateBusyState();
             }
           } catch (error) {
             console.error('ストリームの処理に失敗しました', error);
@@ -593,10 +825,15 @@
             : 'エージェントに指示を送信しています…',
           'progress',
         );
-        setMessagesBusy(true);
         isRunning = true;
         isPaused = false;
         updatePauseButtonState();
+        if (isNewTaskSubmission) {
+          clearStepActivity();
+        }
+        pendingAssistantResponse = true;
+        assistantMessageCountAtSubmit = assistantMessageCount;
+        updateBusyState();
 
         promptInput.value = '';
         promptInput.focus();
@@ -645,15 +882,18 @@
             promptInput.focus();
           }
           setStatus(error.message || 'エージェントへの送信に失敗しました。', 'error');
+          pendingAssistantResponse = false;
+          clearStepActivity();
+          updateBusyState();
           shouldContinueRunning = false;
         } finally {
           formElement.classList.remove('is-sending');
-          setMessagesBusy(false);
           isRunning = shouldContinueRunning;
           if (!shouldContinueRunning) {
             isPaused = false;
           }
           updatePauseButtonState();
+          updateBusyState();
         }
       });
 
