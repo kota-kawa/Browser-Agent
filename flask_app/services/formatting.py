@@ -122,17 +122,21 @@ def _format_step_entry(index: int, step: Any) -> str:
 	return '\n'.join(lines)
 
 
-def _format_history_messages(history: AgentHistoryList) -> list[tuple[int, str]]:
-	formatted: list[tuple[int, str]] = []
+def _iter_history_steps(history: AgentHistoryList) -> list[tuple[int, Any]]:
+	steps: list[tuple[int, Any]] = []
 	next_index = 1
 	for step in history.history:
 		metadata = getattr(step, 'metadata', None)
 		step_number = getattr(metadata, 'step_number', None) if metadata else None
 		if not isinstance(step_number, int) or step_number < 1:
 			step_number = next_index
-		formatted.append((step_number, _format_step_entry(step_number, step)))
+		steps.append((step_number, step))
 		next_index = step_number + 1
-	return formatted
+	return steps
+
+
+def _format_history_messages(history: AgentHistoryList) -> list[tuple[int, str]]:
+	return [(step_number, _format_step_entry(step_number, step)) for step_number, step in _iter_history_steps(history)]
 
 
 def _format_step_plan(
@@ -158,7 +162,8 @@ def _format_step_plan(
 
 
 def _summarize_history(history: AgentHistoryList) -> str:
-	total_steps = len(history.history)
+	steps = _iter_history_steps(history)
+	total_steps = max((step_number for step_number, _ in steps), default=0)
 	success = history.is_successful()
 	if success is True:
 		prefix, status = '✅', '成功'
