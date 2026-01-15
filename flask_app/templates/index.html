@@ -265,6 +265,17 @@
         }
       }
 
+      function ensureThinkingMessageAtEnd() {
+        if (!messagesBusy || !messagesElement) {
+          return;
+        }
+        ensureThinkingMessage();
+        if (thinkingMessageElement && messagesElement.lastElementChild !== thinkingMessageElement) {
+          thinkingMessageElement.remove();
+          messagesElement.appendChild(thinkingMessageElement);
+        }
+      }
+
       function removeThinkingMessage() {
         if (thinkingMessageElement && thinkingMessageElement.isConnected) {
           thinkingMessageElement.remove();
@@ -673,6 +684,7 @@
         }
         resolvePendingAssistantResponse();
         updateBusyState();
+        ensureThinkingMessageAtEnd();
       }
 
       function appendOrUpdateMessage(message) {
@@ -706,6 +718,7 @@
             resolvePendingAssistantResponse();
           }
         }
+        ensureThinkingMessageAtEnd();
       }
 
       function updatePauseButtonState() {
