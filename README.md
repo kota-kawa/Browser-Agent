@@ -101,6 +101,14 @@ UIの「WebArena」タブから、またはAPIを使って標準ベンチマー�
 
 ## 🧪 開発
 
+### フロントエンドビルド
+フロントエンドはViteでビルドされます。ソースコードを変更した後はビルドを実行してください。
+```bash
+cd flask_app/frontend
+npm install
+npm run build
+```
+
 ### テスト実行
 ```bash
 ./bin/test.sh

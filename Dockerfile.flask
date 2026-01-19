@@ -5,6 +5,14 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# Install Node.js for frontend build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy local browser_use package files
 COPY pyproject.toml README.md ./
 COPY browser_use/ browser_use/
@@ -17,6 +25,10 @@ COPY flask_app/requirements.txt ./
 # Then we install the local package to ensure we use the local version
 RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir .
+
+# Copy frontend source and build
+COPY flask_app/frontend/ flask_app/frontend/
+RUN cd flask_app/frontend && npm install && npm run build
 
 # Copy FastAPI application code
 # Keep the flask_app package under the flask_app directory so imports like flask_app.* keep working.

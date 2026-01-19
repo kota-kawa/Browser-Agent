@@ -23,12 +23,6 @@
       rel="apple-touch-icon"
       href="/favicon.png"
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
-    />
     <link rel="stylesheet" href="{{ request.url_for('static', path='css/style.css') }}" />
     <style>
         .full-screen-layout {
@@ -49,15 +43,6 @@
     <script>
       window.__AGENT_RESULT_APP_PROPS__ = {{ {'browserUrl': browser_url}|tojson }};
     </script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"
-      crossorigin
-    ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"
-      crossorigin
-    ></script>
-    <script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.min.js"></script>
-    <script src="{{ request.url_for('static', path='js/agent_result_app.js') }}"></script>
+    <script type="module" src="{{ request.url_for('static', path='dist/agent_result.js') }}"></script>
   </body>
 </html>

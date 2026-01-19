@@ -11,6 +11,7 @@
 - `flask_app/` : Web サーバー、SSE、静的 UI、Docker `Dockerfile.flask`、`requirements.txt` を含むアプリ本体 (FastAPI)。
   - `core/` (設定/環境), `services/` (実行ロジック), `routes/` (HTTP), `prompts/` (system prompt) に分割。
   - `webarena/`: WebArena ベンチマーク実行環境とルート定義。
+  - `frontend/`: Vite + React フロントエンドソース。ビルド成果物は `static/dist/` に出力。
   - `templates/index.html` + `static/css/style.css` が UI。
 - `docs/` : Mintlify 互換ドキュメント。プレビューは `cd docs && npx mintlify dev` を使用。
 - `examples/` : サンプル集。
@@ -67,6 +68,7 @@
 - `flask_app/prompts/system_prompt.py`: システムプロンプト構築ロジック。タイムゾーンを考慮した日時を注入します。
 
 ## ビルド・実行・検証
+- **フロントエンドビルド**: `cd flask_app/frontend && npm install && npm run build`
 - **セットアップ**: `./bin/setup.sh` (uv venv + 依存インストール)。
 - **起動**:
   - 直接: `uv run uvicorn flask_app.app:app --host 0.0.0.0 --port 5005` (別途 Chrome 必要)

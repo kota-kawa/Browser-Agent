@@ -128,3 +128,5 @@ uv.lock
 all_github_issues_progress.md
 all_github_issues.md
 *.Identifier
+flask_app/static/dist/
+flask_app/frontend/node_modules/
