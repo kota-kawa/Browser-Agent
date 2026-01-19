@@ -45,52 +45,19 @@
     </style>
   </head>
   <body>
-    <main class="full-screen-layout">
-      <section class="browser-pane" aria-label="ブラウザ画面">
-        <div class="browser-shell">
-          <div class="browser-toolbar" role="presentation">
-            <div class="browser-toolbar-dots" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-            <div class="browser-toolbar-title">リモートブラウザ</div>
-            <div class="browser-toolbar-url" title="{{ browser_url }}">{{ browser_url }}</div>
-          </div>
-          <iframe
-            src="{{ browser_url }}"
-            title="コンテナ内ブラウザ"
-          ></iframe>
-        </div>
-      </section>
-    </main>
+    <div id="root"></div>
     <script>
-      // Ensure the embedded noVNC session fills the browser pane
-      const browserIframe = document.querySelector('.browser-pane iframe');
-      if (browserIframe) {
-        const shell = document.querySelector('.browser-shell');
-        const toolbar = shell?.querySelector('.browser-toolbar');
-
-        const syncIframeHeight = () => {
-          if (!shell) {
-            return;
-          }
-          const toolbarHeight = toolbar?.offsetHeight ?? 0;
-          const nextHeight = Math.max(shell.clientHeight - toolbarHeight, 0);
-          browserIframe.style.height = `${nextHeight}px`;
-        };
-
-        if (shell) {
-          if (typeof ResizeObserver !== 'undefined') {
-            const resizeObserver = new ResizeObserver(syncIframeHeight);
-            resizeObserver.observe(shell);
-          } else {
-            window.addEventListener('resize', syncIframeHeight);
-          }
-        }
-
-        syncIframeHeight();
-      }
+      window.__AGENT_RESULT_APP_PROPS__ = {{ {'browserUrl': browser_url}|tojson }};
     </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"
+      crossorigin
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.min.js"></script>
+    <script src="{{ request.url_for('static', path='js/agent_result_app.js') }}"></script>
   </body>
 </html>
