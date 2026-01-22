@@ -101,7 +101,7 @@ echo "   - Base URLの設定..."
 docker exec shopping /var/www/magento2/bin/magento setup:store-config:set --base-url='http://shopping/'
 
 echo "   - データベースの更新..."
-docker exec shopping mysql -u magentouser -pMyPassword magentodb -e 'UPDATE core_config_data SET value="http://shopping/" WHERE path = "web/secure/base_url";'
+docker exec shopping mysql -u magentouser -p"${WEBARENA_MYSQL_PASSWORD:-MyPassword}" magentodb -e 'UPDATE core_config_data SET value="http://shopping/" WHERE path = "web/secure/base_url";'
 
 echo "   - キャッシュのクリア..."
 docker exec shopping /var/www/magento2/bin/magento cache:flush

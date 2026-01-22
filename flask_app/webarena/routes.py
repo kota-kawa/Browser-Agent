@@ -216,13 +216,13 @@ def _reset_state(controller, sites, start_url: str | None = None):
 			logger.warning('No WEBARENA_RESET_COMMAND/URL configured. Only browser session was reset.')
 
 
-WEBARENA_CREDENTIALS_PROMPT = """
+WEBARENA_CREDENTIALS_PROMPT = f"""
 ### WebArena Environment Credentials
 For tasks in the WebArena environment, use the following credentials if required:
-- Shopping (Magento): Email "emma.lopez@gmail.com", Password "Password.123"
-- Shopping Admin: Username "admin", Password "admin1234"
-- GitLab: Username "root", Password "5iveL!fe"
-- Reddit (PostMill): Username "user1", Password "password"
+- Shopping (Magento): Email "{os.getenv('WEBARENA_MAGENTO_EMAIL', 'emma.lopez@gmail.com')}", Password "{os.getenv('WEBARENA_MAGENTO_PASSWORD', 'Password.123')}"
+- Shopping Admin: Username "{os.getenv('WEBARENA_ADMIN_USERNAME', 'admin')}", Password "{os.getenv('WEBARENA_ADMIN_PASSWORD', 'admin1234')}"
+- GitLab: Username "{os.getenv('WEBARENA_GITLAB_USERNAME', 'root')}", Password "{os.getenv('WEBARENA_GITLAB_PASSWORD', '5iveL!fe')}"
+- Reddit (PostMill): Username "{os.getenv('WEBARENA_REDDIT_USERNAME', 'user1')}", Password "{os.getenv('WEBARENA_REDDIT_PASSWORD', 'password')}"
 """
 
 
