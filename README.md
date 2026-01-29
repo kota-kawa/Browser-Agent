@@ -1,36 +1,113 @@
 # Browser-Agent
 
-日本語 | [English](README.en.md)
-
 <p align="center">
   <img src="static/Browser-Agent-Icon.png" width="800" alt="Browser-Agent Icon">
 </p>
 
-最新のLLMを活用したFastAPIベースのWebインターフェース付きブラウザ自動化エージェントです。自然言語でブラウザを操作でき、実行状況をリアルタイムで可視化し、WebArenaのようなベンチマークも実行できます。
+A browser automation agent with a FastAPI web interface powered by modern LLMs. Control a real browser with natural language, watch it in real time, and run benchmarks like WebArena.
+
+## 🚀 Overview
+
+Browser-Agent combines the `browser_use` library with a FastAPI backend to provide:
+- **Natural language control** of browser tasks.
+- **Real-time visualization** via noVNC and live logs.
+- **Multi-LLM support** (Gemini, OpenAI, Anthropic, DeepSeek, and more).
+- **WebArena benchmarking** tools built in.
+
+## ✨ Key Features
+
+- **Web interface** for chat, browser view, and logs.
+- **Live streaming** with SSE and VNC.
+- **Scratchpad** for structured task notes (prices, names, reviews, etc.).
+- **Docker-first** setup with Docker Compose.
+- **Extensible architecture** separating core agent, API services, and UI.
+
+## 🛠️ Quick Start (Docker Compose only)
+
+### Prerequisites
+- **Docker** and **Docker Compose**
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/kota-kawa/Browser-Agent.git
+cd browser-agent
+```
+
+### 2. Configure environment variables
+Copy the example secrets file and add your LLM API keys.
+```bash
+cp secrets.env.example secrets.env
+```
+Edit `secrets.env` and set keys such as `GOOGLE_API_KEY` or `OPENAI_API_KEY`.
+
+### 3. Start the stack
+```bash
+docker compose up --build
+```
+
+### 4. Open the UI
+Visit **http://localhost:5005** in your browser.
+
+## 📖 Usage
+
+### Web UI
+1. Open http://localhost:5005.
+2. Enter a task in the chat box (e.g., “Find a good mechanical keyboard on amazon.com”).
+3. Watch the browser on the left and logs/chat on the right.
+
+### WebArena
+Use the **WebArena** tab in the UI or call the API endpoints below.
+
+### API Endpoints
+- `POST /api/chat`: Send a task to the agent.
+- `GET /api/stream`: Subscribe to the event stream.
+- `POST /webarena/run`: Run a specific WebArena task.
+
+## 📂 Project Structure
+
+```
+/
+├── browser_use/       # Core agent logic, DOM manipulation, tools
+├── flask_app/         # FastAPI web server, API routes, UI templates
+│   ├── core/          # Config and environment setup
+│   ├── services/      # Business logic (Agent Controller, History)
+│   ├── routes/        # API endpoints
+│   └── templates/     # HTML frontend
+├── docker-compose.yml # Container orchestration
+└── secrets.env        # API keys and configuration
+```
+
+## 📄 License
+
+See [LICENSE.md](LICENSE.md) for details.
+
+<details>
+<summary>日本語</summary>
+
+# Browser-Agent
+
+最新のLLMを活用したFastAPIベースのブラウザ自動化エージェントです。自然言語でブラウザを操作でき、実行状況をリアルタイムで可視化し、WebArenaのようなベンチマークも実行できます。
 
 ## 🚀 概要
 
-`Browser-Agent` は `browser_use` ライブラリと堅牢なFastAPIバックエンドを統合し、次の機能を提供します。
-- **自然言語操作**: 「東京行きの最安フライトを探して」や「アカウントにログインしてメッセージを確認して」といった指示でブラウザを操作します。
-- **リアルタイム可視化**: noVNCストリームでエージェントの動作を見ながら、UI上でステップごとのログを確認できます。
-- **マルチLLM対応**: Gemini、OpenAI、Anthropic、DeepSeek などに対応しています。
-- **WebArenaベンチマーク**: 標準的なブラウザ自動化ベンチマークを実行・評価するツールを内蔵しています。
+`Browser-Agent` は `browser_use` ライブラリとFastAPIバックエンドを統合し、次の機能を提供します。
+- **自然言語操作**: 指示に沿ってブラウザ作業を自動化します。
+- **リアルタイム可視化**: noVNCとログで実行内容を確認できます。
+- **マルチLLM対応**: Gemini、OpenAI、Anthropic、DeepSeek など。
+- **WebArenaベンチマーク**: 標準タスクの実行・評価が可能です。
 
 ## ✨ 主な機能
 
-- **Webインターフェース**: エージェントの操作、ブラウザ画面の確認、実行ログの監視を行える、クリーンでレスポンシブなUI。
-- **ライブストリーミング**: Server-Sent Events (SSE) とVNCでリアルタイムにフィードバック。
-- **Scratchpad**: タスク中に抽出したデータ（価格、名前、レビューなど）を構造化して保存する専用メモリ。
-- **Docker対応**: Docker Composeによる簡単なデプロイに対応。
-- **拡張可能なアーキテクチャ**: コアエージェント（`browser_use`）、APIサービス（`flask_app`）、UIを分離したモジュール設計。
+- **Webインターフェース**: チャット、ブラウザ画面、ログを一画面で確認。
+- **ライブストリーミング**: SSEとVNCによるリアルタイム表示。
+- **Scratchpad**: 価格・名前・レビューなどの構造化メモ。
+- **Docker Compose前提**のシンプル運用。
+- **拡張可能な構成**: コアエージェント、API、UIを分離。
 
-## 🛠️ インストール
+## 🛠️ クイックスタート（Docker Composeのみ）
 
 ### 前提条件
-- **Python 3.11+**
-- **Docker & Docker Compose**（フルスタック推奨）
-- **uv**（ローカルPython管理に推奨）
-- **Google Chrome**（Dockerなしでローカル実行する場合）
+- **Docker** と **Docker Compose**
 
 ### 1. リポジトリをクローン
 ```bash
@@ -38,51 +115,34 @@ git clone https://github.com/kota-kawa/Browser-Agent.git
 cd browser-agent
 ```
 
-### 2. 環境設定
-サンプルのシークレットファイルをコピーしてAPIキーを設定します。
+### 2. 環境変数の設定
+サンプルをコピーしてAPIキーを設定します。
 ```bash
 cp secrets.env.example secrets.env
 ```
-`secrets.env` を編集し、LLMプロバイダのキー（例: `GOOGLE_API_KEY`, `OPENAI_API_KEY`）を追加してください。
+`secrets.env` を編集し、`GOOGLE_API_KEY` や `OPENAI_API_KEY` を設定してください。
 
-### 3. Dockerで実行（推奨）
-FastAPIアプリ、Chromeインスタンス、VNCサーバーが起動します。
+### 3. 起動
 ```bash
-docker-compose up --build
-```
-UIのアクセス先: http://localhost:5005
-
-### 4. ローカルで実行
-Dockerなしで実行する場合:
-
-**依存関係のインストール:**
-```bash
-# uv を使用（推奨）
-./bin/setup.sh
-
-# または pip
-pip install -r flask_app/requirements.txt
+docker compose up --build
 ```
 
-**アプリの起動:**
-リモートデバッグを有効にしたChromeを起動するか、`BROWSER_USE_CDP_URL` にリモートCDPエンドポイントを指定してください。
-```bash
-uv run uvicorn flask_app.app:app --host 0.0.0.0 --port 5005
-```
+### 4. UIを開く
+**http://localhost:5005** にアクセスします。
 
 ## 📖 使い方
 
 ### Web UI
-1. ブラウザで http://localhost:5005 を開きます。
-2. チャットボックスに指示を入力します（例: "amazon.comに行って良いメカニカルキーボードを探して"）。
-3. エージェントがタスクを実行します。左側にブラウザ画面、右側にログとチャットが表示されます。
+1. http://localhost:5005 を開きます。
+2. チャットに指示を入力します（例: "amazon.comで良いメカニカルキーボードを探して"）。
+3. 左にブラウザ画面、右にログとチャットが表示されます。
 
-### WebArena ベンチマーク
-UIの「WebArena」タブから、またはAPIを使って標準ベンチマークタスクを実行・評価できます。
+### WebArena
+UIの **WebArena** タブ、またはAPIから実行できます。
 
 ### API エンドポイント
 - `POST /api/chat`: エージェントにタスクを送信します。
-- `GET /api/stream`: ログ用イベントストリームに接続します。
+- `GET /api/stream`: イベントストリームを購読します。
 - `POST /webarena/run`: WebArenaの特定タスクを実行します。
 
 ## 📂 プロジェクト構成
@@ -99,28 +159,8 @@ UIの「WebArena」タブから、またはAPIを使って標準ベンチマー�
 └── secrets.env        # APIキーと設定
 ```
 
-## 🧪 開発
-
-### フロントエンドビルド
-フロントエンドはViteでビルドされます。ソースコードを変更した後はビルドを実行してください。
-```bash
-cd flask_app/frontend
-npm install
-npm run build
-```
-
-### テスト実行
-```bash
-./bin/test.sh
-```
-
-### Lint
-```bash
-./bin/lint.sh
-```
-
 ## 📄 ライセンス
 
 詳細は [LICENSE.md](LICENSE.md) を参照してください。
 
-個人、企業を問わず、使いたい方は自由にダウンロードして、カスタマイズして活用してください！ 🛠️
+</details>
