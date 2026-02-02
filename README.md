@@ -42,6 +42,7 @@ Edit `secrets.env` and set keys such as `GOOGLE_API_KEY` or `OPENAI_API_KEY`.
 
 ### 3. Start the stack
 ```bash
+docker network create multi_agent_platform_net
 docker compose up --build
 ```
 
@@ -124,6 +125,7 @@ cp secrets.env.example secrets.env
 
 ### 3. 起動
 ```bash
+docker network create multi_agent_platform_net
 docker compose up --build
 ```
 
