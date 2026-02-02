@@ -1,17 +1,18 @@
 import React, { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import type { AgentResultAppProps } from './types/app';
 
-const initialData = window.__AGENT_RESULT_APP_PROPS__ || {};
+const initialData: Partial<AgentResultAppProps> = window.__AGENT_RESULT_APP_PROPS__ || {};
 const browserUrl = initialData.browserUrl || '';
 
 const App = () => {
   useEffect(() => {
-    const browserIframe = document.querySelector('.browser-pane iframe');
+    const browserIframe = document.querySelector<HTMLIFrameElement>('.browser-pane iframe');
     if (!browserIframe) {
       return undefined;
     }
-    const shell = document.querySelector('.browser-shell');
-    const toolbar = shell ? shell.querySelector('.browser-toolbar') : null;
+    const shell = document.querySelector<HTMLDivElement>('.browser-shell');
+    const toolbar = shell ? shell.querySelector<HTMLDivElement>('.browser-toolbar') : null;
 
     const syncIframeHeight = () => {
       if (!shell) {
@@ -22,7 +23,7 @@ const App = () => {
       browserIframe.style.height = `${nextHeight}px`;
     };
 
-    let resizeObserver;
+    let resizeObserver: ResizeObserver | null = null;
     if (shell) {
       if (typeof ResizeObserver !== 'undefined') {
         resizeObserver = new ResizeObserver(syncIframeHeight);

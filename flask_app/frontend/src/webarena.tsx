@@ -1,23 +1,60 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
+import type {
+  EnvUrls,
+  ModelOption,
+  ModelSelection,
+  VisionState,
+  WebArenaRunResult,
+  WebArenaTask,
+  WebArenaTasksResponse,
+} from './types/api';
+import type { WebArenaAppProps } from './types/app';
 
-const initialData = window.__WEBARENA_APP_PROPS__ || {};
+const initialData: Partial<WebArenaAppProps> = window.__WEBARENA_APP_PROPS__ || {};
 const browserUrl = initialData.browserUrl || '';
-const envDefaults = initialData.envUrls || {};
+const envDefaults: Partial<EnvUrls> = initialData.envUrls || {};
 const supportedSites = Array.isArray(initialData.supportedSites)
   ? initialData.supportedSites
   : [];
 
 const PER_PAGE = 20;
 
-const encodeModelSelection = (selection) => {
+type VisionStateView = {
+  supported: boolean | null;
+  effective: boolean;
+  userEnabled: boolean;
+  loading: boolean;
+  error: string;
+};
+
+type BatchState = {
+  status: 'running' | 'complete' | 'error';
+  total: number;
+  currentIndex: number;
+  currentTaskId: number | null;
+  results: WebArenaRunResult[];
+  successCount: number;
+  timeText?: string;
+  errorMessage?: string;
+};
+
+type LogState =
+  | { type: 'idle' }
+  | { type: 'blank' }
+  | { type: 'single-running' }
+  | { type: 'single-result'; result: WebArenaRunResult }
+  | { type: 'error'; message?: string; prefix?: string }
+  | { type: 'batch'; batch: BatchState };
+
+const encodeModelSelection = (selection: ModelSelection | ModelOption | null | undefined) => {
   if (!selection || !selection.provider || !selection.model) {
     return null;
   }
   return JSON.stringify({ provider: selection.provider, model: selection.model });
 };
 
-const formatSiteLabel = (site) => {
+const formatSiteLabel = (site: string) => {
   if (!site) {
     return 'ALL';
   }
@@ -28,11 +65,11 @@ const formatSiteLabel = (site) => {
 };
 
 const App = () => {
-  const [modelOptions, setModelOptions] = useState([]);
+  const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [selectedModelValue, setSelectedModelValue] = useState('');
   const [modelBusy, setModelBusy] = useState(false);
 
-  const [visionState, setVisionState] = useState({
+  const [visionState, setVisionState] = useState<VisionStateView>({
     supported: null,
     effective: false,
     userEnabled: true,
@@ -41,36 +78,36 @@ const App = () => {
   });
   const [visionBusy, setVisionBusy] = useState(false);
 
-  const [envUrls, setEnvUrls] = useState({
+  const [envUrls, setEnvUrls] = useState<EnvUrls>({
     shopping: envDefaults.shopping || '',
     shopping_admin: envDefaults.shopping_admin || '',
     gitlab: envDefaults.gitlab || '',
     reddit: envDefaults.reddit || '',
   });
 
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<WebArenaTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [selectedSite, setSelectedSite] = useState('');
 
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [isCustom, setIsCustom] = useState(false);
   const [customIntent, setCustomIntent] = useState('');
   const [customUrl, setCustomUrl] = useState('');
 
   const [statusMessage, setStatusMessage] = useState('');
   const [statusColor, setStatusColor] = useState('var(--text-muted)');
-  const statusTimerRef = useRef(null);
+  const statusTimerRef = useRef<number | null>(null);
 
   const [runInProgress, setRunInProgress] = useState(false);
   const [batchInProgress, setBatchInProgress] = useState(false);
   const [runButtonLabel, setRunButtonLabel] = useState('選択タスクを実行');
 
-  const [logState, setLogState] = useState({ type: 'idle' });
+  const [logState, setLogState] = useState<LogState>({ type: 'idle' });
 
-  const setStatus = useCallback((message, color, clearAfterMs) => {
+  const setStatus = useCallback((message: string, color?: string, clearAfterMs?: number) => {
     setStatusMessage(message);
     if (color) {
       setStatusColor(color);
@@ -91,11 +128,20 @@ const App = () => {
   const loadModels = useCallback(async () => {
     try {
       const response = await fetch('/api/models');
-      const data = await response.json();
-      const models = Array.isArray(data.models) ? data.models : [];
+      const data = (await response.json()) as
+        | ModelOption[]
+        | { models?: ModelOption[]; current?: ModelSelection };
+      const models = Array.isArray(data)
+        ? data
+        : Array.isArray((data as { models?: ModelOption[] }).models)
+          ? ((data as { models?: ModelOption[] }).models ?? [])
+          : [];
       setModelOptions(models);
 
-      const current = data.current || null;
+      const current =
+        !Array.isArray(data) && typeof (data as { current?: unknown }).current === 'object'
+          ? ((data as { current?: ModelSelection }).current ?? null)
+          : null;
       const desired = encodeModelSelection(current);
       const hasDesired =
         desired && models.some((model) => encodeModelSelection(model) === desired);
@@ -111,7 +157,7 @@ const App = () => {
     }
   }, []);
 
-  const applyModel = useCallback(async (selection) => {
+  const applyModel = useCallback(async (selection: ModelSelection) => {
     await fetch('/model_settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -122,7 +168,7 @@ const App = () => {
   const refreshVisionState = useCallback(async () => {
     try {
       const res = await fetch('/api/vision');
-      const data = await res.json();
+      const data = (await res.json()) as VisionState;
       setVisionState({
         supported: !!data.model_supported,
         effective: !!data.effective,
@@ -148,7 +194,7 @@ const App = () => {
       const res = await fetch(
         `/webarena/tasks?page=${currentPage}&per_page=${PER_PAGE}${siteQuery}`
       );
-      const data = await res.json();
+      const data = (await res.json()) as WebArenaTasksResponse;
       setTasks(Array.isArray(data.tasks) ? data.tasks : []);
       setHasNextPage((data.tasks || []).length >= PER_PAGE);
     } catch (error) {
@@ -178,12 +224,12 @@ const App = () => {
     };
   }, []);
 
-  const handleModelChange = async (event) => {
+  const handleModelChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
     setSelectedModelValue(value);
-    let selection;
+    let selection: ModelSelection;
     try {
-      selection = JSON.parse(value);
+      selection = JSON.parse(value) as ModelSelection;
     } catch (error) {
       setStatus('モデル設定の解析に失敗しました。', 'var(--accent-danger)', 3000);
       return;
@@ -202,7 +248,7 @@ const App = () => {
     }
   };
 
-  const handleVisionToggle = async (event) => {
+  const handleVisionToggle = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const enabled = event.target.checked;
     setVisionBusy(true);
     try {
@@ -220,7 +266,7 @@ const App = () => {
     }
   };
 
-  const handleTaskSelect = (taskId) => {
+  const handleTaskSelect = (taskId: number | 'custom') => {
     if (taskId === 'custom') {
       setIsCustom(true);
       setSelectedTaskId(null);
@@ -230,15 +276,16 @@ const App = () => {
     setSelectedTaskId(taskId);
   };
 
-  const handleCustomCardClick = (event) => {
-    const tagName = event.target.tagName;
+  const handleCustomCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    const tagName = target.tagName;
     if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
       return;
     }
     handleTaskSelect('custom');
   };
 
-  const handleSiteFilter = (site) => {
+  const handleSiteFilter = (site: string) => {
     setSelectedSite(site || '');
     setCurrentPage(1);
     setSelectedTaskId(null);
@@ -251,7 +298,12 @@ const App = () => {
       return;
     }
 
-    const payload = {
+    const payload: {
+      env_urls: EnvUrls;
+      custom_task?: { intent: string; start_url?: string };
+      task_id?: number | null;
+      selected_site?: string;
+    } = {
       env_urls: {
         shopping: envUrls.shopping,
         shopping_admin: envUrls.shopping_admin,
@@ -284,14 +336,15 @@ const App = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = (await res.json()) as WebArenaRunResult & { error?: string };
       if (!res.ok) {
         throw new Error(data.error || 'Error running task');
       }
       setLogState({ type: 'single-result', result: data });
       setStatus('完了', 'var(--accent-success)');
     } catch (error) {
-      setLogState({ type: 'error', message: error.message, prefix: 'エラーが発生しました: ' });
+      const err = error as { message?: string };
+      setLogState({ type: 'error', message: err.message, prefix: 'エラーが発生しました: ' });
       setStatus('エラー', 'var(--accent-danger)');
     } finally {
       setRunInProgress(false);
@@ -304,16 +357,17 @@ const App = () => {
     setBatchInProgress(true);
     setLogState({ type: 'blank' });
 
-    let taskIds = [];
+    let taskIds: number[] = [];
     try {
       const siteQuery = selectedSite ? `&site=${selectedSite}` : '';
       const taskRes = await fetch(`/webarena/tasks?page=1&per_page=1000${siteQuery}`);
-      const taskData = await taskRes.json();
+      const taskData = (await taskRes.json()) as WebArenaTasksResponse;
       taskIds = (taskData.tasks || []).map((task) => task.task_id);
     } catch (error) {
+      const err = error as { message?: string };
       setLogState({
         type: 'error',
-        message: `タスクの取得に失敗しました: ${error.message}`,
+        message: `タスクの取得に失敗しました: ${err.message}`,
         prefix: '',
       });
       setStatus('エラー', 'var(--accent-danger)');
@@ -328,7 +382,7 @@ const App = () => {
       return;
     }
 
-    const results = [];
+    const results: WebArenaRunResult[] = [];
     let successCount = 0;
     const startTime = Date.now();
 
@@ -359,7 +413,7 @@ const App = () => {
           },
         });
 
-        let data;
+        let data: WebArenaRunResult;
         try {
           const res = await fetch('/webarena/run', {
             method: 'POST',
@@ -375,21 +429,24 @@ const App = () => {
               selected_site: selectedSite || undefined,
             }),
           });
-          data = await res.json();
+          const responseData = (await res.json()) as WebArenaRunResult & { error?: string };
           if (!res.ok) {
             data = {
               task_id: taskId,
               success: false,
-              summary: data.error || `TASK ${taskId} の実行に失敗しました`,
+              summary: responseData.error || `TASK ${taskId} の実行に失敗しました`,
               evaluation: 'Batch runner recorded an error for this task.',
               steps: [],
             };
+          } else {
+            data = responseData;
           }
         } catch (error) {
+          const err = error as { message?: string };
           data = {
             task_id: taskId,
             success: false,
-            summary: `エラー: ${error.message}`,
+            summary: `エラー: ${err.message}`,
             evaluation: 'Batch runner caught an exception.',
             steps: [],
           };
@@ -446,6 +503,7 @@ const App = () => {
         setStatus('完了 (保存失敗)', 'var(--accent-success)');
       }
     } catch (error) {
+      const err = error as { message?: string };
       setLogState({
         type: 'batch',
         batch: {
@@ -455,7 +513,7 @@ const App = () => {
           currentTaskId: null,
           results: [...results],
           successCount,
-          errorMessage: error.message,
+          errorMessage: err.message,
         },
       });
       setStatus('エラー', 'var(--accent-danger)');
@@ -464,8 +522,9 @@ const App = () => {
     }
   };
 
-  const handleEnvChange = (key) => (event) => {
-    setEnvUrls((prev) => ({ ...prev, [key]: event.target.value }));
+  const handleEnvChange = (key: keyof EnvUrls) => (event: React.FormEvent<HTMLInputElement>) => {
+    const target = event.target as HTMLInputElement;
+    setEnvUrls((prev) => ({ ...prev, [key]: target.value }));
   };
 
   const renderLogs = () => {
@@ -540,7 +599,7 @@ const App = () => {
     }
 
     if (logState.type === 'batch') {
-      const batch = logState.batch || {};
+      const batch = logState.batch;
       const total = batch.total || 0;
       const currentIndex = batch.currentIndex || 0;
       const pct = total > 0 ? Math.max(5, Math.round((currentIndex / total) * 100)) : 0;
@@ -729,7 +788,7 @@ const App = () => {
                 modelOptions.map((model) => (
                   <option
                     key={encodeModelSelection(model) || model.label}
-                    value={encodeModelSelection(model)}
+                    value={encodeModelSelection(model) as string}
                   >
                     {model.label}
                   </option>
@@ -918,15 +977,15 @@ const App = () => {
                 placeholder="開始URL"
                 style={{ marginBottom: '8px' }}
                 value={customUrl}
-                onInput={(event) => setCustomUrl(event.target.value)}
+                onInput={(event) => setCustomUrl((event.target as HTMLInputElement).value)}
               />
               <textarea
                 id="custom-intent"
                 className="wa-input"
-                rows="3"
+                rows={3}
                 placeholder="指示内容を入力..."
                 value={customIntent}
-                onInput={(event) => setCustomIntent(event.target.value)}
+                onInput={(event) => setCustomIntent((event.target as HTMLTextAreaElement).value)}
               ></textarea>
             </div>
           </div>

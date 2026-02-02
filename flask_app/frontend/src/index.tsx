@@ -9,16 +9,35 @@ import React, {
 import { createRoot } from 'react-dom/client';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import type {
+  ChatMessage,
+  ChatResponse,
+  ModelOption,
+  ModelSelection,
+  ModelsResponse,
+  PauseResumeResponse,
+  ResetResponse,
+  SSEEvent,
+} from './types/api';
+import type { IndexAppProps } from './types/app';
 
 const MIN_THINKING_MS = 600;
 const DEFAULT_BUSY_TITLE = 'AIが考えています';
 const DEFAULT_BUSY_SUB = '見つけた情報から回答を組み立て中';
 const FALLBACK_STEP_DETAIL = '次の操作を進行中です';
 
-const initialData = window.__INDEX_APP_PROPS__ || {};
+const initialData: Partial<IndexAppProps> = window.__INDEX_APP_PROPS__ || {};
 const browserUrl = initialData.browserUrl || '';
 
-const formatThinkingTimestamp = (timestamp) => {
+type ConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected';
+type StatusVariant = 'muted' | 'info' | 'success' | 'warning' | 'error' | 'progress';
+
+type StepInfo = {
+  stepNumber: number;
+  detail: string;
+};
+
+const formatThinkingTimestamp = (timestamp: number | string) => {
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) {
     return '';
@@ -35,7 +54,7 @@ const formatThinkingTimestamp = (timestamp) => {
     .replace(/\//g, '/');
 };
 
-const formatMessageTimestamp = (timestamp) => {
+const formatMessageTimestamp = (timestamp: string) => {
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) {
     return { text: '', iso: '' };
@@ -51,7 +70,7 @@ const formatMessageTimestamp = (timestamp) => {
   };
 };
 
-const extractStepInfo = (content) => {
+const extractStepInfo = (content: string | null | undefined): StepInfo | null => {
   if (!content || typeof content !== 'string') {
     return null;
   }
@@ -84,7 +103,7 @@ const extractStepInfo = (content) => {
   return { stepNumber, detail };
 };
 
-const isRunSummaryMessage = (content) => {
+const isRunSummaryMessage = (content: string | null | undefined) => {
   if (!content || typeof content !== 'string') {
     return false;
   }
@@ -94,10 +113,7 @@ const isRunSummaryMessage = (content) => {
   return content.includes('ステップでエージェントが実行されました');
 };
 
-const findLastStepInfo = (messages) => {
-  if (!Array.isArray(messages)) {
-    return null;
-  }
+const findLastStepInfo = (messages: ChatMessage[]) => {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
     if (!message || message.role !== 'assistant') {
@@ -114,7 +130,7 @@ const findLastStepInfo = (messages) => {
   return null;
 };
 
-const countAssistantMessages = (messages) => {
+const countAssistantMessages = (messages: ChatMessage[]) => {
   let count = 0;
   messages.forEach((message) => {
     if (message && message.role === 'assistant') {
@@ -124,14 +140,18 @@ const countAssistantMessages = (messages) => {
   return count;
 };
 
-const encodeModelSelection = (selection) => {
+const encodeModelSelection = (selection: ModelSelection | ModelOption | null | undefined) => {
   if (!selection || !selection.provider || !selection.model) {
     return null;
   }
   return JSON.stringify({ provider: selection.provider, model: selection.model });
 };
 
-const MessageBubble = ({ content }) => {
+type MessageBubbleProps = {
+  content?: string | null;
+};
+
+const MessageBubble = ({ content }: MessageBubbleProps) => {
   const text = typeof content === 'string' ? content : '';
   const htmlContent = useMemo(() => {
     const parsed = marked.parse(text, {
@@ -144,7 +164,11 @@ const MessageBubble = ({ content }) => {
   return <div className="bubble" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
 };
 
-const MessageItem = ({ message }) => {
+type MessageItemProps = {
+  message: ChatMessage;
+};
+
+const MessageItem = ({ message }: MessageItemProps) => {
   const formatted = useMemo(
     () => formatMessageTimestamp(message.timestamp),
     [message.timestamp]
@@ -172,7 +196,13 @@ const MessageItem = ({ message }) => {
   );
 };
 
-const ThinkingMessage = ({ title, sub, timestamp }) => {
+type ThinkingMessageProps = {
+  title: string;
+  sub: string;
+  timestamp: number;
+};
+
+const ThinkingMessage = ({ title, sub, timestamp }: ThinkingMessageProps) => {
   return (
     <div className="msg system compact assistant pending thinking" id="thinking-message">
       <div className="thinking-header">
@@ -187,7 +217,11 @@ const ThinkingMessage = ({ title, sub, timestamp }) => {
   );
 };
 
-const ConnectionIndicator = ({ state }) => {
+type ConnectionIndicatorProps = {
+  state: ConnectionState;
+};
+
+const ConnectionIndicator = ({ state }: ConnectionIndicatorProps) => {
   let message = '接続を待機しています';
   if (state === 'connected') {
     message = 'リアルタイム更新中';
@@ -212,7 +246,7 @@ const ConnectionIndicator = ({ state }) => {
 };
 
 const App = () => {
-  const [conversation, setConversation] = useState([]);
+  const [conversation, setConversation] = useState<ChatMessage[]>([]);
   const [assistantMessageCount, setAssistantMessageCount] = useState(0);
   const [assistantMessageCountAtSubmit, setAssistantMessageCountAtSubmit] = useState(0);
   const [pendingAssistantResponse, setPendingAssistantResponse] = useState(false);
@@ -221,59 +255,62 @@ const App = () => {
   const [isSending, setIsSending] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const [connectionState, setConnectionState] = useState('idle');
-  const [modelOptions, setModelOptions] = useState([]);
+  const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
+  const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [selectedModelValue, setSelectedModelValue] = useState('');
   const [stepInProgress, setStepInProgress] = useState(false);
-  const [currentStepNumber, setCurrentStepNumber] = useState(null);
+  const [currentStepNumber, setCurrentStepNumber] = useState<number | null>(null);
   const [currentStepDetail, setCurrentStepDetail] = useState('');
   const [thinkingVisible, setThinkingVisible] = useState(false);
   const [busyMessageTitle, setBusyMessageTitle] = useState(DEFAULT_BUSY_TITLE);
   const [busyMessageSub, setBusyMessageSub] = useState(DEFAULT_BUSY_SUB);
 
-  const conversationRef = useRef([]);
+  const conversationRef = useRef<ChatMessage[]>([]);
   const assistantMessageCountRef = useRef(0);
   const assistantMessageCountAtSubmitRef = useRef(0);
   const pendingAssistantResponseRef = useRef(false);
   const isRunningRef = useRef(false);
   const isPausedRef = useRef(false);
 
-  const messagesRef = useRef(null);
-  const formRef = useRef(null);
-  const promptInputRef = useRef(null);
-  const pendingSubmitModeRef = useRef('continue');
-  const eventSourceRef = useRef(null);
-  const reconnectTimerRef = useRef(null);
-  const thinkingHideTimerRef = useRef(null);
+  const messagesRef = useRef<HTMLDivElement | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const pendingSubmitModeRef = useRef<'continue' | 'new-task'>('continue');
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const thinkingHideTimerRef = useRef<number | null>(null);
   const thinkingShownAtRef = useRef(0);
-  const thinkingTimestampRef = useRef(null);
+  const thinkingTimestampRef = useRef<number | null>(null);
   const shouldBusyRef = useRef(false);
   const prevBusyRef = useRef(false);
   const scrollPendingRef = useRef(false);
-  const statusClearTimerRef = useRef(null);
-  const statusRef = useRef({ message: '', variant: 'muted' });
+  const statusClearTimerRef = useRef<number | null>(null);
+  const statusRef = useRef<{ message?: string; variant: StatusVariant }>({
+    message: '',
+    variant: 'muted',
+  });
 
-  const setAssistantMessageCountState = (value) => {
+  const setAssistantMessageCountState = (value: number) => {
     assistantMessageCountRef.current = value;
     setAssistantMessageCount(value);
   };
 
-  const setAssistantMessageCountAtSubmitState = (value) => {
+  const setAssistantMessageCountAtSubmitState = (value: number) => {
     assistantMessageCountAtSubmitRef.current = value;
     setAssistantMessageCountAtSubmit(value);
   };
 
-  const setPendingAssistantResponseState = (value) => {
+  const setPendingAssistantResponseState = (value: boolean) => {
     pendingAssistantResponseRef.current = value;
     setPendingAssistantResponse(value);
   };
 
-  const setIsRunningState = (value) => {
+  const setIsRunningState = (value: boolean) => {
     isRunningRef.current = value;
     setIsRunning(value);
   };
 
-  const setIsPausedState = (value) => {
+  const setIsPausedState = (value: boolean) => {
     isPausedRef.current = value;
     setIsPaused(value);
   };
@@ -284,7 +321,7 @@ const App = () => {
     setCurrentStepDetail('');
   }, []);
 
-  const updateStepActivity = useCallback((stepInfo) => {
+  const updateStepActivity = useCallback((stepInfo: StepInfo | null) => {
     if (!stepInfo) {
       return;
     }
@@ -294,7 +331,7 @@ const App = () => {
     requestScrollToBottom();
   }, []);
 
-  const setStatus = useCallback((message, variant = 'info') => {
+  const setStatus = useCallback((message?: string, variant: StatusVariant = 'info') => {
     if (statusClearTimerRef.current) {
       clearTimeout(statusClearTimerRef.current);
       statusClearTimerRef.current = null;
@@ -313,7 +350,7 @@ const App = () => {
   }, []);
 
   const updateConversationState = useCallback(
-    (nextMessages, { syncStep } = { syncStep: false }) => {
+    (nextMessages: ChatMessage[], { syncStep }: { syncStep?: boolean } = { syncStep: false }) => {
       conversationRef.current = nextMessages;
       setConversation(nextMessages);
       const count = countAssistantMessages(nextMessages);
@@ -337,7 +374,7 @@ const App = () => {
   );
 
   const appendOrUpdateMessage = useCallback(
-    (message) => {
+    (message: ChatMessage) => {
       if (!message || typeof message.id === 'undefined') {
         return;
       }
@@ -370,12 +407,13 @@ const App = () => {
       if (!response.ok) {
         throw new Error('履歴の取得に失敗しました。');
       }
-      const data = await response.json();
+      const data = (await response.json()) as { messages?: ChatMessage[] };
       updateConversationState(data.messages || [], { syncStep: true });
       requestScrollToBottom();
       setStatus('', 'muted');
     } catch (error) {
-      setStatus(error.message, 'error');
+      const err = error as { message?: string };
+      setStatus(err.message, 'error');
     }
   }, [requestScrollToBottom, setStatus, updateConversationState]);
 
@@ -392,26 +430,31 @@ const App = () => {
   }, [clearStepActivity, loadHistory, setStatus, updateConversationState]);
 
   const loadModels = useCallback(
-    async (preferredSelection) => {
+    async (preferredSelection?: ModelSelection | null) => {
       try {
         const response = await fetch('/api/models');
         if (!response.ok) {
           throw new Error('モデルの取得に失敗しました。');
         }
-        const data = await response.json();
+        const data = (await response.json()) as
+          | ModelsResponse
+          | ModelOption[]
+          | { models?: ModelOption[]; current?: ModelSelection };
         const models = Array.isArray(data)
           ? data
-          : Array.isArray(data.models)
-            ? data.models
+          : Array.isArray((data as { models?: ModelOption[] }).models)
+            ? ((data as { models?: ModelOption[] }).models ?? [])
             : [];
-        const current =
-          !Array.isArray(data) && typeof data.current === 'object' ? data.current : null;
+        const currentCandidate =
+          !Array.isArray(data) && typeof (data as { current?: unknown }).current === 'object'
+            ? ((data as { current?: ModelSelection }).current ?? null)
+            : null;
+        const current = currentCandidate || null;
         const preferred = encodeModelSelection(preferredSelection);
 
         setModelOptions(models);
         const desired = preferred || encodeModelSelection(current);
-        const hasDesired =
-          desired && models.some((model) => encodeModelSelection(model) === desired);
+        const hasDesired = desired && models.some((model) => encodeModelSelection(model) === desired);
 
         if (hasDesired) {
           setSelectedModelValue(desired);
@@ -419,27 +462,29 @@ const App = () => {
           setSelectedModelValue(encodeModelSelection(models[0]) || '');
         }
       } catch (error) {
-        setStatus(error.message, 'error');
+        const err = error as { message?: string };
+        setStatus(err.message, 'error');
       }
     },
     [setStatus]
   );
 
   const applyModelSelection = useCallback(
-    async (selection) => {
+    async (selection: ModelSelection) => {
       try {
         const response = await fetch('/model_settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(selection),
         });
-        const data = await response.json();
+        const data = (await response.json()) as { error?: string };
         if (!response.ok) {
           throw new Error(data.error || 'モデル設定の適用に失敗しました。');
         }
         setStatus(`モデルを ${selection.label || selection.model} に変更しました。`, 'success');
       } catch (error) {
-        setStatus(error.message, 'error');
+        const err = error as { message?: string };
+        setStatus(err.message, 'error');
       }
     },
     [setStatus]
@@ -466,7 +511,7 @@ const App = () => {
 
     eventSource.onmessage = (event) => {
       try {
-        const payload = JSON.parse(event.data);
+        const payload = JSON.parse(event.data) as SSEEvent;
         if (payload.type === 'message' && payload.payload) {
           appendOrUpdateMessage(payload.payload);
         } else if (payload.type === 'update' && payload.payload) {
@@ -596,7 +641,7 @@ const App = () => {
     }
   }, [conversation, thinkingVisible]);
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const mode = pendingSubmitModeRef.current;
     pendingSubmitModeRef.current = 'continue';
@@ -638,7 +683,7 @@ const App = () => {
         body: JSON.stringify(isNewTaskSubmission ? { prompt, new_task: true } : { prompt }),
       });
 
-      const data = await response.json().catch(() => ({}));
+      const data = (await response.json().catch(() => ({}))) as ChatResponse;
       if (!response.ok) {
         const message = data.error || 'LLMへの送信に失敗しました。';
         throw new Error(message);
@@ -666,7 +711,8 @@ const App = () => {
         }
         promptInputRef.current.focus();
       }
-      setStatus(error.message || 'エージェントへの送信に失敗しました。', 'error');
+      const err = error as { message?: string };
+      setStatus(err.message || 'エージェントへの送信に失敗しました。', 'error');
       setPendingAssistantResponseState(false);
       clearStepActivity();
       shouldContinueRunning = false;
@@ -687,7 +733,7 @@ const App = () => {
     const endpoint = isPaused ? '/api/resume' : '/api/pause';
     try {
       const response = await fetch(endpoint, { method: 'POST' });
-      const data = await response.json().catch(() => ({}));
+      const data = (await response.json().catch(() => ({}))) as PauseResumeResponse;
       if (!response.ok) {
         const message =
           data.error || (isPaused ? '再開に失敗しました。' : '一時停止に失敗しました。');
@@ -700,7 +746,8 @@ const App = () => {
         'info'
       );
     } catch (error) {
-      setStatus(error.message || '操作に失敗しました。', 'error');
+      const err = error as { message?: string };
+      setStatus(err.message || '操作に失敗しました。', 'error');
     } finally {
       setIsPausing(false);
     }
@@ -736,7 +783,7 @@ const App = () => {
     setIsResetting(true);
     try {
       const response = await fetch('/api/reset', { method: 'POST' });
-      const data = await response.json().catch(() => ({}));
+      const data = (await response.json().catch(() => ({}))) as ResetResponse;
       if (!response.ok) {
         const message = data.error || '履歴のリセットに失敗しました。';
         throw new Error(message);
@@ -747,13 +794,14 @@ const App = () => {
       setIsRunningState(false);
       setIsPausedState(false);
     } catch (error) {
-      setStatus(error.message || '履歴のリセットに失敗しました。', 'error');
+      const err = error as { message?: string };
+      setStatus(err.message || '履歴のリセットに失敗しました。', 'error');
     } finally {
       setIsResetting(false);
     }
   };
 
-  const handlePromptKeyDown = (event) => {
+  const handlePromptKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault();
       if (formRef.current) {
@@ -766,11 +814,11 @@ const App = () => {
     }
   };
 
-  const handleModelChange = (event) => {
+  const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
     setSelectedModelValue(value);
     try {
-      const selection = JSON.parse(value);
+      const selection = JSON.parse(value) as ModelSelection;
       const selected = modelOptions.find((model) => encodeModelSelection(model) === value);
       selection.label = selected ? selected.label : undefined;
       applyModelSelection(selection);
@@ -787,12 +835,12 @@ const App = () => {
   const messagesClassName = `messages${messagesEmpty ? ' is-empty' : ''}`;
 
   useEffect(() => {
-    const browserIframe = document.querySelector('.browser-pane iframe');
+    const browserIframe = document.querySelector<HTMLIFrameElement>('.browser-pane iframe');
     if (!browserIframe) {
       return undefined;
     }
-    const shell = document.querySelector('.browser-shell');
-    const toolbar = shell ? shell.querySelector('.browser-toolbar') : null;
+    const shell = document.querySelector<HTMLDivElement>('.browser-shell');
+    const toolbar = shell ? shell.querySelector<HTMLDivElement>('.browser-toolbar') : null;
 
     const syncIframeHeight = () => {
       if (!shell) {
@@ -803,7 +851,7 @@ const App = () => {
       browserIframe.style.height = `${nextHeight}px`;
     };
 
-    let resizeObserver;
+    let resizeObserver: ResizeObserver | null = null;
     if (shell) {
       if (typeof ResizeObserver !== 'undefined') {
         resizeObserver = new ResizeObserver(syncIframeHeight);
@@ -847,7 +895,7 @@ const App = () => {
                     {modelOptions.map((model) => (
                       <option
                         key={encodeModelSelection(model) || model.label}
-                        value={encodeModelSelection(model)}
+                        value={encodeModelSelection(model) as string}
                       >
                         {model.label}
                       </option>
@@ -915,7 +963,7 @@ const App = () => {
               id="prompt-input"
               name="prompt"
               placeholder="ブラウザに指示したい内容を入力してください。"
-              rows="3"
+              rows={3}
               required
               ref={promptInputRef}
               onKeyDown={handlePromptKeyDown}

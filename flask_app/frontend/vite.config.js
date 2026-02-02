@@ -9,9 +9,9 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        index: path.resolve(__dirname, 'src/index.jsx'),
-        webarena: path.resolve(__dirname, 'src/webarena.jsx'),
-        agent_result: path.resolve(__dirname, 'src/agent_result.jsx'),
+        index: path.resolve(__dirname, 'src/index.tsx'),
+        webarena: path.resolve(__dirname, 'src/webarena.tsx'),
+        agent_result: path.resolve(__dirname, 'src/agent_result.tsx'),
       },
       output: {
         entryFileNames: '[name].js',
