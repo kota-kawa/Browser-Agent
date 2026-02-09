@@ -25,7 +25,7 @@ _LANGUAGE_EXTENSION = (
 	'- All thought processes, action evaluations, memories, next goals, final reports, etc., must be written in natural Japanese.\n'
 	'- Statuses such as success or failure must also be explicitly stated in Japanese (e.g., 成功, 失敗, 不明).\n'
 	'- Proper nouns, quotes, or original text on web pages that need to be presented to the user may be kept in their original language.\n'
-	'- Do not use search engines like Google or DuckDuckGo. Basically use yahoo.co.jp.\n'
+	'- Do not use Google for search. Use yahoo.co.jp by default. If Yahoo Japan is absolutely impossible, you may use another non-Google search engine as a last resort (not recommended).\n'
 )
 
 _SYSTEM_PROMPT_FILENAME = 'system_prompt_browser_agent.md'

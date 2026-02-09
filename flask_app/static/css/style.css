@@ -160,21 +160,37 @@ body::before {
   list-style: none;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 8px;
+  padding: 7px 14px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--border-subtle);
-  background: rgba(248, 250, 252, 0.9);
-  font-size: 0.78rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 20px -18px rgba(15, 23, 42, 0.4);
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: #1f2937;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease,
+    box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .chat-header-summary:focus-visible {
   outline: 2px solid rgba(37, 99, 235, 0.7);
   outline-offset: 2px;
+}
+
+.chat-header-summary::after {
+  content: '⌄';
+  font-size: 0.85em;
+  color: #64748b;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.chat-header-summary:hover {
+  border-color: rgba(37, 99, 235, 0.45);
+  color: #1e3a8a;
+  background: rgba(239, 246, 255, 0.9);
+  transform: translateY(-0.5px);
 }
 
 .chat-header-summary::-webkit-details-marker {
@@ -187,8 +203,14 @@ body::before {
 
 .chat-header-details[open] .chat-header-summary {
   color: #1e293b;
-  background: #ffffff;
-  border-color: rgba(148, 163, 184, 0.45);
+  background: rgba(239, 246, 255, 0.95);
+  border-color: rgba(37, 99, 235, 0.45);
+  box-shadow: 0 10px 22px -18px rgba(37, 99, 235, 0.45);
+}
+
+.chat-header-details[open] .chat-header-summary::after {
+  transform: rotate(180deg);
+  color: #2563eb;
 }
 
 .chat-header-controls {
@@ -198,6 +220,11 @@ body::before {
   align-items: center;
   justify-content: flex-end;
   width: 100%;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(248, 250, 252, 0.85);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .chat-header-controls .connection-indicator {
