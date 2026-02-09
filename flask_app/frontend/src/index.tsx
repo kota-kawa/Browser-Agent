@@ -275,7 +275,6 @@ const App = () => {
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
   const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
-  const pendingSubmitModeRef = useRef<'continue' | 'new-task'>('continue');
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
   const thinkingHideTimerRef = useRef<number | null>(null);
@@ -643,9 +642,7 @@ const App = () => {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const mode = pendingSubmitModeRef.current;
-    pendingSubmitModeRef.current = 'continue';
-    const isNewTaskSubmission = mode === 'new-task';
+    const isNewTaskSubmission = true;
     const rawPrompt = promptInputRef.current ? promptInputRef.current.value : '';
     const prompt = rawPrompt.trim();
     if (!prompt) {
@@ -655,12 +652,7 @@ const App = () => {
 
     const submittedPromptValue = rawPrompt;
     setIsSending(true);
-    setStatus(
-      isNewTaskSubmission
-        ? '新しいタスクとしてエージェントに指示を送信しています…'
-        : 'エージェントに指示を送信しています…',
-      'progress'
-    );
+    setStatus('新しいタスクとしてエージェントに指示を送信しています…', 'progress');
     setIsRunningState(true);
     setIsPausedState(false);
     if (isNewTaskSubmission) {
@@ -753,25 +745,6 @@ const App = () => {
     }
   };
 
-  const handleNewTask = () => {
-    if (isRunning || isSending) {
-      return;
-    }
-    if (!promptInputRef.current || !promptInputRef.current.value.trim()) {
-      setStatus('新しいタスクの指示を入力してください。', 'warning');
-      promptInputRef.current?.focus();
-      return;
-    }
-    pendingSubmitModeRef.current = 'new-task';
-    if (formRef.current) {
-      if (typeof formRef.current.requestSubmit === 'function') {
-        formRef.current.requestSubmit();
-      } else {
-        formRef.current.submit();
-      }
-    }
-  };
-
   const handleReset = async () => {
     if (isResetting) {
       return;
@@ -829,7 +802,6 @@ const App = () => {
 
   const shouldDisablePause = !isRunning || isPausing;
   const pauseLabel = !isRunning ? '一時停止' : isPaused ? '再開' : '一時停止';
-  const newTaskDisabled = isRunning || isSending;
   const messagesEmpty = conversation.length === 0 && !thinkingVisible;
 
   const messagesClassName = `messages${messagesEmpty ? ' is-empty' : ''}`;
@@ -881,49 +853,54 @@ const App = () => {
               <h1>チャット</h1>
             </div>
             <div className="chat-header-side">
-              <div className="model-selector-group">
-                <label htmlFor="model-selector" className="model-selector-label">
-                  AIモデル
-                </label>
-                <div className="model-selector-wrapper">
-                  <select
-                    id="model-selector"
-                    name="model"
-                    value={modelOptions.length ? selectedModelValue : undefined}
-                    onChange={handleModelChange}
-                  >
-                    {modelOptions.map((model) => (
-                      <option
-                        key={encodeModelSelection(model) || model.label}
-                        value={encodeModelSelection(model) as string}
+              <details className="chat-header-details">
+                <summary className="chat-header-summary">設定を表示</summary>
+                <div className="chat-header-controls">
+                  <div className="model-selector-group">
+                    <label htmlFor="model-selector" className="model-selector-label">
+                      AIモデル
+                    </label>
+                    <div className="model-selector-wrapper">
+                      <select
+                        id="model-selector"
+                        name="model"
+                        value={modelOptions.length ? selectedModelValue : undefined}
+                        onChange={handleModelChange}
                       >
-                        {model.label}
-                      </option>
-                    ))}
-                  </select>
+                        {modelOptions.map((model) => (
+                          <option
+                            key={encodeModelSelection(model) || model.label}
+                            value={encodeModelSelection(model) as string}
+                          >
+                            {model.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <ConnectionIndicator state={connectionState} />
+                  <div className="chat-controls" role="group" aria-label="チャット操作">
+                    <button
+                      type="button"
+                      id="pause-button"
+                      className="control-button control-button--primary"
+                      disabled={shouldDisablePause}
+                      onClick={handlePauseToggle}
+                    >
+                      {pauseLabel}
+                    </button>
+                    <button
+                      type="button"
+                      id="reset-button"
+                      className="control-button control-button--ghost"
+                      onClick={handleReset}
+                      disabled={isResetting}
+                    >
+                      履歴リセット
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <ConnectionIndicator state={connectionState} />
-              <div className="chat-controls" role="group" aria-label="チャット操作">
-                <button
-                  type="button"
-                  id="pause-button"
-                  className="control-button control-button--primary"
-                  disabled={shouldDisablePause}
-                  onClick={handlePauseToggle}
-                >
-                  {pauseLabel}
-                </button>
-                <button
-                  type="button"
-                  id="reset-button"
-                  className="control-button control-button--ghost"
-                  onClick={handleReset}
-                  disabled={isResetting}
-                >
-                  履歴リセット
-                </button>
-              </div>
+              </details>
             </div>
           </header>
           <div className="chat-body">
@@ -975,16 +952,6 @@ const App = () => {
             </button>
           </div>
           <div className="prompt-footer">
-            <button
-              type="button"
-              id="new-task-button"
-              className="new-task-button"
-              aria-label="新しいタスクとして送信"
-              disabled={newTaskDisabled}
-              onClick={handleNewTask}
-            >
-              新しいタスクとして送信
-            </button>
             <span className="hint">Ctrl / ⌘ + Enterで送信</span>
           </div>
         </form>

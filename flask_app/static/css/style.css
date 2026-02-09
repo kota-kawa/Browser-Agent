@@ -143,17 +143,68 @@ body::before {
 
 .chat-header-side {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: flex-end;
   align-items: center;
   min-width: 0;
 }
 
-.chat-header-side .connection-indicator {
+.chat-header-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+.chat-header-summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: rgba(248, 250, 252, 0.9);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.chat-header-summary:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.7);
+  outline-offset: 2px;
+}
+
+.chat-header-summary::-webkit-details-marker {
+  display: none;
+}
+
+.chat-header-summary::marker {
+  content: '';
+}
+
+.chat-header-details[open] .chat-header-summary {
+  color: #1e293b;
+  background: #ffffff;
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+.chat-header-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.chat-header-controls .connection-indicator {
   flex: 1 1 auto;
 }
 
-.chat-header-side .chat-controls {
+.chat-header-controls .chat-controls {
   margin-left: auto;
 }
 
@@ -921,38 +972,6 @@ button:not(:disabled) {
 
 .submit-button .button-icon {
   line-height: 1;
-}
-
-.new-task-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.95rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid rgba(37, 99, 235, 0.45);
-  background: rgba(37, 99, 235, 0.12);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #1d4ed8;
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-}
-
-.new-task-button:hover,
-.new-task-button:focus-visible {
-  background: rgba(37, 99, 235, 0.2);
-  color: #1e3a8a;
-  transform: translateY(-0.5px);
-}
-
-.new-task-button:focus-visible {
-  outline: 2px solid rgba(37, 99, 235, 0.7);
-  outline-offset: 2px;
-}
-
-.new-task-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
 }
 
 .prompt-form.is-sending .submit-button {

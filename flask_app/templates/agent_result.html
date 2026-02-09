@@ -43,6 +43,6 @@
     <script>
       window.__AGENT_RESULT_APP_PROPS__ = {{ {'browserUrl': browser_url}|tojson }};
     </script>
-    <script type="module" src="{{ request.url_for('static', path='dist/agent_result.js') }}"></script>
+    <script type="module" src="{{ request.url_for('static', path='dist_vite/agent_result.js') }}"></script>
   </body>
 </html>

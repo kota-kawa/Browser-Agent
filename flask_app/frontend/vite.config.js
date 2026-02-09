@@ -5,7 +5,7 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: '../static/dist',
+    outDir: '../static/dist_vite',
     emptyOutDir: true,
     rollupOptions: {
       input: {
