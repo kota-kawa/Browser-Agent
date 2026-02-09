@@ -874,7 +874,7 @@ const App = () => {
 
   return (
     <main className="layout">
-      <section className="chat-pane" aria-label="チャット領域">
+      <section className="chat-pane" aria-label="チャット領域" aria-busy={shouldBusy}>
         <div className="chat-pane__content">
           <header className="chat-header">
             <div className="chat-header-main">
