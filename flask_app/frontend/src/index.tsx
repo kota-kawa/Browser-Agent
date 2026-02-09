@@ -363,7 +363,7 @@ const App = () => {
   const prevBusyRef = useRef(false);
   const scrollPendingRef = useRef(false);
   const statusClearTimerRef = useRef<number | null>(null);
-  const statusRef = useRef<{ message?: string; variant: StatusVariant }>({
+  const [status, setStatusState] = useState<{ message: string; variant: StatusVariant }>({
     message: '',
     variant: 'muted',
   });
@@ -389,10 +389,11 @@ const App = () => {
       clearTimeout(statusClearTimerRef.current);
       statusClearTimerRef.current = null;
     }
-    statusRef.current = { message, variant };
-    if (message && (variant === 'info' || variant === 'success')) {
+    const nextMessage = message || '';
+    setStatusState({ message: nextMessage, variant });
+    if (nextMessage && (variant === 'info' || variant === 'success')) {
       statusClearTimerRef.current = window.setTimeout(() => {
-        statusRef.current = { message: '', variant: 'muted' };
+        setStatusState({ message: '', variant: 'muted' });
         statusClearTimerRef.current = null;
       }, 5000);
     }
@@ -833,6 +834,7 @@ const App = () => {
   const messagesEmpty = conversation.length === 0 && !thinkingVisible;
 
   const messagesClassName = `messages${messagesEmpty ? ' is-empty' : ''}`;
+  const statusClassName = `status-banner${status.message ? '' : ' is-empty'}`;
 
   useEffect(() => {
     const browserIframe = document.querySelector<HTMLIFrameElement>('.browser-pane iframe');
@@ -960,6 +962,17 @@ const App = () => {
               </details>
             </div>
           </header>
+          <div
+            className={statusClassName}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            data-variant={status.variant}
+            aria-hidden={!status.message}
+          >
+            <span className="status-dot" aria-hidden="true"></span>
+            <span className="status-text">{status.message}</span>
+          </div>
           <div className="chat-body">
             <div
               id="messages"

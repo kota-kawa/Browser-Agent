@@ -61,6 +61,101 @@
   gap: 12px;
 }
 
+.page-index .status-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-height: 36px;
+  overflow: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.page-index .status-banner.is-empty {
+  min-height: 0;
+  max-height: 0;
+  padding: 0 14px;
+  border-width: 0;
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+}
+
+.page-index .status-banner .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #94a3b8;
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.15);
+}
+
+.page-index .status-banner[data-variant='muted'] {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.2);
+  color: var(--text-muted);
+}
+
+.page-index .status-banner[data-variant='info'],
+.page-index .status-banner[data-variant='progress'] {
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(14, 165, 233, 0.22);
+  color: #0369a1;
+}
+
+.page-index .status-banner[data-variant='info'] .status-dot,
+.page-index .status-banner[data-variant='progress'] .status-dot {
+  background: var(--accent-info);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.18);
+}
+
+.page-index .status-banner[data-variant='progress'] .status-dot {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.page-index .status-banner[data-variant='success'] {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.2);
+  color: #15803d;
+}
+
+.page-index .status-banner[data-variant='success'] .status-dot {
+  background: var(--accent-success);
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+}
+
+.page-index .status-banner[data-variant='warning'] {
+  background: rgba(249, 115, 22, 0.14);
+  border-color: rgba(249, 115, 22, 0.25);
+  color: #b45309;
+}
+
+.page-index .status-banner[data-variant='warning'] .status-dot {
+  background: var(--accent-warning);
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.18);
+}
+
+.page-index .status-banner[data-variant='error'] {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.24);
+  color: #b91c1c;
+}
+
+.page-index .status-banner[data-variant='error'] .status-dot {
+  background: var(--accent-danger);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18);
+}
+
+.page-index .status-banner .status-text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 
 .page-index .chat-header-main {
   display: flex;
