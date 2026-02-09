@@ -20,6 +20,7 @@ import type {
   SSEEvent,
 } from './types/api';
 import type { IndexAppProps } from './types/app';
+import { getJson, post, postJson } from './lib/api';
 
 const MIN_THINKING_MS = 600;
 const DEFAULT_BUSY_TITLE = 'AIが考えています';
@@ -402,11 +403,10 @@ const App = () => {
 
   const loadHistory = useCallback(async () => {
     try {
-      const response = await fetch('/api/history');
-      if (!response.ok) {
-        throw new Error('履歴の取得に失敗しました。');
-      }
-      const data = (await response.json()) as { messages?: ChatMessage[] };
+      const { data } = await getJson<{ messages?: ChatMessage[] }>('/api/history', {
+        errorMessage: '履歴の取得に失敗しました。',
+        preferErrorBody: false,
+      });
       updateConversationState(data.messages || [], { syncStep: true });
       requestScrollToBottom();
       setStatus('', 'muted');
@@ -431,22 +431,25 @@ const App = () => {
   const loadModels = useCallback(
     async (preferredSelection?: ModelSelection | null) => {
       try {
-        const response = await fetch('/api/models');
-        if (!response.ok) {
-          throw new Error('モデルの取得に失敗しました。');
-        }
-        const data = (await response.json()) as
+        const { data } = await getJson<
+          ModelsResponse | ModelOption[] | { models?: ModelOption[]; current?: ModelSelection }
+        >('/api/models', {
+          errorMessage: 'モデルの取得に失敗しました。',
+          preferErrorBody: false,
+        });
+        const dataPayload = data as
           | ModelsResponse
           | ModelOption[]
           | { models?: ModelOption[]; current?: ModelSelection };
-        const models = Array.isArray(data)
-          ? data
-          : Array.isArray((data as { models?: ModelOption[] }).models)
-            ? ((data as { models?: ModelOption[] }).models ?? [])
+        const models = Array.isArray(dataPayload)
+          ? dataPayload
+          : Array.isArray((dataPayload as { models?: ModelOption[] }).models)
+            ? ((dataPayload as { models?: ModelOption[] }).models ?? [])
             : [];
         const currentCandidate =
-          !Array.isArray(data) && typeof (data as { current?: unknown }).current === 'object'
-            ? ((data as { current?: ModelSelection }).current ?? null)
+          !Array.isArray(dataPayload) &&
+          typeof (dataPayload as { current?: unknown }).current === 'object'
+            ? ((dataPayload as { current?: ModelSelection }).current ?? null)
             : null;
         const current = currentCandidate || null;
         const preferred = encodeModelSelection(preferredSelection);
@@ -471,15 +474,9 @@ const App = () => {
   const applyModelSelection = useCallback(
     async (selection: ModelSelection) => {
       try {
-        const response = await fetch('/model_settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(selection),
+        await postJson<{ error?: string }, ModelSelection>('/model_settings', selection, {
+          errorMessage: 'モデル設定の適用に失敗しました。',
         });
-        const data = (await response.json()) as { error?: string };
-        if (!response.ok) {
-          throw new Error(data.error || 'モデル設定の適用に失敗しました。');
-        }
         setStatus(`モデルを ${selection.label || selection.model} に変更しました。`, 'success');
       } catch (error) {
         const err = error as { message?: string };
@@ -642,7 +639,6 @@ const App = () => {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const isNewTaskSubmission = true;
     const rawPrompt = promptInputRef.current ? promptInputRef.current.value : '';
     const prompt = rawPrompt.trim();
     if (!prompt) {
@@ -655,9 +651,7 @@ const App = () => {
     setStatus('新しいタスクとしてエージェントに指示を送信しています…', 'progress');
     setIsRunningState(true);
     setIsPausedState(false);
-    if (isNewTaskSubmission) {
-      clearStepActivity();
-    }
+    clearStepActivity();
     setPendingAssistantResponseState(true);
     setAssistantMessageCountAtSubmitState(assistantMessageCountRef.current);
 
@@ -669,17 +663,15 @@ const App = () => {
     let shouldContinueRunning = false;
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isNewTaskSubmission ? { prompt, new_task: true } : { prompt }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as ChatResponse;
-      if (!response.ok) {
-        const message = data.error || 'LLMへの送信に失敗しました。';
-        throw new Error(message);
-      }
+      const { data, response } = await postJson<ChatResponse, { prompt: string; new_task: true }>(
+        '/api/chat',
+        { prompt, new_task: true },
+        {
+          fallback: {},
+          errorMessage: 'LLMへの送信に失敗しました。',
+          throwOnParseError: false,
+        }
+      );
 
       if (Array.isArray(data.messages)) {
         updateConversationState(data.messages, { syncStep: true });
@@ -724,13 +716,11 @@ const App = () => {
     setIsPausing(true);
     const endpoint = isPaused ? '/api/resume' : '/api/pause';
     try {
-      const response = await fetch(endpoint, { method: 'POST' });
-      const data = (await response.json().catch(() => ({}))) as PauseResumeResponse;
-      if (!response.ok) {
-        const message =
-          data.error || (isPaused ? '再開に失敗しました。' : '一時停止に失敗しました。');
-        throw new Error(message);
-      }
+      await post<PauseResumeResponse>(endpoint, {
+        fallback: {},
+        errorMessage: isPaused ? '再開に失敗しました。' : '一時停止に失敗しました。',
+        throwOnParseError: false,
+      });
       const nextPaused = !isPausedRef.current;
       setIsPausedState(nextPaused);
       setStatus(
@@ -755,12 +745,11 @@ const App = () => {
     }
     setIsResetting(true);
     try {
-      const response = await fetch('/api/reset', { method: 'POST' });
-      const data = (await response.json().catch(() => ({}))) as ResetResponse;
-      if (!response.ok) {
-        const message = data.error || '履歴のリセットに失敗しました。';
-        throw new Error(message);
-      }
+      const { data } = await post<ResetResponse>('/api/reset', {
+        fallback: {},
+        errorMessage: '履歴のリセットに失敗しました。',
+        throwOnParseError: false,
+      });
       updateConversationState(data.messages || [], { syncStep: true });
       requestScrollToBottom();
       setStatus('履歴をリセットしました。', 'success');

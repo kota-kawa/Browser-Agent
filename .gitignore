@@ -130,3 +130,5 @@ all_github_issues.md
 *.Identifier
 flask_app/static/dist/
 flask_app/frontend/node_modules/
+!flask_app/frontend/src/lib/
+!flask_app/frontend/src/lib/**

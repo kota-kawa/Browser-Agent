@@ -10,6 +10,7 @@ import type {
   WebArenaTasksResponse,
 } from './types/api';
 import type { WebArenaAppProps } from './types/app';
+import { getJson, postJson, requestJson } from './lib/api';
 
 const initialData: Partial<WebArenaAppProps> = window.__WEBARENA_APP_PROPS__ || {};
 const browserUrl = initialData.browserUrl || '';
@@ -127,20 +128,25 @@ const App = () => {
 
   const loadModels = useCallback(async () => {
     try {
-      const response = await fetch('/api/models');
-      const data = (await response.json()) as
+      const { data } = await getJson<
+        ModelOption[] | { models?: ModelOption[]; current?: ModelSelection }
+      >('/api/models', {
+        throwOnNonOk: false,
+      });
+      const dataPayload = data as
         | ModelOption[]
         | { models?: ModelOption[]; current?: ModelSelection };
-      const models = Array.isArray(data)
-        ? data
-        : Array.isArray((data as { models?: ModelOption[] }).models)
-          ? ((data as { models?: ModelOption[] }).models ?? [])
+      const models = Array.isArray(dataPayload)
+        ? dataPayload
+        : Array.isArray((dataPayload as { models?: ModelOption[] }).models)
+          ? ((dataPayload as { models?: ModelOption[] }).models ?? [])
           : [];
       setModelOptions(models);
 
       const current =
-        !Array.isArray(data) && typeof (data as { current?: unknown }).current === 'object'
-          ? ((data as { current?: ModelSelection }).current ?? null)
+        !Array.isArray(dataPayload) &&
+        typeof (dataPayload as { current?: unknown }).current === 'object'
+          ? ((dataPayload as { current?: ModelSelection }).current ?? null)
           : null;
       const desired = encodeModelSelection(current);
       const hasDesired =
@@ -158,17 +164,17 @@ const App = () => {
   }, []);
 
   const applyModel = useCallback(async (selection: ModelSelection) => {
-    await fetch('/model_settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(selection),
+    await postJson('/model_settings', selection, {
+      parseJson: false,
+      throwOnNonOk: false,
     });
   }, []);
 
   const refreshVisionState = useCallback(async () => {
     try {
-      const res = await fetch('/api/vision');
-      const data = (await res.json()) as VisionState;
+      const { data } = await getJson<VisionState>('/api/vision', {
+        throwOnNonOk: false,
+      });
       setVisionState({
         supported: !!data.model_supported,
         effective: !!data.effective,
@@ -191,10 +197,12 @@ const App = () => {
     setTasksError('');
     try {
       const siteQuery = selectedSite ? `&site=${selectedSite}` : '';
-      const res = await fetch(
-        `/webarena/tasks?page=${currentPage}&per_page=${PER_PAGE}${siteQuery}`
+      const { data } = await getJson<WebArenaTasksResponse>(
+        `/webarena/tasks?page=${currentPage}&per_page=${PER_PAGE}${siteQuery}`,
+        {
+          throwOnNonOk: false,
+        }
       );
-      const data = (await res.json()) as WebArenaTasksResponse;
       setTasks(Array.isArray(data.tasks) ? data.tasks : []);
       setHasNextPage((data.tasks || []).length >= PER_PAGE);
     } catch (error) {
@@ -252,11 +260,7 @@ const App = () => {
     const enabled = event.target.checked;
     setVisionBusy(true);
     try {
-      await fetch('/api/vision', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled }),
-      });
+      await postJson('/api/vision', { enabled }, { parseJson: false, throwOnNonOk: false });
     } catch (error) {
       console.error('Failed to update vision toggle', error);
       alert('スクリーンショット設定の更新に失敗しました。');
@@ -331,15 +335,13 @@ const App = () => {
     setLogState({ type: 'single-running' });
 
     try {
-      const res = await fetch('/webarena/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = (await res.json()) as WebArenaRunResult & { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || 'Error running task');
-      }
+      const { data } = await postJson<WebArenaRunResult & { error?: string }, typeof payload>(
+        '/webarena/run',
+        payload,
+        {
+          errorMessage: 'Error running task',
+        }
+      );
       setLogState({ type: 'single-result', result: data });
       setStatus('完了', 'var(--accent-success)');
     } catch (error) {
@@ -360,8 +362,12 @@ const App = () => {
     let taskIds: number[] = [];
     try {
       const siteQuery = selectedSite ? `&site=${selectedSite}` : '';
-      const taskRes = await fetch(`/webarena/tasks?page=1&per_page=1000${siteQuery}`);
-      const taskData = (await taskRes.json()) as WebArenaTasksResponse;
+      const { data: taskData } = await getJson<WebArenaTasksResponse>(
+        `/webarena/tasks?page=1&per_page=1000${siteQuery}`,
+        {
+          throwOnNonOk: false,
+        }
+      );
       taskIds = (taskData.tasks || []).map((task) => task.task_id);
     } catch (error) {
       const err = error as { message?: string };
@@ -415,22 +421,27 @@ const App = () => {
 
         let data: WebArenaRunResult;
         try {
-          const res = await fetch('/webarena/run', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              env_urls: {
-                shopping: envUrls.shopping,
-                shopping_admin: envUrls.shopping_admin,
-                gitlab: envUrls.gitlab,
-                reddit: envUrls.reddit,
-              },
-              task_id: taskId,
-              selected_site: selectedSite || undefined,
-            }),
-          });
-          const responseData = (await res.json()) as WebArenaRunResult & { error?: string };
-          if (!res.ok) {
+          const { data: responseData, response } = await requestJson<
+            WebArenaRunResult & { error?: string }
+          >(
+            '/webarena/run',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                env_urls: {
+                  shopping: envUrls.shopping,
+                  shopping_admin: envUrls.shopping_admin,
+                  gitlab: envUrls.gitlab,
+                  reddit: envUrls.reddit,
+                },
+                task_id: taskId,
+                selected_site: selectedSite || undefined,
+              }),
+            },
+            { throwOnNonOk: false }
+          );
+          if (!response.ok) {
             data = {
               task_id: taskId,
               success: false,
@@ -492,10 +503,9 @@ const App = () => {
 
       try {
         setStatus('結果を保存中...', 'var(--accent-info)');
-        await fetch('/webarena/save_results', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ results }),
+        await postJson('/webarena/save_results', { results }, {
+          parseJson: false,
+          throwOnNonOk: false,
         });
         setStatus('完了 (保存済み)', 'var(--accent-success)');
       } catch (error) {
