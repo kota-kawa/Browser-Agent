@@ -34,6 +34,10 @@ export interface VisionState {
   model: string;
 }
 
+export interface UserProfileResponse {
+  text: string;
+}
+
 export interface StatusPayload {
   agent_running?: boolean;
   run_summary?: string;

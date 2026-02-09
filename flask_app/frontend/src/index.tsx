@@ -19,6 +19,7 @@ import type {
   PauseResumeResponse,
   ResetResponse,
   SSEEvent,
+  UserProfileResponse,
   VisionState,
 } from './types/api';
 import type { IndexAppProps } from './types/app';
@@ -28,6 +29,7 @@ const MIN_THINKING_MS = 600;
 const DEFAULT_BUSY_TITLE = 'AIが考えています';
 const DEFAULT_BUSY_SUB = '見つけた情報から回答を組み立て中';
 const FALLBACK_STEP_DETAIL = '次の操作を進行中です';
+const USER_PROFILE_MAX_LENGTH = 2000;
 
 const initialData: Partial<IndexAppProps> = window.__INDEX_APP_PROPS__ || {};
 const browserUrl = initialData.browserUrl || '';
@@ -347,6 +349,9 @@ const App = () => {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [selectedModelValue, setSelectedModelValue] = useState('');
+  const [userProfile, setUserProfile] = useState('');
+  const [userProfileDirty, setUserProfileDirty] = useState(false);
+  const [userProfileSaving, setUserProfileSaving] = useState(false);
   const [visionState, setVisionState] = useState<VisionStateView>({
     supported: null,
     effective: false,
@@ -380,6 +385,7 @@ const App = () => {
   const prevBusyRef = useRef(false);
   const scrollPendingRef = useRef(false);
   const statusClearTimerRef = useRef<number | null>(null);
+  const userProfileTouchedRef = useRef(false);
   const [status, setStatusState] = useState<{ message: string; variant: StatusVariant }>({
     message: '',
     variant: 'muted',
@@ -529,6 +535,39 @@ const App = () => {
     [setStatus]
   );
 
+  const loadUserProfile = useCallback(async () => {
+    try {
+      const { data } = await getJson<UserProfileResponse>('/api/user_profile', {
+        throwOnNonOk: false,
+        preferErrorBody: false,
+      });
+      if (!userProfileTouchedRef.current) {
+        setUserProfile(data?.text || '');
+        setUserProfileDirty(false);
+      }
+    } catch (error) {
+      const err = error as { message?: string };
+      setStatus(err.message || 'ユーザー個人データの取得に失敗しました。', 'error');
+    }
+  }, [setStatus]);
+
+  const handleUserProfileSave = useCallback(async () => {
+    setUserProfileSaving(true);
+    try {
+      const { data } = await postJson<UserProfileResponse, { text: string }>('/api/user_profile', {
+        text: userProfile,
+      });
+      setUserProfile(data?.text || '');
+      setUserProfileDirty(false);
+      setStatus('ユーザー個人データを保存しました。次のタスクから反映されます。', 'success');
+    } catch (error) {
+      const err = error as { message?: string };
+      setStatus(err.message || 'ユーザー個人データの保存に失敗しました。', 'error');
+    } finally {
+      setUserProfileSaving(false);
+    }
+  }, [setStatus, userProfile]);
+
   const refreshVisionState = useCallback(async () => {
     try {
       const { data } = await getJson<VisionState>('/api/vision', {
@@ -632,6 +671,7 @@ const App = () => {
     setupEventStream();
     loadHistory();
     loadModels();
+    loadUserProfile();
     refreshVisionState();
 
     return () => {
@@ -652,7 +692,7 @@ const App = () => {
         statusClearTimerRef.current = null;
       }
     };
-  }, [loadHistory, loadModels, refreshVisionState, setupEventStream]);
+  }, [loadHistory, loadModels, loadUserProfile, refreshVisionState, setupEventStream]);
 
   const shouldBusy = pendingAssistantResponse || stepInProgress;
 
@@ -924,6 +964,7 @@ const App = () => {
   }
 
   const shouldDisablePause = !isRunning || isPausing;
+  const shouldDisableUserProfileSave = userProfileSaving || !userProfileDirty;
   const pauseLabel = !isRunning ? '一時停止' : isPaused ? '再開' : '一時停止';
   const messagesEmpty = conversation.length === 0 && !thinkingVisible;
 
@@ -1053,6 +1094,37 @@ const App = () => {
                       <p className="vision-toggle-hint">{visionHint}</p>
                     </div>
                   )}
+                  <div className="user-profile-group">
+                    <div className="user-profile-header">
+                      <label htmlFor="user-profile" className="user-profile-label">
+                        ユーザー個人データ
+                      </label>
+                      <button
+                        type="button"
+                        className="user-profile-save"
+                        onClick={handleUserProfileSave}
+                        disabled={shouldDisableUserProfileSave}
+                      >
+                        {userProfileSaving ? '保存中…' : userProfileDirty ? '保存' : '保存済み'}
+                      </button>
+                    </div>
+                    <textarea
+                      id="user-profile"
+                      className="user-profile-textarea"
+                      rows={4}
+                      maxLength={USER_PROFILE_MAX_LENGTH}
+                      placeholder="例: 予算・好み・制約・検索で優先する条件など"
+                      value={userProfile}
+                      onChange={(event) => {
+                        userProfileTouchedRef.current = true;
+                        setUserProfile(event.target.value);
+                        setUserProfileDirty(true);
+                      }}
+                    />
+                    <p className="user-profile-hint">
+                      ここに入力した内容はシステムプロンプトに挿入され、次のタスクから検索に反映されます。
+                    </p>
+                  </div>
                   <ConnectionIndicator state={connectionState} />
                   <div className="chat-controls" role="group" aria-label="チャット操作">
                     <button

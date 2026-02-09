@@ -7,6 +7,7 @@ from pathlib import Path
 from browser_use.model_selection import _load_selection
 
 from ..core.config import logger
+from ..services.user_profile import load_user_profile
 
 # List of models that are not multimodal and should not receive vision inputs
 NON_MULTIMODAL_MODELS = [
@@ -106,8 +107,12 @@ def _build_custom_system_prompt(
 
 	now = datetime.now().astimezone()
 	current_datetime_line = now.strftime('%Y-%m-%d %H:%M %Z (UTC%z, %A)')
+	user_profile_text = load_user_profile()
+	if not user_profile_text:
+		user_profile_text = '未設定'
 	# Avoid str.format() so literal braces in the template (e.g., action schemas) are preserved
 	# without triggering KeyError for names like "go_to_url".
 	template = template.replace('{max_actions}', str(max_actions_per_step))
 	template = template.replace('{current_datetime}', current_datetime_line)
+	template = template.replace('{user_profile}', user_profile_text)
 	return template
