@@ -19,10 +19,12 @@ from .llm_factory import _create_selected_llm
 class ConversationAnalysis(BaseModel):
 	"""Data model for the result of conversation analysis."""
 
-	should_reply: bool = Field(..., description='True if the browser agent should provide a brief, helpful reply.')
+	should_reply: bool = Field(
+		..., description='True if the assistant should provide a helpful reply even when no browser action is required.'
+	)
 	reply: str = Field(
 		default='',
-		description='A short suggestion, alert, or mention of other agents. Should be empty if should_reply is False.',
+		description='A concise but complete answer for the user. Must be empty if should_reply is False.',
 	)
 	addressed_agents: list[str] = Field(
 		default_factory=list,
@@ -71,6 +73,10 @@ def _normalize_analysis_payload(payload: dict[str, Any] | None) -> dict[str, Any
 	valid_action_types = {'search', 'navigate', 'form_fill', 'data_extract', None}
 	if normalized.get('action_type') not in valid_action_types:
 		normalized['action_type'] = None
+
+	# If a reply is present, ensure should_reply is true.
+	if normalized.get('reply'):
+		normalized['should_reply'] = True
 
 	# Ensure reply is empty if should_reply is False
 	if not normalized.get('should_reply'):
@@ -218,6 +224,95 @@ async def _fallback_to_text_parsing(llm: Any, messages: list[Any]) -> dict[str, 
 		return _build_error_response(f'会話履歴の分析中にエラーが発生しました: {fallback_exc}')
 
 
+def _looks_like_refusal(text: str) -> bool:
+	if not text:
+		return True
+	lowered = text.lower()
+	refusal_phrases = (
+		'ブラウザ操作',
+		'文脈外',
+		'回答しない',
+		'回答でき',
+		'対応でき',
+		'できません',
+		'outside the scope',
+		'cannot answer',
+		'not provide an answer',
+		'not able to',
+		'guidelines',
+	)
+	return any(phrase in lowered for phrase in refusal_phrases)
+
+
+def _stringify_reply(payload: Any) -> str:
+	if isinstance(payload, str):
+		return payload.strip()
+	if isinstance(payload, dict):
+		for key in ('reply', 'content', 'text', 'message'):
+			value = payload.get(key)
+			if isinstance(value, str) and value.strip():
+				return value.strip()
+		try:
+			return json.dumps(payload, ensure_ascii=False)
+		except TypeError:
+			return str(payload)
+	return str(payload).strip()
+
+
+async def _generate_direct_reply_async(llm: Any, conversation_history: list[dict[str, Any]]) -> str:
+	"""Generate a direct answer when no browser action is required."""
+	if not conversation_history:
+		return ''
+
+	conversation_history = _trim_conversation_history(conversation_history)
+	conversation_text = ''
+	for msg in conversation_history:
+		role = msg.get('role', 'unknown')
+		content = msg.get('content', '')
+		conversation_text += f'{role}: {content}\n'
+
+	prompt = f"""以下は会話履歴です。最新のユーザーの質問に日本語で答えてください。
+
+条件:
+- ブラウザ操作やエージェントの都合には触れない
+- 可能な範囲で直接回答する（不足があれば合理的な前提を短く述べる）
+- 不要な質問はしない
+- 簡潔だが質問には十分に答える
+
+会話履歴:
+{conversation_text}
+"""
+
+	messages = [
+		SystemMessage(content='You are a helpful assistant who answers user questions directly in Japanese.'),
+		UserMessage(role='user', content=prompt),
+	]
+	response = await llm.ainvoke(messages)
+	reply_text = _stringify_reply(_get_completion_payload(response))
+	return reply_text
+
+
+async def _ensure_direct_reply_async(
+	analysis_payload: dict[str, Any],
+	llm: Any,
+	conversation_history: list[dict[str, Any]],
+) -> dict[str, Any]:
+	if not analysis_payload or analysis_payload.get('needs_action'):
+		return analysis_payload
+
+	reply_text = (analysis_payload.get('reply') or '').strip()
+	if not reply_text or _looks_like_refusal(reply_text) or not analysis_payload.get('should_reply'):
+		direct_reply = await _generate_direct_reply_async(llm, conversation_history)
+		if direct_reply:
+			analysis_payload['reply'] = direct_reply
+			analysis_payload['should_reply'] = True
+
+	if analysis_payload.get('reply'):
+		analysis_payload['should_reply'] = True
+
+	return analysis_payload
+
+
 def _trim_conversation_history(
 	conversation_history: list[dict[str, Any]],
 	window_size: int | None = None,
@@ -286,34 +381,37 @@ async def _analyze_conversation_history_async(conversation_history: list[dict[st
 		conversation_text += f'{role}: {content}\n'
 
 	# Create a prompt to analyze the conversation
-	analysis_prompt = f"""あなたは「ブラウザ操作専門」のアシスタントです。
+	analysis_prompt = f"""あなたは「ブラウザ操作に強い」アシスタントです。
 
-【あなたの専門分野（発言可能な範囲）】
+【役割】
 - Web検索: 情報検索、調査、ニュース確認
 - Webページ操作: ナビゲーション、フォーム入力、データ抽出
 - オンラインサービス: 予約、購入、申し込み手続き
 - Webサイトの閲覧支援: 特定ページへのアクセス
+- ブラウザ操作が不要な質問でも、可能な範囲で直接回答する
 
-【発言してはいけない場合】
-- IoTデバイス操作 → IoT Agentの専門
-- 料理・洗濯・家庭科の知識 → Life-Style Agentの専門
-- スケジュール・予定・タスク管理 → Scheduler Agentの専門
-- ブラウザ操作が不要な一般的な質問
+【対応方針】
+- ブラウザ操作が不要で、一般知識や推論で答えられる質問は **必ず回答** する
+- 最新情報や正確な確認が必要な質問は `needs_action: true` とする
+- 物理的な操作（IoT等）は実行できないが、一般的な手順や注意点は説明できる
 
 【判断ルール】
 1. `needs_action: true` は、Webブラウザでの操作が「必須」な場合のみ
-2. `should_reply: true` は、ブラウザ操作の文脈で有益な情報がある場合のみ
-3. 他エージェントへの呼びかけ・任せる判断は禁止
-4. 自分の専門外の話題は完全に無視する
+2. `should_reply: true` は、ユーザーの質問に回答できる場合は常に `true`
+3. ブラウザ操作が不要な場合は `needs_action: false` のまま `reply` に回答を書く
+4. 他エージェントへの呼びかけ・任せる判断は禁止
+
+【出力言語】
+- `reply` と `reason` は必ず日本語で書く
 
 【発言する例】
 - 「東京の天気を調べて」→ needs_action: true, action_type: "search"
 - 「Amazonで商品を検索して」→ needs_action: true
+- 「Pythonのリスト内包表記を教えて」→ needs_action: false, should_reply: true
+- 「夕食のレシピを教えて」→ needs_action: false, should_reply: true
 
-【発言しない例】
-- 「エアコンをつけて」→ 発言しない（IoT Agentの専門）
-- 「夕食のレシピを教えて」→ 発言しない（Life-Assistantの専門）
-- 「明日の予定を追加して」→ 発言しない（Schedulerの専門）
+【発言できない操作の例（回答は可能）】
+- 「エアコンをつけて」→ 操作はできないが、一般的な手順説明は可
 
 会話履歴:
 {conversation_text}
@@ -321,7 +419,7 @@ async def _analyze_conversation_history_async(conversation_history: list[dict[st
 JSONのみで出力:
 {{
   "should_reply": true/false,
-  "reply": "短い提案（ブラウザ操作の文脈に限定）",
+  "reply": "ユーザーへの直接回答（簡潔だが質問に答える）",
   "addressed_agents": [],
   "needs_action": true/false,
   "action_type": "search" | "navigate" | "form_fill" | "data_extract" | null,
@@ -342,20 +440,23 @@ JSONのみで出力:
 		analysis_result = _get_completion_payload(response)
 
 		if isinstance(analysis_result, ConversationAnalysis):
-			return analysis_result.model_dump()
-
-		if isinstance(analysis_result, dict):
+			analysis_payload = analysis_result.model_dump()
+		elif isinstance(analysis_result, dict):
 			normalized = _normalize_analysis_payload(analysis_result)
-			return ConversationAnalysis.model_validate(normalized).model_dump()
+			analysis_payload = ConversationAnalysis.model_validate(normalized).model_dump()
+		else:
+			raise TypeError(f'Expected ConversationAnalysis, but got {type(analysis_result).__name__}')
 
-		raise TypeError(f'Expected ConversationAnalysis, but got {type(analysis_result).__name__}')
+		return await _ensure_direct_reply_async(analysis_payload, llm, conversation_history)
 
 	except ModelProviderError as exc:
 		logger.warning('Structured output failed due to provider error, retrying without schema: %s', exc)
-		return await _fallback_to_text_parsing(llm, messages)
+		analysis_payload = await _fallback_to_text_parsing(llm, messages)
+		return await _ensure_direct_reply_async(analysis_payload, llm, conversation_history)
 	except (ValidationError, TypeError, AttributeError) as exc:
 		logger.warning('Structured output failed, falling back to text parsing: %s', exc)
-		return await _fallback_to_text_parsing(llm, messages)
+		analysis_payload = await _fallback_to_text_parsing(llm, messages)
+		return await _ensure_direct_reply_async(analysis_payload, llm, conversation_history)
 	except Exception as exc:
 		logger.exception('Unexpected error during conversation history analysis')
 		return _build_error_response(f'予期しないエラーが発生しました: {exc}')
