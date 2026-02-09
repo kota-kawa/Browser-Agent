@@ -6,6 +6,7 @@ from typing import Any
 from ..core.config import logger
 from ..core.env import _get_env_trimmed
 from ..core.exceptions import AgentControllerError
+from .llm_daily_limit import apply_daily_llm_limit
 
 # Correctly handle imports, including adding the project root to sys.path if necessary
 try:
@@ -52,21 +53,21 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 			from browser_use.llm.google.chat import ChatGoogle
 		except ModuleNotFoundError as exc:
 			raise AgentControllerError('Gemini 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
-		return ChatGoogle(**llm_kwargs)
+		return apply_daily_llm_limit(ChatGoogle(**llm_kwargs))
 	if provider == 'claude':
 		logger.info(f'Using Anthropic (Claude) model: {model}')
 		try:
 			from browser_use.llm.anthropic.chat import ChatAnthropic
 		except ModuleNotFoundError as exc:
 			raise AgentControllerError('Claude 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
-		return ChatAnthropic(**llm_kwargs)
+		return apply_daily_llm_limit(ChatAnthropic(**llm_kwargs))
 	if provider == 'groq':
 		logger.info(f'Using Groq model: {model}')
 		try:
 			from browser_use.llm.groq.chat import ChatGroq
 		except ModuleNotFoundError as exc:
 			raise AgentControllerError('Groq 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
-		return ChatGroq(**llm_kwargs)
+		return apply_daily_llm_limit(ChatGroq(**llm_kwargs))
 
 	# Default to OpenAI for any other case, including 'openai' provider
 	logger.info(f'Using OpenAI model: {model} with base_url: {base_url}')
@@ -74,4 +75,4 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 		from browser_use.llm.openai.chat import ChatOpenAI
 	except ModuleNotFoundError as exc:
 		raise AgentControllerError('OpenAI 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
-	return ChatOpenAI(**llm_kwargs)
+	return apply_daily_llm_limit(ChatOpenAI(**llm_kwargs))
