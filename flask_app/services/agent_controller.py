@@ -252,7 +252,7 @@ class BrowserAgentController:
 					base_extension += f'\n\n{additional_system_message}'
 				extend_system_message = base_extension
 
-			tools = Tools(exclude_actions=['read_file'])
+			tools = Tools(exclude_actions=['read_file', 'search_google'])
 			step_timeout = self._resolve_step_timeout()
 			fresh_agent = Agent(
 				task=initial_task,
