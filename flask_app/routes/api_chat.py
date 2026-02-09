@@ -18,6 +18,7 @@ from ..services.history_store import (
 	_copy_history,
 	_update_history_message,
 )
+from ..services.input_guard import InputGuardError, check_prompt_safety
 from .utils import read_json_payload
 
 router = APIRouter()
@@ -68,6 +69,19 @@ async def chat(request: Request) -> JSONResponse:
 
 	if not prompt:
 		return JSONResponse({'error': 'プロンプトを入力してください。'}, status_code=400)
+
+	try:
+		guard_result = await check_prompt_safety(prompt)
+	except InputGuardError as exc:
+		logger.warning('Llama Guard check failed: %s', exc)
+		return JSONResponse({'error': f'入力の安全性チェックに失敗しました: {exc}'}, status_code=503)
+
+	if not guard_result.is_safe:
+		logger.info('Blocked prompt by Llama Guard. Categories: %s', ','.join(guard_result.categories))
+		return JSONResponse(
+			{'error': '入力内容が安全性チェックによりブロックされました。別の表現でお試しください。'},
+			status_code=400,
+		)
 
 	try:
 		controller = get_agent_controller()
