@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useRef,
   useCallback,
+  useReducer,
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import { marked } from 'marked';
@@ -36,6 +37,26 @@ type StatusVariant = 'muted' | 'info' | 'success' | 'warning' | 'error' | 'progr
 type StepInfo = {
   stepNumber: number;
   detail: string;
+};
+
+type ConversationState = {
+  messages: ChatMessage[];
+  assistantMessageCount: number;
+  assistantMessageCountAtSubmit: number;
+  pendingAssistantResponse: boolean;
+};
+
+type ConversationAction =
+  | { type: 'set_messages'; messages: ChatMessage[] }
+  | { type: 'upsert_message'; message: ChatMessage }
+  | { type: 'mark_pending' }
+  | { type: 'clear_pending' }
+  | { type: 'reset' };
+
+const useLatest = <T,>(value: T) => {
+  const ref = useRef(value);
+  ref.current = value;
+  return ref;
 };
 
 const formatThinkingTimestamp = (timestamp: number | string) => {
@@ -139,6 +160,61 @@ const countAssistantMessages = (messages: ChatMessage[]) => {
     }
   });
   return count;
+};
+
+const buildConversationState = (
+  messages: ChatMessage[],
+  prevState: ConversationState
+): ConversationState => {
+  const count = countAssistantMessages(messages);
+  const pendingCleared =
+    prevState.pendingAssistantResponse && count > prevState.assistantMessageCountAtSubmit;
+  return {
+    ...prevState,
+    messages,
+    assistantMessageCount: count,
+    pendingAssistantResponse: pendingCleared ? false : prevState.pendingAssistantResponse,
+  };
+};
+
+const conversationReducer = (
+  state: ConversationState,
+  action: ConversationAction
+): ConversationState => {
+  switch (action.type) {
+    case 'set_messages':
+      return buildConversationState(action.messages, state);
+    case 'upsert_message': {
+      const nextMessages = [...state.messages];
+      const existingIndex = nextMessages.findIndex((item) => item.id === action.message.id);
+      if (existingIndex >= 0) {
+        nextMessages[existingIndex] = action.message;
+      } else {
+        nextMessages.push(action.message);
+      }
+      return buildConversationState(nextMessages, state);
+    }
+    case 'mark_pending':
+      return {
+        ...state,
+        pendingAssistantResponse: true,
+        assistantMessageCountAtSubmit: state.assistantMessageCount,
+      };
+    case 'clear_pending':
+      return {
+        ...state,
+        pendingAssistantResponse: false,
+      };
+    case 'reset':
+      return {
+        messages: [],
+        assistantMessageCount: 0,
+        assistantMessageCountAtSubmit: 0,
+        pendingAssistantResponse: false,
+      };
+    default:
+      return state;
+  }
 };
 
 const encodeModelSelection = (selection: ModelSelection | ModelOption | null | undefined) => {
@@ -247,10 +323,13 @@ const ConnectionIndicator = ({ state }: ConnectionIndicatorProps) => {
 };
 
 const App = () => {
-  const [conversation, setConversation] = useState<ChatMessage[]>([]);
-  const [assistantMessageCount, setAssistantMessageCount] = useState(0);
-  const [assistantMessageCountAtSubmit, setAssistantMessageCountAtSubmit] = useState(0);
-  const [pendingAssistantResponse, setPendingAssistantResponse] = useState(false);
+  const [conversationState, dispatchConversation] = useReducer(conversationReducer, {
+    messages: [],
+    assistantMessageCount: 0,
+    assistantMessageCountAtSubmit: 0,
+    pendingAssistantResponse: false,
+  });
+  const { messages: conversation, pendingAssistantResponse } = conversationState;
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -265,13 +344,12 @@ const App = () => {
   const [thinkingVisible, setThinkingVisible] = useState(false);
   const [busyMessageTitle, setBusyMessageTitle] = useState(DEFAULT_BUSY_TITLE);
   const [busyMessageSub, setBusyMessageSub] = useState(DEFAULT_BUSY_SUB);
-
-  const conversationRef = useRef<ChatMessage[]>([]);
-  const assistantMessageCountRef = useRef(0);
-  const assistantMessageCountAtSubmitRef = useRef(0);
-  const pendingAssistantResponseRef = useRef(false);
-  const isRunningRef = useRef(false);
-  const isPausedRef = useRef(false);
+  const latestRunStateRef = useLatest({
+    isRunning,
+    isPaused,
+    pendingAssistantResponse,
+  });
+  const latestConversationRef = useLatest(conversation);
 
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -289,31 +367,6 @@ const App = () => {
     message: '',
     variant: 'muted',
   });
-
-  const setAssistantMessageCountState = (value: number) => {
-    assistantMessageCountRef.current = value;
-    setAssistantMessageCount(value);
-  };
-
-  const setAssistantMessageCountAtSubmitState = (value: number) => {
-    assistantMessageCountAtSubmitRef.current = value;
-    setAssistantMessageCountAtSubmit(value);
-  };
-
-  const setPendingAssistantResponseState = (value: boolean) => {
-    pendingAssistantResponseRef.current = value;
-    setPendingAssistantResponse(value);
-  };
-
-  const setIsRunningState = (value: boolean) => {
-    isRunningRef.current = value;
-    setIsRunning(value);
-  };
-
-  const setIsPausedState = (value: boolean) => {
-    isPausedRef.current = value;
-    setIsPaused(value);
-  };
 
   const clearStepActivity = useCallback(() => {
     setStepInProgress(false);
@@ -351,26 +404,18 @@ const App = () => {
 
   const updateConversationState = useCallback(
     (nextMessages: ChatMessage[], { syncStep }: { syncStep?: boolean } = { syncStep: false }) => {
-      conversationRef.current = nextMessages;
-      setConversation(nextMessages);
-      const count = countAssistantMessages(nextMessages);
-      setAssistantMessageCountState(count);
-      if (
-        pendingAssistantResponseRef.current &&
-        count > assistantMessageCountAtSubmitRef.current
-      ) {
-        setPendingAssistantResponseState(false);
-      }
+      dispatchConversation({ type: 'set_messages', messages: nextMessages });
+      const runtime = latestRunStateRef.current;
       if (syncStep) {
         const lastStepInfo = findLastStepInfo(nextMessages);
-        if (lastStepInfo && (isRunningRef.current || pendingAssistantResponseRef.current)) {
+        if (lastStepInfo && (runtime.isRunning || runtime.pendingAssistantResponse)) {
           updateStepActivity(lastStepInfo);
-        } else if (!isRunningRef.current && !pendingAssistantResponseRef.current) {
+        } else if (!runtime.isRunning && !runtime.pendingAssistantResponse) {
           clearStepActivity();
         }
       }
     },
-    [clearStepActivity, updateStepActivity]
+    [clearStepActivity, dispatchConversation, latestRunStateRef, updateStepActivity]
   );
 
   const appendOrUpdateMessage = useCallback(
@@ -378,16 +423,13 @@ const App = () => {
       if (!message || typeof message.id === 'undefined') {
         return;
       }
-      const currentMessages = conversationRef.current;
-      const nextMessages = [...currentMessages];
-      const existingIndex = nextMessages.findIndex((item) => item.id === message.id);
-      if (existingIndex >= 0) {
-        nextMessages[existingIndex] = message;
-      } else {
-        nextMessages.push(message);
+      const existingIndex = latestConversationRef.current.findIndex(
+        (item) => item.id === message.id
+      );
+      if (existingIndex < 0) {
         requestScrollToBottom();
       }
-      updateConversationState(nextMessages);
+      dispatchConversation({ type: 'upsert_message', message });
 
       if (message.role === 'assistant') {
         const stepInfo = extractStepInfo(message.content);
@@ -398,7 +440,7 @@ const App = () => {
         }
       }
     },
-    [clearStepActivity, requestScrollToBottom, updateConversationState, updateStepActivity]
+    [clearStepActivity, dispatchConversation, latestConversationRef, requestScrollToBottom, updateStepActivity]
   );
 
   const loadHistory = useCallback(async () => {
@@ -417,16 +459,14 @@ const App = () => {
   }, [requestScrollToBottom, setStatus, updateConversationState]);
 
   const handleResetEvent = useCallback(() => {
-    updateConversationState([], { syncStep: false });
+    dispatchConversation({ type: 'reset' });
     setStatus('履歴をリセットしました。', 'success');
-    setPendingAssistantResponseState(false);
-    setAssistantMessageCountAtSubmitState(0);
     clearStepActivity();
-    setIsRunningState(false);
-    setIsPausedState(false);
+    setIsRunning(false);
+    setIsPaused(false);
     setConnectionState('connected');
     loadHistory();
-  }, [clearStepActivity, loadHistory, setStatus, updateConversationState]);
+  }, [clearStepActivity, dispatchConversation, loadHistory, setStatus]);
 
   const loadModels = useCallback(
     async (preferredSelection?: ModelSelection | null) => {
@@ -524,12 +564,12 @@ const App = () => {
           }
         } else if (payload.type === 'status' && payload.payload) {
           const statusPayload = payload.payload || {};
-          setIsRunningState(false);
-          setIsPausedState(false);
+          setIsRunning(false);
+          setIsPaused(false);
           if (statusPayload.run_summary) {
             // Suppress the top completion banner for finished tasks.
           }
-          setPendingAssistantResponseState(false);
+          dispatchConversation({ type: 'clear_pending' });
           clearStepActivity();
         }
       } catch (error) {
@@ -649,11 +689,10 @@ const App = () => {
     const submittedPromptValue = rawPrompt;
     setIsSending(true);
     setStatus('新しいタスクとしてエージェントに指示を送信しています…', 'progress');
-    setIsRunningState(true);
-    setIsPausedState(false);
+    setIsRunning(true);
+    setIsPaused(false);
     clearStepActivity();
-    setPendingAssistantResponseState(true);
-    setAssistantMessageCountAtSubmitState(assistantMessageCountRef.current);
+    dispatchConversation({ type: 'mark_pending' });
 
     if (promptInputRef.current) {
       promptInputRef.current.value = '';
@@ -697,14 +736,14 @@ const App = () => {
       }
       const err = error as { message?: string };
       setStatus(err.message || 'エージェントへの送信に失敗しました。', 'error');
-      setPendingAssistantResponseState(false);
+      dispatchConversation({ type: 'clear_pending' });
       clearStepActivity();
       shouldContinueRunning = false;
     } finally {
       setIsSending(false);
-      setIsRunningState(shouldContinueRunning);
+      setIsRunning(shouldContinueRunning);
       if (!shouldContinueRunning) {
-        setIsPausedState(false);
+        setIsPaused(false);
       }
     }
   };
@@ -721,8 +760,8 @@ const App = () => {
         errorMessage: isPaused ? '再開に失敗しました。' : '一時停止に失敗しました。',
         throwOnParseError: false,
       });
-      const nextPaused = !isPausedRef.current;
-      setIsPausedState(nextPaused);
+      const nextPaused = !latestRunStateRef.current.isPaused;
+      setIsPaused(nextPaused);
       setStatus(
         nextPaused ? 'エージェントを一時停止しました。' : 'エージェントを再開しました。',
         'info'
@@ -753,8 +792,8 @@ const App = () => {
       updateConversationState(data.messages || [], { syncStep: true });
       requestScrollToBottom();
       setStatus('履歴をリセットしました。', 'success');
-      setIsRunningState(false);
-      setIsPausedState(false);
+      setIsRunning(false);
+      setIsPaused(false);
     } catch (error) {
       const err = error as { message?: string };
       setStatus(err.message || '履歴のリセットに失敗しました。', 'error');
