@@ -11,6 +11,7 @@ from browser_use.llm.exceptions import ModelProviderError
 from browser_use.llm.messages import SystemMessage, UserMessage
 
 from ..core.config import logger
+from ..core.env import _CONVERSATION_CONTEXT_WINDOW
 from ..core.exceptions import AgentControllerError
 from .llm_factory import _create_selected_llm
 
@@ -219,13 +220,15 @@ async def _fallback_to_text_parsing(llm: Any, messages: list[Any]) -> dict[str, 
 
 def _trim_conversation_history(
 	conversation_history: list[dict[str, Any]],
-	window_size: int = 5,
+	window_size: int | None = None,
 ) -> list[dict[str, Any]]:
 	"""Keep the first user input and the most recent messages up to ``window_size``.
 
 	The first user message anchors context, and the tail keeps the latest turns
 	for the LLM. Duplicates are removed using message ids when present.
 	"""
+	if window_size is None:
+		window_size = _CONVERSATION_CONTEXT_WINDOW
 	if not conversation_history or window_size <= 0:
 		return conversation_history
 

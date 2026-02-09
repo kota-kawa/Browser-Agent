@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from ..core.config import logger
+from ..core.env import _CONVERSATION_CONTEXT_WINDOW
 from ..core.exceptions import AgentControllerError
 from ..services.agent_runtime import finalize_summary, get_agent_controller
 from ..services.conversation_review import _analyze_conversation_history
@@ -19,6 +21,41 @@ from ..services.history_store import (
 from .utils import read_json_payload
 
 router = APIRouter()
+
+_STEP_MESSAGE_RE = re.compile(r'^ステップ\\d+')
+
+
+def _build_recent_conversation_context(
+	messages: list[dict[str, Any]],
+	limit: int,
+) -> str | None:
+	if limit <= 0 or not messages:
+		return None
+
+	filtered: list[dict[str, str]] = []
+	for msg in messages:
+		if not isinstance(msg, dict):
+			continue
+		role = msg.get('role')
+		content = (msg.get('content') or '').strip()
+		if not content:
+			continue
+		if role == 'assistant' and _STEP_MESSAGE_RE.match(content):
+			continue
+		filtered.append({'role': role, 'content': content})
+
+	if not filtered:
+		return None
+
+	tail = filtered[-limit:]
+	if not tail:
+		return None
+
+	lines = ['以下は直近の会話履歴です。必要に応じて参照してください。']
+	for entry in tail:
+		role_label = 'ユーザー' if entry['role'] == 'user' else 'アシスタント'
+		lines.append(f'{role_label}: {entry["content"]}')
+	return '\n'.join(lines)
 
 
 @router.post('/api/chat')
@@ -216,8 +253,18 @@ async def chat(request: Request) -> JSONResponse:
 			except Exception:
 				logger.exception('Failed to report error in on_complete')
 
+	context_message = _build_recent_conversation_context(
+		_copy_history(),
+		_CONVERSATION_CONTEXT_WINDOW,
+	)
+
 	try:
-		controller.run(prompt, background=True, completion_callback=on_complete)
+		controller.run(
+			prompt,
+			background=True,
+			completion_callback=on_complete,
+			additional_system_message=context_message,
+		)
 	except AgentControllerError as exc:
 		message = finalize_summary(f'エージェントの実行に失敗しました: {exc}')
 		logger.warning(message)
