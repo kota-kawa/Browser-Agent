@@ -327,6 +327,117 @@
   color: var(--text-muted);
 }
 
+.page-index .vision-toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.9));
+}
+
+.page-index .vision-toggle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.page-index .vision-toggle-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.page-index .vision-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.page-index .vision-badge.is-ok {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.page-index .vision-badge.is-off {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.page-index .vision-badge.is-pending {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.page-index .vision-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px -20px rgba(15, 23, 42, 0.35);
+}
+
+.page-index .vision-toggle input {
+  display: none;
+}
+
+.page-index .vision-toggle-slider {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  transition: background 0.2s ease;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.5);
+}
+
+.page-index .vision-toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 6px 12px -6px rgba(15, 23, 42, 0.45);
+  transition: transform 0.2s ease;
+}
+
+.page-index .vision-toggle input:checked + .vision-toggle-slider {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.page-index .vision-toggle input:checked + .vision-toggle-slider::after {
+  transform: translateX(18px);
+}
+
+.page-index .vision-toggle-label {
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: 0.02em;
+}
+
+.page-index .vision-toggle-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
 
 .page-index .chat-header-controls .connection-indicator {
   width: 100%;

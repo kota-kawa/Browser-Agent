@@ -10,8 +10,6 @@ from ..core.config import logger
 
 # List of models that are not multimodal and should not receive vision inputs
 NON_MULTIMODAL_MODELS = [
-	'claude-haiku-4-5',
-	'claude-opus-4-5',
 	'llama-3.3-70b-versatile',
 	'llama-3.1-8b-instant',
 	'openai/gpt-oss-20b',

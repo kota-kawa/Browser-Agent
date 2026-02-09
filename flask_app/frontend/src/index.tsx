@@ -19,6 +19,7 @@ import type {
   PauseResumeResponse,
   ResetResponse,
   SSEEvent,
+  VisionState,
 } from './types/api';
 import type { IndexAppProps } from './types/app';
 import { getJson, post, postJson } from './lib/api';
@@ -37,6 +38,14 @@ type StatusVariant = 'muted' | 'info' | 'success' | 'warning' | 'error' | 'progr
 type StepInfo = {
   stepNumber: number;
   detail: string;
+};
+
+type VisionStateView = {
+  supported: boolean | null;
+  effective: boolean;
+  userEnabled: boolean;
+  loading: boolean;
+  error: string;
 };
 
 type ConversationState = {
@@ -338,6 +347,14 @@ const App = () => {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [selectedModelValue, setSelectedModelValue] = useState('');
+  const [visionState, setVisionState] = useState<VisionStateView>({
+    supported: null,
+    effective: false,
+    userEnabled: true,
+    loading: true,
+    error: '',
+  });
+  const [visionBusy, setVisionBusy] = useState(false);
   const [stepInProgress, setStepInProgress] = useState(false);
   const [currentStepNumber, setCurrentStepNumber] = useState<number | null>(null);
   const [currentStepDetail, setCurrentStepDetail] = useState('');
@@ -512,6 +529,28 @@ const App = () => {
     [setStatus]
   );
 
+  const refreshVisionState = useCallback(async () => {
+    try {
+      const { data } = await getJson<VisionState>('/api/vision', {
+        throwOnNonOk: false,
+      });
+      setVisionState({
+        supported: !!data.model_supported,
+        effective: !!data.effective,
+        userEnabled: !!data.user_enabled,
+        loading: false,
+        error: '',
+      });
+    } catch (error) {
+      console.error('Failed to load vision state', error);
+      setVisionState((prev) => ({
+        ...prev,
+        loading: false,
+        error: 'スクリーンショット状態の取得に失敗しました。',
+      }));
+    }
+  }, []);
+
   const applyModelSelection = useCallback(
     async (selection: ModelSelection) => {
       try {
@@ -522,9 +561,11 @@ const App = () => {
       } catch (error) {
         const err = error as { message?: string };
         setStatus(err.message, 'error');
+      } finally {
+        refreshVisionState();
       }
     },
-    [setStatus]
+    [refreshVisionState, setStatus]
   );
 
   const setupEventStream = useCallback(() => {
@@ -563,6 +604,7 @@ const App = () => {
           } else {
             setStatus('モデル設定が更新されました。', 'info');
           }
+          refreshVisionState();
         } else if (payload.type === 'status' && payload.payload) {
           const statusPayload = payload.payload || {};
           setIsRunning(false);
@@ -584,12 +626,13 @@ const App = () => {
       eventSource.close();
       reconnectTimerRef.current = window.setTimeout(setupEventStream, 2000);
     };
-  }, [appendOrUpdateMessage, clearStepActivity, handleResetEvent, loadModels, setStatus]);
+  }, [appendOrUpdateMessage, clearStepActivity, handleResetEvent, loadModels, refreshVisionState, setStatus]);
 
   useEffect(() => {
     setupEventStream();
     loadHistory();
     loadModels();
+    refreshVisionState();
 
     return () => {
       if (eventSourceRef.current) {
@@ -609,7 +652,7 @@ const App = () => {
         statusClearTimerRef.current = null;
       }
     };
-  }, [loadHistory, loadModels, setupEventStream]);
+  }, [loadHistory, loadModels, refreshVisionState, setupEventStream]);
 
   const shouldBusy = pendingAssistantResponse || stepInProgress;
 
@@ -829,6 +872,57 @@ const App = () => {
     }
   };
 
+  const handleVisionToggle = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const enabled = event.target.checked;
+    setVisionBusy(true);
+    try {
+      await postJson('/api/vision', { enabled }, { parseJson: false, throwOnNonOk: false });
+      setStatus(
+        enabled ? 'スクリーンショット送信を有効にしました。' : 'スクリーンショット送信を停止しました。',
+        'info'
+      );
+    } catch (error) {
+      console.error('Failed to update vision toggle', error);
+      setStatus('スクリーンショット設定の更新に失敗しました。', 'error');
+    } finally {
+      setVisionBusy(false);
+      refreshVisionState();
+    }
+  };
+
+  const selectedModelProvider = useMemo(() => {
+    if (!selectedModelValue) {
+      return '';
+    }
+    try {
+      const parsed = JSON.parse(selectedModelValue) as ModelSelection;
+      return (parsed.provider || '').toLowerCase();
+    } catch (error) {
+      return '';
+    }
+  }, [selectedModelValue]);
+  const showVisionToggle = ['openai', 'claude', 'gemini'].includes(selectedModelProvider);
+  const visionBadgeText = visionState.loading
+    ? 'CHECKING'
+    : visionState.supported
+      ? 'SUPPORTED'
+      : 'UNSUPPORTED';
+  const visionBadgeClass = `vision-badge${
+    visionState.loading ? ' is-pending' : visionState.supported ? ' is-ok' : ' is-off'
+  }`;
+  let visionHint = 'モデルがサポートしていればスクリーンショットを送信します。';
+  if (visionState.error) {
+    visionHint = visionState.error;
+  } else if (!visionState.loading) {
+    if (!visionState.supported) {
+      visionHint = '選択中のモデルはスクリーンショット非対応です。';
+    } else if (visionState.effective) {
+      visionHint = 'スクリーンショットをモデルに送信しています。';
+    } else {
+      visionHint = 'スクリーンショット送信を停止中です。';
+    }
+  }
+
   const shouldDisablePause = !isRunning || isPausing;
   const pauseLabel = !isRunning ? '一時停止' : isPaused ? '再開' : '一時停止';
   const messagesEmpty = conversation.length === 0 && !thinkingVisible;
@@ -937,6 +1031,28 @@ const App = () => {
                       </select>
                     </div>
                   </div>
+                  {showVisionToggle && (
+                    <div className="vision-toggle-group" aria-live="polite">
+                      <div className="vision-toggle-header">
+                        <span className="vision-toggle-title">スクリーンショット参照</span>
+                        <span className={visionBadgeClass}>{visionBadgeText}</span>
+                      </div>
+                      <label className="vision-toggle">
+                        <input
+                          type="checkbox"
+                          id="vision-toggle"
+                          checked={visionState.userEnabled}
+                          disabled={visionState.loading || !visionState.supported || visionBusy}
+                          onChange={handleVisionToggle}
+                        />
+                        <span className="vision-toggle-slider" aria-hidden="true"></span>
+                        <span className="vision-toggle-label">
+                          {visionState.userEnabled ? 'ON' : 'OFF'}
+                        </span>
+                      </label>
+                      <p className="vision-toggle-hint">{visionHint}</p>
+                    </div>
+                  )}
                   <ConnectionIndicator state={connectionState} />
                   <div className="chat-controls" role="group" aria-label="チャット操作">
                     <button
