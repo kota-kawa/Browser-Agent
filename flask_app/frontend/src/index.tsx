@@ -294,7 +294,7 @@ const ThinkingMessage = ({ title, sub, timestamp }: ThinkingMessageProps) => {
   return (
     <div className="msg system compact assistant pending thinking" id="thinking-message">
       <div className="thinking-header">
-        <span className="thinking-orb" aria-hidden="true"></span>
+        <span className="thinking-agent-icon" aria-hidden="true"></span>
         <span className="thinking-labels">
           <span className="thinking-title">{title}</span>
           <span className="thinking-sub">{sub}</span>
