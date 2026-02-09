@@ -1,36 +1,20 @@
-<!DOCTYPE html>
-<html lang="ja">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+{% extends "base.html" %}
+
+{% block theme_color %}
     <meta name="theme-color" content="#eef3fb" />
-    <title>ブラウザ制御デモ</title>
-    <link
-      rel="icon"
-      type="image/png"
-      href="/favicon.png"
-      sizes="512x512"
-    />
-    <link
-      rel="icon"
-      type="image/x-icon"
-      href="/favicon.ico"
-    />
-    <link
-      rel="shortcut icon"
-      href="/favicon.ico"
-    />
-    <link
-      rel="apple-touch-icon"
-      href="/favicon.png"
-    />
-    <link rel="stylesheet" href="{{ request.url_for('static', path='css/style.css') }}" />
-  </head>
-  <body>
-    <div id="root"></div>
+{% endblock %}
+
+{% block title %}ブラウザ制御デモ{% endblock %}
+
+{% block body_class %}page-index{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{{ request.url_for('static', path='css/index.css') }}" />
+{% endblock %}
+
+{% block body_scripts %}
     <script>
       window.__INDEX_APP_PROPS__ = {{ {'browserUrl': browser_url}|tojson }};
     </script>
     <script type="module" src="{{ request.url_for('static', path='dist_vite/index.js') }}"></script>
-  </body>
-</html>
+{% endblock %}

@@ -1,14 +1,14 @@
-<!DOCTYPE html>
-<html lang="ja">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>WebArena 評価 - ブラウザエージェント</title>
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="stylesheet" href="{{ request.url_for('static', path='css/style.css') }}" />
-  </head>
-  <body>
-    <div id="root"></div>
+{% extends "base.html" %}
+
+{% block title %}WebArena 評価 - ブラウザエージェント{% endblock %}
+
+{% block body_class %}page-webarena{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{{ request.url_for('static', path='css/webarena.css') }}" />
+{% endblock %}
+
+{% block body_scripts %}
     <script>
       window.__WEBARENA_APP_PROPS__ = {{
         {
@@ -19,5 +19,4 @@
       }};
     </script>
     <script type="module" src="{{ request.url_for('static', path='dist_vite/webarena.js') }}"></script>
-  </body>
-</html>
+{% endblock %}

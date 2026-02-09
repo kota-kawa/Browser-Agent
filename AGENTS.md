@@ -11,8 +11,8 @@
 - `flask_app/` : Web サーバー、SSE、静的 UI、Docker `Dockerfile.flask`、`requirements.txt` を含むアプリ本体 (FastAPI)。
   - `core/` (設定/環境), `services/` (実行ロジック), `routes/` (HTTP), `prompts/` (system prompt) に分割。
   - `webarena/`: WebArena ベンチマーク実行環境とルート定義。
-  - `frontend/`: Vite + React フロントエンドソース。ビルド成果物は `static/dist/` に出力。
-  - `templates/index.html` + `static/css/style.css` が UI。
+- `frontend/`: Vite + React フロントエンドソース。ビルド成果物は `static/dist/` に出力。
+- `templates/*.html` + `static/css/base.css` とページ別 CSS (`index.css`, `agent_result.css`, `webarena.css`) が UI。
 - `docs/` : Mintlify 互換ドキュメント。プレビューは `cd docs && npx mintlify dev` を使用。
 - `examples/` : サンプル集。
 - `docker/` とトップレベル `Dockerfile*` : Chrome/VNC コンテナと FastAPI コンテナのビルド設定。
