@@ -27,7 +27,12 @@ class SystemPrompt:
 		self.max_actions_per_step = max_actions_per_step
 		self.use_thinking = use_thinking
 		self.flash_mode = flash_mode
-		self.current_datetime_line = datetime.now().strftime('現在の日時ー%Y年%m月%d日%H時%M分')
+		now = datetime.now().astimezone()
+		weekday_ja = '月火水木金土日'[now.weekday()]
+		self.current_datetime_line = (
+			f'{now.strftime("%Y-%m-%d %H:%M %Z (UTC%z, %A)")}'
+			f' / ローカル日時: {now.strftime("%Y年%m月%d日")}({weekday_ja}) {now.strftime("%H時%M分")} {now.strftime("%Z")}'
+		)
 		prompt = ''
 		if override_system_message:
 			prompt = override_system_message
@@ -285,20 +290,31 @@ Available tabs:
 """
 		return browser_state
 
+	def _get_current_datetime_line(self) -> str:
+		now = datetime.now().astimezone()
+		weekday_ja = '月火水木金土日'[now.weekday()]
+		return (
+			f'{now.strftime("%Y-%m-%d %H:%M %Z (UTC%z, %A)")}'
+			f' / ローカル日時: {now.strftime("%Y年%m月%d日")}({weekday_ja}) {now.strftime("%H時%M分")} {now.strftime("%Z")}'
+		)
+
 	def _get_agent_state_description(self) -> str:
 		if self.step_info:
 			step_info_description = f'Step {self.step_info.step_number + 1}. Maximum steps: {self.step_info.max_steps}\n'
 		else:
 			step_info_description = ''
 
-		time_str = datetime.now().strftime('%Y-%m-%d')
-		step_info_description += f'Current date: {time_str}'
+		current_datetime_line = self._get_current_datetime_line()
+		step_info_description += f'Current datetime (authoritative): {current_datetime_line}'
 
 		_todo_contents = self.file_system.get_todo_contents() if self.file_system else ''
 		if not len(_todo_contents):
 			_todo_contents = '[Current todo.md is empty, fill it with your plan when applicable]'
 
 		agent_state = f"""
+<current_datetime>
+{current_datetime_line}
+</current_datetime>
 <user_request>
 {self.task}
 </user_request>

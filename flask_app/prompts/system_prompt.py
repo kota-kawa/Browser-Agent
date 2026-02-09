@@ -106,7 +106,11 @@ def _build_custom_system_prompt(
 		)
 
 	now = datetime.now().astimezone()
-	current_datetime_line = now.strftime('%Y-%m-%d %H:%M %Z (UTC%z, %A)')
+	weekday_ja = '月火水木金土日'[now.weekday()]
+	current_datetime_line = (
+		f'{now.strftime("%Y-%m-%d %H:%M %Z (UTC%z, %A)")}'
+		f' / ローカル日時: {now.strftime("%Y年%m月%d日")}({weekday_ja}) {now.strftime("%H時%M分")} {now.strftime("%Z")}'
+	)
 	user_profile_text = load_user_profile()
 	if not user_profile_text:
 		user_profile_text = '未設定'

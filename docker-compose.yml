@@ -12,7 +12,6 @@ services:
       - browser_agent_dist:/app/flask_app/static/dist
     environment:
       - EMBED_BROWSER_URL=http://127.0.0.1:7900/vnc_lite.html?autoconnect=1&resize=scale&scale=auto&view_clip=false
-      - WATCHFILES_FORCE_POLLING=1
     command:
       - uvicorn
       - flask_app.app:app
@@ -20,11 +19,6 @@ services:
       - 0.0.0.0
       - --port
       - '5005'
-      - --reload
-      - --reload-dir
-      - /app/flask_app
-      - --reload-dir
-      - /app/browser_use
     depends_on:
       - browser
     networks:
