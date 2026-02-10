@@ -1,3 +1,5 @@
+// JP: WebArena UI のエントリポイント
+// EN: Entry point for the WebArena UI
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import type {
@@ -19,6 +21,8 @@ const supportedSites = Array.isArray(initialData.supportedSites)
   ? initialData.supportedSites
   : [];
 
+// JP: タスク一覧のページサイズ
+// EN: Page size for the task list
 const PER_PAGE = 20;
 
 type VisionStateView = {
@@ -48,6 +52,8 @@ type LogState =
   | { type: 'error'; message?: string; prefix?: string }
   | { type: 'batch'; batch: BatchState };
 
+// JP: モデル選択を JSON 文字列に変換
+// EN: Encode model selection as JSON string
 const encodeModelSelection = (selection: ModelSelection | ModelOption | null | undefined) => {
   if (!selection || !selection.provider || !selection.model) {
     return null;
@@ -55,6 +61,8 @@ const encodeModelSelection = (selection: ModelSelection | ModelOption | null | u
   return JSON.stringify({ provider: selection.provider, model: selection.model });
 };
 
+// JP: サイト名を UI 表示向けに整形
+// EN: Format site label for display
 const formatSiteLabel = (site: string) => {
   if (!site) {
     return 'ALL';
@@ -65,6 +73,8 @@ const formatSiteLabel = (site: string) => {
     .join(' ');
 };
 
+// JP: WebArena 管理画面のメインコンポーネント
+// EN: Main component for WebArena console
 const App = () => {
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [selectedModelValue, setSelectedModelValue] = useState('');
@@ -126,6 +136,8 @@ const App = () => {
     }
   }, []);
 
+  // JP: モデル一覧と現在選択を取得
+  // EN: Load model list and current selection
   const loadModels = useCallback(async () => {
     try {
       const { data } = await getJson<
@@ -170,6 +182,8 @@ const App = () => {
     });
   }, []);
 
+  // JP: Vision 対応状況を取得
+  // EN: Refresh vision support state
   const refreshVisionState = useCallback(async () => {
     try {
       const { data } = await getJson<VisionState>('/api/vision', {
@@ -192,6 +206,8 @@ const App = () => {
     }
   }, []);
 
+  // JP: タスク一覧を取得（ページング/サイトフィルタ対応）
+  // EN: Load tasks with pagination and site filter
   const loadTasks = useCallback(async () => {
     setTasksLoading(true);
     setTasksError('');
@@ -289,6 +305,8 @@ const App = () => {
     handleTaskSelect('custom');
   };
 
+  // JP: サイトフィルタ変更時にページと選択をリセット
+  // EN: Reset pagination/selection when changing the site filter
   const handleSiteFilter = (site: string) => {
     setSelectedSite(site || '');
     setCurrentPage(1);
@@ -296,6 +314,8 @@ const App = () => {
     setIsCustom(false);
   };
 
+  // JP: 単体タスク実行のハンドラ
+  // EN: Handler to run a single task
   const handleRun = async () => {
     if (selectedTaskId === null && !isCustom) {
       alert('タスクを選択してください。');
@@ -354,6 +374,8 @@ const App = () => {
     }
   };
 
+  // JP: 一括実行（バッチ）のハンドラ
+  // EN: Handler to run tasks in batch
   const handleBatchRun = async () => {
     setStatus('一括実行中...', 'var(--accent-info)');
     setBatchInProgress(true);

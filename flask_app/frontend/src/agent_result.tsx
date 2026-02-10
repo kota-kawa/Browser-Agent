@@ -1,3 +1,5 @@
+// JP: エージェント結果画面のエントリポイント
+// EN: Entry point for the agent result screen
 import React, { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { AgentResultAppProps } from './types/app';
@@ -5,6 +7,8 @@ import type { AgentResultAppProps } from './types/app';
 const initialData: Partial<AgentResultAppProps> = window.__AGENT_RESULT_APP_PROPS__ || {};
 const browserUrl = initialData.browserUrl || '';
 
+// JP: ブラウザ iframe の高さをツールバー分だけ調整する
+// EN: Resize iframe to account for toolbar height
 const App = () => {
   useEffect(() => {
     const browserIframe = document.querySelector<HTMLIFrameElement>('.browser-pane iframe');

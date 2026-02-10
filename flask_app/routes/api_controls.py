@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# JP: エージェントの制御系 API
+# EN: Control endpoints for the agent
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
@@ -13,6 +15,8 @@ router = APIRouter()
 
 @router.post('/api/reset')
 def reset_conversation() -> JSONResponse:
+	# JP: 既存セッションをリセットし、履歴も初期化
+	# EN: Reset controller (if any) and clear history
 	controller = get_controller_if_initialized()
 	if controller is not None:
 		try:
@@ -33,6 +37,8 @@ def reset_conversation() -> JSONResponse:
 
 @router.post('/api/pause')
 def pause_agent() -> JSONResponse:
+	# JP: 実行中のエージェントを一時停止
+	# EN: Pause a running agent
 	try:
 		controller = get_existing_controller()
 		controller.pause()
@@ -46,6 +52,8 @@ def pause_agent() -> JSONResponse:
 
 @router.post('/api/resume')
 def resume_agent() -> JSONResponse:
+	# JP: 一時停止中のエージェントを再開
+	# EN: Resume a paused agent
 	try:
 		controller = get_existing_controller()
 		controller.resume()

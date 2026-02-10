@@ -1,3 +1,5 @@
+// JP: メインチャットUIのエントリポイント
+// EN: Entry point for the main chat UI
 import React, {
   useState,
   useEffect,
@@ -25,6 +27,8 @@ import type {
 import type { IndexAppProps } from './types/app';
 import { getJson, post, postJson } from './lib/api';
 
+// JP: UIの表示タイミングや文言の定数
+// EN: UI timing and copy constants
 const MIN_THINKING_MS = 600;
 const DEFAULT_BUSY_TITLE = 'AIが考えています';
 const DEFAULT_BUSY_SUB = '見つけた情報から回答を組み立て中';
@@ -34,6 +38,8 @@ const USER_PROFILE_MAX_LENGTH = 2000;
 const initialData: Partial<IndexAppProps> = window.__INDEX_APP_PROPS__ || {};
 const browserUrl = initialData.browserUrl || '';
 
+// JP: 接続状態と表示種別の型定義
+// EN: Types for connection state and status variants
 type ConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected';
 type StatusVariant = 'muted' | 'info' | 'success' | 'warning' | 'error' | 'progress';
 
@@ -64,12 +70,16 @@ type ConversationAction =
   | { type: 'clear_pending' }
   | { type: 'reset' };
 
+// JP: 最新値を参照するための簡易フック
+// EN: Small hook to keep a ref to the latest value
 const useLatest = <T,>(value: T) => {
   const ref = useRef(value);
   ref.current = value;
   return ref;
 };
 
+// JP: 「考え中」表示用のタイムスタンプ整形
+// EN: Format timestamp for the thinking indicator
 const formatThinkingTimestamp = (timestamp: number | string) => {
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) {
@@ -87,6 +97,8 @@ const formatThinkingTimestamp = (timestamp: number | string) => {
     .replace(/\//g, '/');
 };
 
+// JP: メッセージ時刻をUI向けに整形
+// EN: Format message timestamp for UI
 const formatMessageTimestamp = (timestamp: string) => {
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) {
@@ -103,6 +115,8 @@ const formatMessageTimestamp = (timestamp: string) => {
   };
 };
 
+// JP: ステップログから進行中情報を抽出
+// EN: Extract step info from step-log messages
 const extractStepInfo = (content: string | null | undefined): StepInfo | null => {
   if (!content || typeof content !== 'string') {
     return null;
@@ -136,6 +150,8 @@ const extractStepInfo = (content: string | null | undefined): StepInfo | null =>
   return { stepNumber, detail };
 };
 
+// JP: 実行サマリメッセージかどうか判定
+// EN: Detect run summary messages
 const isRunSummaryMessage = (content: string | null | undefined) => {
   if (!content || typeof content !== 'string') {
     return false;
@@ -188,6 +204,8 @@ const buildConversationState = (
   };
 };
 
+// JP: 会話履歴の更新を集中管理する reducer
+// EN: Reducer that manages conversation updates
 const conversationReducer = (
   state: ConversationState,
   action: ConversationAction
@@ -239,6 +257,8 @@ type MessageBubbleProps = {
   content?: string | null;
 };
 
+// JP: Markdown をサニタイズして表示するバブル
+// EN: Bubble that renders sanitized Markdown
 const MessageBubble = ({ content }: MessageBubbleProps) => {
   const text = typeof content === 'string' ? content : '';
   const htmlContent = useMemo(() => {
@@ -256,6 +276,8 @@ type MessageItemProps = {
   message: ChatMessage;
 };
 
+// JP: 1件のチャットメッセージ表示
+// EN: Single chat message item
 const MessageItem = ({ message }: MessageItemProps) => {
   const formatted = useMemo(
     () => formatMessageTimestamp(message.timestamp),
@@ -290,6 +312,8 @@ type ThinkingMessageProps = {
   timestamp: number;
 };
 
+// JP: 進行中表示（Thinking）
+// EN: Thinking indicator component
 const ThinkingMessage = ({ title, sub, timestamp }: ThinkingMessageProps) => {
   return (
     <div className="msg system compact assistant pending thinking" id="thinking-message">
@@ -309,6 +333,8 @@ type ConnectionIndicatorProps = {
   state: ConnectionState;
 };
 
+// JP: SSE接続状態の表示
+// EN: Connection state indicator for SSE
 const ConnectionIndicator = ({ state }: ConnectionIndicatorProps) => {
   let message = '接続を待機しています';
   if (state === 'connected') {
@@ -333,6 +359,8 @@ const ConnectionIndicator = ({ state }: ConnectionIndicatorProps) => {
   );
 };
 
+// JP: メインUIコンポーネント
+// EN: Main UI component
 const App = () => {
   const [conversationState, dispatchConversation] = useReducer(conversationReducer, {
     messages: [],
@@ -607,6 +635,8 @@ const App = () => {
     [refreshVisionState, setStatus]
   );
 
+  // JP: SSEでリアルタイム更新を受け取る
+  // EN: Set up SSE stream for real-time updates
   const setupEventStream = useCallback(() => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
@@ -667,6 +697,8 @@ const App = () => {
     };
   }, [appendOrUpdateMessage, clearStepActivity, handleResetEvent, loadModels, refreshVisionState, setStatus]);
 
+  // JP: 初期ロード時に履歴・設定・SSEを同期
+  // EN: Sync history/config/SSE on initial load
   useEffect(() => {
     setupEventStream();
     loadHistory();
@@ -761,6 +793,8 @@ const App = () => {
     }
   }, [conversation, thinkingVisible]);
 
+  // JP: 新規タスクとしてプロンプトを送信
+  // EN: Submit a new prompt as a fresh task
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const rawPrompt = promptInputRef.current ? promptInputRef.current.value : '';
@@ -832,6 +866,8 @@ const App = () => {
     }
   };
 
+  // JP: 一時停止/再開のトグル
+  // EN: Pause/resume toggle handler
   const handlePauseToggle = async () => {
     if (!isRunning || isPausing) {
       return;
@@ -858,6 +894,8 @@ const App = () => {
     }
   };
 
+  // JP: 会話履歴のリセット
+  // EN: Reset conversation history
   const handleReset = async () => {
     if (isResetting) {
       return;
@@ -912,6 +950,8 @@ const App = () => {
     }
   };
 
+  // JP: Vision（スクリーンショット送信）設定の切替
+  // EN: Toggle vision (screenshot) setting
   const handleVisionToggle = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const enabled = event.target.checked;
     setVisionBusy(true);

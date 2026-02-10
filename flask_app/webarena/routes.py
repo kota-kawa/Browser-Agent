@@ -12,6 +12,8 @@ from contextlib import suppress
 from difflib import SequenceMatcher
 from urllib.parse import urlparse
 
+# JP: WebArena ベンチマーク実行用ルート
+# EN: Routes for running WebArena benchmark tasks
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -27,14 +29,18 @@ logger = logging.getLogger(__name__)
 
 templates = Jinja2Templates(directory=str(APP_TEMPLATE_DIR))
 
-# Only these environments are provisioned locally
+# JP: ローカルで利用可能な環境のみ許可
+# EN: Only these environments are provisioned locally
 SUPPORTED_SITES = {'shopping', 'shopping_admin', 'reddit', 'gitlab'}
 
-# Load WebArena tasks from JSON and filter to supported environments
+# JP: タスク一覧を読み込み、サポート対象に絞る
+# EN: Load tasks from JSON and filter to supported environments
 TASKS_FILE = os.path.join(os.path.dirname(__file__), 'tasks_data/test.json')
 
 
 def _load_tasks():
+	# JP: tasks_data/test.json を読み込み、対応サイトのみ抽出
+	# EN: Load tasks_data/test.json and keep only supported-site tasks
 	try:
 		with open(TASKS_FILE) as f:
 			all_tasks = json.load(f)
@@ -87,6 +93,8 @@ def _build_default_env_urls():
 	When running the app directly on the host machine, we still want to keep
 	the existing localhost-based defaults so the UI works without Docker.
 	"""
+	# JP: Docker 内外で到達可能な URL を切り替える
+	# EN: Switch defaults based on whether we are inside Docker
 	in_container = os.path.exists('/.dockerenv') or os.environ.get('CONTAINERIZED') == '1'
 
 	container_defaults = {
@@ -116,12 +124,15 @@ def _build_default_env_urls():
 	}
 
 
-# Default base URLs for WebArena environments (auto-select host vs container)
+# JP: Docker/ホストを自動判定した既定の環境URL
+# EN: Default env URLs auto-selected for host vs container
 DEFAULT_ENV_URLS = _build_default_env_urls()
 
 
 @router.get('/webarena')
 def index(request: Request):
+	# JP: WebArena UI を返す
+	# EN: Serve the WebArena UI
 	return templates.TemplateResponse(
 		'webarena.html',
 		{
@@ -135,6 +146,8 @@ def index(request: Request):
 
 @router.get('/webarena/tasks')
 def get_tasks(page: int = 1, per_page: int = 50, site: str | None = None):
+	# JP: ページングされたタスク一覧を返す
+	# EN: Return a paginated list of tasks
 	site_filter = site
 
 	tasks = WEBARENA_TASKS
@@ -149,6 +162,8 @@ def get_tasks(page: int = 1, per_page: int = 50, site: str | None = None):
 
 
 def _resolve_start_url(task, env_urls_override=None):
+	# JP: タスク内のプレースホルダを実URLに置換
+	# EN: Replace placeholders in task start_url with actual URLs
 	start_url = task.get('start_url', '')
 	env_urls = DEFAULT_ENV_URLS.copy()
 	if env_urls_override:
@@ -175,6 +190,8 @@ def _reset_state(controller, sites, start_url: str | None = None):
 	- Always reset the browser controller session (clears cookies/storage).
 	- Optionally call external reset hook via command or HTTP endpoint for backend state.
 	"""
+	# JP: タスク間の状態をできる限りリセットする
+	# EN: Best-effort reset between tasks
 	# 1) Reset browser session
 	try:
 		controller.reset()
@@ -216,6 +233,8 @@ def _reset_state(controller, sites, start_url: str | None = None):
 			logger.warning('No WEBARENA_RESET_COMMAND/URL configured. Only browser session was reset.')
 
 
+# JP: WebArena のログイン情報を system prompt に追加
+# EN: Inject WebArena credentials into the system prompt
 WEBARENA_CREDENTIALS_PROMPT = f"""
 ### WebArena Environment Credentials
 For tasks in the WebArena environment, use the following credentials if required:
@@ -230,6 +249,8 @@ def _run_single_task(task, controller, env_urls_override=None, start_url_overrid
 	"""
 	Execute one WebArena task with the shared controller and return the result payload.
 	"""
+	# JP: タスク1件を実行し、結果のサマリを作成
+	# EN: Execute a single task and build a result payload
 	intent = task.get('intent', '')
 	if not intent:
 		raise ValueError('Task is missing intent.')
@@ -273,6 +294,8 @@ def _run_single_task(task, controller, env_urls_override=None, start_url_overrid
 def _compute_aggregate_metrics(results: list[dict], selected_tasks: list[dict], max_steps: int) -> dict:
 	"""Compute extended aggregate statistics for a WebArena batch run."""
 
+	# JP: 成功率やステップ統計などの集計指標を計算
+	# EN: Compute aggregate metrics (success rate, step stats, etc.)
 	if not results:
 		return {}
 
@@ -338,6 +361,8 @@ def _apply_start_page_override(selected_site: str | None, env_urls_override: dic
 	When the WebArena UI is used with an environment filter, start the agent on that site's base URL.
 	This affects only the WebArena flow (root / is unchanged).
 	"""
+	# JP: サイトフィルタ時は対象サイトのURLを開始ページにする
+	# EN: Use the selected site's base URL as the start page when filtering
 	if not selected_site or selected_site not in SUPPORTED_SITES:
 		return None
 
@@ -354,6 +379,8 @@ def _evaluate_result(history, task, controller):
 	"""
 	Evaluation logic based on WebArena 'eval' fields.
 	"""
+	# JP: タスクに紐づく評価条件で成功/失敗を判定
+	# EN: Evaluate success based on task-specific criteria
 	if not task:
 		return 'Custom task - no automated evaluation'
 
@@ -379,6 +406,8 @@ def _evaluate_result(history, task, controller):
 
 	def _ensure_page_ready():
 		"""Wait briefly for document readiness to reduce false negatives."""
+		# JP: 読み込み完了待ちで誤判定を減らす
+		# EN: Wait for readiness to reduce false negatives
 		for _ in range(3):
 			try:
 				ready = controller.evaluate_in_browser('document.readyState')
@@ -523,6 +552,8 @@ def _evaluate_result(history, task, controller):
 
 @router.post('/webarena/run')
 async def run_task(request: Request):
+	# JP: 単体タスクの実行エンドポイント
+	# EN: Endpoint to run a single task
 	data = await read_json_payload(request)
 	task_id = data.get('task_id')
 	custom_task = data.get('custom_task')
@@ -582,6 +613,8 @@ async def run_batch(request: Request):
 	"""
 	Run a batch of supported WebArena tasks sequentially (no manual prompt input).
 	"""
+	# JP: タスクを順番に実行して集計結果を返す
+	# EN: Run tasks sequentially and return aggregate results
 	data = await read_json_payload(request)
 	env_urls_override = data.get('env_urls', {})
 	selected_site = data.get('selected_site')
@@ -612,6 +645,8 @@ async def run_batch(request: Request):
 	success_count = 0
 
 	for task in selected_tasks:
+		# JP: タスク単位で失敗してもバッチは継続
+		# EN: Continue batch even if a single task fails
 		try:
 			result = _run_single_task(task, controller, env_urls_override, start_override)
 			success_count += 1 if result.get('success') else 0
@@ -641,6 +676,8 @@ async def run_batch(request: Request):
 	}
 
 	# Save results to disk
+	# JP: 集計結果をローカルに保存
+	# EN: Persist batch results to disk
 	try:
 		output_dir = 'webarena_data'
 		if not os.path.exists(output_dir):
@@ -658,6 +695,8 @@ async def run_batch(request: Request):
 
 @router.post('/webarena/save_results')
 async def save_results(request: Request):
+	# JP: UI から送信された結果を保存・再計算する
+	# EN: Save UI-submitted results and recompute metrics
 	data = await read_json_payload(request)
 	results = data.get('results', [])
 
@@ -665,6 +704,8 @@ async def save_results(request: Request):
 		return JSONResponse({'error': 'No results provided'}, status_code=400)
 
 	# Reconstruct selected_tasks from result IDs for metric calculation
+	# JP: task_id から元タスクを復元して集計に利用
+	# EN: Rebuild task list from task_id for aggregation
 	task_map = {t['task_id']: t for t in WEBARENA_TASKS}
 	ordered_tasks = []
 	for r in results:

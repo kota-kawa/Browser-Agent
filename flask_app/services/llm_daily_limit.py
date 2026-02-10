@@ -4,6 +4,8 @@ import threading
 from dataclasses import dataclass
 from datetime import date, datetime
 
+# JP: LLM 呼び出し回数に日次制限を適用するラッパー
+# EN: Wrapper that applies a daily limit to LLM calls
 from browser_use.llm.base import BaseChatModel
 from browser_use.llm.exceptions import ModelRateLimitError
 
@@ -23,10 +25,14 @@ _STATE: _DailyLimitState | None = None
 
 
 def _today() -> date:
+	# JP: ローカル日付で日次切り替えを判定
+	# EN: Use local date for daily rollover
 	return datetime.now().date()
 
 
 def _get_state() -> _DailyLimitState | None:
+	# JP: 初回アクセス時に日次制限状態を生成
+	# EN: Initialize daily limit state on first access
 	global _STATE
 
 	if _STATE is not None:
@@ -46,6 +52,8 @@ def _get_state() -> _DailyLimitState | None:
 
 
 def _check_and_increment(state: _DailyLimitState, model: str | None) -> None:
+	# JP: 日付の切り替えと回数上限チェック
+	# EN: Reset counts on new day and enforce the limit
 	with state.lock:
 		today = _today()
 		if today != state.day:
@@ -61,6 +69,8 @@ def _check_and_increment(state: _DailyLimitState, model: str | None) -> None:
 
 
 def apply_daily_llm_limit(llm: BaseChatModel) -> BaseChatModel:
+	# JP: LLM の ainvoke をラップして回数制限を追加
+	# EN: Wrap llm.ainvoke to enforce a daily call limit
 	state = _get_state()
 	if state is None:
 		return llm

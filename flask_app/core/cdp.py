@@ -9,19 +9,27 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+# JP: CDP (Chrome DevTools Protocol) の検出/解決ロジック
+# EN: CDP (Chrome DevTools Protocol) detection and resolution utilities
 from .config import logger
 from .env import _env_int
 
+# JP: CDP URL 自動検出のチューニング値
+# EN: Tunables for CDP auto-detection
 _CDP_PROBE_TIMEOUT = float(os.environ.get('BROWSER_USE_CDP_TIMEOUT', '2.0'))
 _CDP_DETECTION_RETRIES = _env_int('BROWSER_USE_CDP_RETRIES', 5)
 _CDP_DETECTION_RETRY_DELAY = float(os.environ.get('BROWSER_USE_CDP_RETRY_DELAY', '1.5'))
 
+# JP: 一時的に作成した WebDriver セッションの後片付け用
+# EN: Cleanup hook for temporary WebDriver sessions
 _CDP_SESSION_CLEANUP: Callable[[], None] | None = None
 
 
 def _replace_cdp_session_cleanup(cleanup: Callable[[], None] | None) -> None:
 	"""Store a cleanup callback, closing any previously registered session."""
 
+	# JP: 既存のクリーンアップ関数を差し替える
+	# EN: Swap the current cleanup callback safely
 	global _CDP_SESSION_CLEANUP
 
 	previous = _CDP_SESSION_CLEANUP
@@ -34,6 +42,8 @@ def _replace_cdp_session_cleanup(cleanup: Callable[[], None] | None) -> None:
 def _consume_cdp_session_cleanup() -> Callable[[], None] | None:
 	"""Return and clear the currently registered CDP cleanup callback."""
 
+	# JP: 現在のクリーンアップ関数を取り出してクリアする
+	# EN: Pop the cleanup callback and clear it
 	global _CDP_SESSION_CLEANUP
 
 	cleanup = _CDP_SESSION_CLEANUP
@@ -42,6 +52,8 @@ def _consume_cdp_session_cleanup() -> Callable[[], None] | None:
 
 
 def _probe_cdp_candidate(base_url: str) -> str | None:
+	# JP: /json/version などの既知パスを巡回して WebSocket URL を取得
+	# EN: Probe known endpoints to extract a WebSocket debugger URL
 	base = base_url.rstrip('/')
 	paths = ('/json/version', '/devtools/version', '/json')
 	for path in paths:
@@ -77,6 +89,8 @@ def _probe_cdp_candidate(base_url: str) -> str | None:
 
 
 def _extract_cdp_url(capabilities: dict[str, Any]) -> str | None:
+	# JP: WebDriver capabilities から CDP URL を抽出
+	# EN: Extract CDP URL from WebDriver capabilities
 	for key in ('se:cdp', 'se:cdpUrl', 'se:cdpURL'):
 		raw_value = capabilities.get(key)
 		if isinstance(raw_value, str):
@@ -87,6 +101,8 @@ def _extract_cdp_url(capabilities: dict[str, Any]) -> str | None:
 
 
 def _cleanup_webdriver_session(base_endpoint: str, session_id: str) -> None:
+	# JP: 作成した WebDriver セッションを終了してリソースを解放
+	# EN: Terminate the temporary WebDriver session to free resources
 	delete_url = f'{base_endpoint}/session/{session_id}'
 	request = Request(delete_url, method='DELETE')
 	try:
@@ -97,6 +113,8 @@ def _cleanup_webdriver_session(base_endpoint: str, session_id: str) -> None:
 
 
 def _probe_webdriver_endpoint(base_endpoint: str) -> str | None:
+	# JP: WebDriver にセッション作成を試み、返却 capabilities から CDP URL を取得
+	# EN: Try a WebDriver session and read the CDP URL from returned capabilities
 	session_url = f'{base_endpoint}/session'
 	payload = json.dumps(
 		{
@@ -172,6 +190,8 @@ def _probe_webdriver_endpoint(base_endpoint: str) -> str | None:
 
 
 def _probe_cdp_via_webdriver(base_url: str) -> str | None:
+	# JP: WebDriver 経由で CDP URL を取得できるか試す
+	# EN: Attempt to obtain CDP URL via WebDriver endpoints
 	normalized = base_url.strip()
 	if not normalized or not normalized.lower().startswith(('http://', 'https://')):
 		return None
@@ -196,6 +216,8 @@ def _probe_cdp_via_webdriver(base_url: str) -> str | None:
 
 
 def _detect_cdp_from_candidates(candidates: list[str]) -> str | None:
+	# JP: 候補 URL から CDP の WebSocket を順に検出
+	# EN: Scan candidates for a valid CDP WebSocket URL
 	for candidate in candidates:
 		ws_url = _probe_cdp_candidate(candidate)
 		if ws_url:
@@ -212,6 +234,8 @@ def _detect_cdp_from_candidates(candidates: list[str]) -> str | None:
 
 
 def _resolve_cdp_url() -> str | None:
+	# JP: 環境変数の明示指定を優先し、無ければ候補探索を行う
+	# EN: Prefer explicit env vars, otherwise probe candidate endpoints
 	explicit_keys = ('BROWSER_USE_CDP_URL', 'CDP_URL', 'REMOTE_CDP_URL')
 	for key in explicit_keys:
 		value = os.environ.get(key)
@@ -240,6 +264,8 @@ def _resolve_cdp_url() -> str | None:
 	delay = _CDP_DETECTION_RETRY_DELAY if _CDP_DETECTION_RETRY_DELAY > 0 else 0.0
 
 	for attempt in range(1, retries + 1):
+		# JP: 既定回数まで検出をリトライする
+		# EN: Retry detection up to the configured limit
 		ws_url = _detect_cdp_from_candidates(candidates)
 		if ws_url:
 			return ws_url

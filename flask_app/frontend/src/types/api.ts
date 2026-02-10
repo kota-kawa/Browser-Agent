@@ -1,3 +1,5 @@
+// JP: フロントエンドで使うAPIレスポンス型
+// EN: API response types used by the frontend
 export type ChatRole = 'user' | 'assistant' | 'system';
 
 export interface ChatMessage {

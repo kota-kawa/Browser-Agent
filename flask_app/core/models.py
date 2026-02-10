@@ -1,3 +1,5 @@
+# JP: UI で選択可能な LLM モデル一覧
+# EN: List of LLM models available for selection in the UI
 SUPPORTED_MODELS = [
 	# Groq (GPT-OSS is here)
 	{'provider': 'groq', 'model': 'openai/gpt-oss-20b', 'label': 'GPT-OSS 20B (Groq)'},

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# JP: UI テンプレートの配信ルート
+# EN: Routes for serving UI templates
 from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
@@ -17,6 +19,8 @@ router = APIRouter()
 def favicon() -> FileResponse:
 	"""Serve the browser agent favicon for root requests."""
 
+	# JP: .ico 形式のファビコンを返す
+	# EN: Return .ico favicon
 	return FileResponse(APP_STATIC_DIR / 'icons' / 'browser-agent.ico', media_type='image/x-icon')
 
 
@@ -24,11 +28,15 @@ def favicon() -> FileResponse:
 def favicon_png() -> FileResponse:
 	"""Serve the png favicon variant for clients that request it."""
 
+	# JP: PNG 形式のファビコンを返す
+	# EN: Return PNG favicon
 	return FileResponse(APP_STATIC_DIR / 'icons' / 'browser-agent.png')
 
 
 @router.get('/')
 def index(request: Request):
+	# JP: ブラウザセッションのウォームアップを試みて UI を返す
+	# EN: Warm up browser session if possible and serve the UI
 	try:
 		controller = get_agent_controller()
 	except AgentControllerError:
@@ -48,6 +56,8 @@ def index(request: Request):
 
 @router.get('/agent-result')
 def agent_result(request: Request):
+	# JP: 結果ページも同様にウォームアップを試みる
+	# EN: Attempt warmup before serving the result page
 	try:
 		controller = get_agent_controller()
 	except AgentControllerError:

@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+# JP: コントローラー初期化やモデル設定を扱うランタイム層
+# EN: Runtime layer that manages controller initialization and model settings
 from browser_use.model_selection import apply_model_selection
 
 from ..core.cdp import _consume_cdp_session_cleanup, _resolve_cdp_url
@@ -18,6 +20,8 @@ from ..prompts.system_prompt import _should_disable_vision
 from .agent_controller import BrowserAgentController
 from .formatting import _append_final_response_notice
 
+# JP: 外部プラットフォーム同期先と Vision 設定ファイルのパス
+# EN: Platform sync endpoint and vision settings file path
 _PLATFORM_BASE = os.getenv('MULTI_AGENT_PLATFORM_BASE', 'http://web:5050').rstrip('/')
 _VISION_SETTINGS_PATH = Path('local_vision_settings.json')
 
@@ -25,6 +29,8 @@ _AGENT_CONTROLLER: BrowserAgentController | None = None
 
 
 def _load_vision_pref() -> bool:
+	# JP: Vision の有効/無効をローカル設定から読み込む
+	# EN: Load the vision toggle from local settings
 	try:
 		if _VISION_SETTINGS_PATH.exists():
 			data = json.loads(_VISION_SETTINGS_PATH.read_text(encoding='utf-8'))
@@ -36,6 +42,8 @@ def _load_vision_pref() -> bool:
 
 
 def _save_vision_pref(enabled: bool) -> None:
+	# JP: Vision 設定をローカルファイルに保存
+	# EN: Persist the vision toggle to local settings
 	try:
 		_VISION_SETTINGS_PATH.write_text(
 			json.dumps({'enabled': bool(enabled)}, ensure_ascii=False, indent=2),
@@ -51,10 +59,14 @@ _VISION_PREF = _load_vision_pref()
 def finalize_summary(text: str) -> str:
 	"""Ensure run summaries include the final-response marker for downstream consumers."""
 
+	# JP: downstream が識別できるよう、完了マーカーを必ず付与
+	# EN: Always append a final-response marker for downstream consumers
 	return _append_final_response_notice(text or '')
 
 
 def get_agent_controller() -> BrowserAgentController:
+	# JP: シングルトンのコントローラーを遅延初期化で生成
+	# EN: Lazily initialize the singleton controller
 	global _AGENT_CONTROLLER
 	if _AGENT_CONTROLLER is None:
 		cdp_url = _resolve_cdp_url()
@@ -70,6 +82,8 @@ def get_agent_controller() -> BrowserAgentController:
 				max_steps=_AGENT_MAX_STEPS,
 				cdp_cleanup=cleanup,
 			)
+			# JP: 保存済みの Vision 設定を反映
+			# EN: Apply persisted vision preference
 			try:
 				_AGENT_CONTROLLER.set_vision_enabled(_VISION_PREF)
 			except Exception:
@@ -85,6 +99,8 @@ def get_agent_controller() -> BrowserAgentController:
 def reset_agent_controller() -> None:
 	"""Shutdown existing controller so the next request uses refreshed LLM settings."""
 
+	# JP: モデル更新時にコントローラーを明示的に再作成させる
+	# EN: Force controller recreation after model updates
 	global _AGENT_CONTROLLER
 	if _AGENT_CONTROLLER is not None:
 		try:
@@ -95,18 +111,24 @@ def reset_agent_controller() -> None:
 
 
 def get_existing_controller() -> BrowserAgentController:
+	# JP: 既に初期化済みのコントローラーのみ返す
+	# EN: Return the controller only if already initialized
 	if _AGENT_CONTROLLER is None:
 		raise AgentControllerError('エージェントはまだ初期化されていません。')
 	return _AGENT_CONTROLLER
 
 
 def get_controller_if_initialized() -> BrowserAgentController | None:
+	# JP: 初期化済みなら返し、未初期化なら None
+	# EN: Return controller if initialized, otherwise None
 	return _AGENT_CONTROLLER
 
 
 def find_model_label(provider: str, model: str) -> str:
 	"""Return the display label for a provider/model pair if known."""
 
+	# JP: UI 表示用のラベルを探索
+	# EN: Look up the UI label for the provider/model pair
 	for entry in SUPPORTED_MODELS:
 		if entry.get('provider') == provider and entry.get('model') == model:
 			return entry.get('label', '')
@@ -116,6 +138,8 @@ def find_model_label(provider: str, model: str) -> str:
 def notify_platform(selection: dict[str, Any]) -> None:
 	"""Best-effort push of the latest Browser model selection back to the platform."""
 
+	# JP: 失敗しても処理を止めないベストエフォート通知
+	# EN: Best-effort push; errors are logged and ignored
 	if not _PLATFORM_BASE or not selection or not isinstance(selection, dict):
 		return
 
@@ -133,6 +157,8 @@ def notify_platform(selection: dict[str, Any]) -> None:
 def current_model_selection() -> dict[str, Any]:
 	"""Return current browser model selection with provider/model."""
 
+	# JP: モデル選択の最新状態を返す
+	# EN: Return the latest model selection
 	try:
 		return apply_model_selection('browser')
 	except Exception:
@@ -143,6 +169,8 @@ def current_model_selection() -> dict[str, Any]:
 def vision_state() -> dict[str, Any]:
 	"""Compute vision toggle state considering model capability."""
 
+	# JP: モデルの対応可否を考慮して実効状態を計算
+	# EN: Compute effective vision state with model capability in mind
 	selection = current_model_selection()
 	provider = (selection.get('provider') or '').strip().lower()
 	model = (selection.get('model') or '').strip().lower()
@@ -160,6 +188,8 @@ def vision_state() -> dict[str, Any]:
 
 
 def set_vision_pref(enabled: bool) -> dict[str, Any]:
+	# JP: Vision の希望値を更新して実行中コントローラーへ反映
+	# EN: Update vision preference and apply to the running controller
 	global _VISION_PREF
 	_VISION_PREF = bool(enabled)
 	_save_vision_pref(_VISION_PREF)

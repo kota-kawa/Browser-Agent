@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
+# JP: 環境変数・URLの正規化を扱うユーティリティ
+# EN: Utilities for environment variables and URL normalization
 from .config import logger
 
 try:
@@ -14,6 +16,8 @@ except ModuleNotFoundError:
 def _env_int(name: str, default: int) -> int:
 	"""Return an integer environment variable with a fallback."""
 
+	# JP: 未設定または不正値の場合は既定値にフォールバック
+	# EN: Fall back to default on missing/invalid values
 	raw_value = os.environ.get(name)
 	if raw_value is None:
 		return default
@@ -32,6 +36,8 @@ _ALLOWED_RESIZE_VALUES = {'scale', 'remote', 'off'}
 def _normalize_embed_browser_url(value: str) -> str:
 	"""Ensure the embedded noVNC URL fills the container on first load."""
 
+	# JP: noVNC の表示が崩れないよう resize/scale パラメータを補完する
+	# EN: Patch resize/scale parameters so noVNC fits the container
 	if not value:
 		return value
 
@@ -62,6 +68,8 @@ def _normalize_embed_browser_url(value: str) -> str:
 
 
 def _get_env_trimmed(name: str) -> str | None:
+	# JP: 前後空白を除去し、空文字は None にする
+	# EN: Trim whitespace and convert empty strings to None
 	value = os.environ.get(name)
 	if value is None:
 		return None
@@ -72,6 +80,8 @@ def _get_env_trimmed(name: str) -> str | None:
 def _normalize_start_url(value: str | None) -> str | None:
 	"""Normalize a configured start URL for the embedded browser."""
 
+	# JP: 入力の無効値を除外し、必要なら https:// を補う
+	# EN: Drop invalid values and add https:// when missing
 	if not value:
 		return None
 
@@ -92,6 +102,8 @@ def _normalize_start_url(value: str | None) -> str | None:
 	return normalized
 
 
+# JP: 開始ページは環境変数を優先し、無ければブラウザ既定の新規タブURL
+# EN: Prefer env-configured start URL; otherwise use the browser default new-tab URL
 _DEFAULT_START_URL = (
 	_normalize_start_url(
 		_get_env_trimmed('BROWSER_DEFAULT_START_URL'),
@@ -99,8 +111,12 @@ _DEFAULT_START_URL = (
 	or DEFAULT_NEW_TAB_URL
 )
 
+# JP: 埋め込みブラウザ（noVNC）のURLを正規化
+# EN: Normalize the embedded browser (noVNC) URL
 _BROWSER_URL = _normalize_embed_browser_url(os.environ.get('EMBED_BROWSER_URL', _DEFAULT_EMBED_BROWSER_URL))
 
+# JP: 主要な環境変数を数値として読み込む
+# EN: Load key numeric environment settings
 _AGENT_MAX_STEPS = _env_int('AGENT_MAX_STEPS', 20)
 _WEBARENA_MAX_STEPS = _env_int('WEBARENA_AGENT_MAX_STEPS', 20)
 _CONVERSATION_CONTEXT_WINDOW = _env_int('CONVERSATION_CONTEXT_WINDOW', 10)

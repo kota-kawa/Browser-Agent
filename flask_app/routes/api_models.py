@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+# JP: モデル選択/ビジョン設定の API
+# EN: Endpoints for model selection and vision settings
 from browser_use.model_selection import apply_model_selection, update_override
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -25,6 +27,8 @@ router = APIRouter()
 
 @router.get('/api/models')
 def get_models() -> JSONResponse:
+	# JP: 選択可能なモデルと現在の選択を返す
+	# EN: Return available models and current selection
 	current = apply_model_selection('browser')
 	return JSONResponse(
 		{
@@ -38,11 +42,15 @@ def get_models() -> JSONResponse:
 def get_vision() -> JSONResponse:
 	"""Return current vision (screenshot) preference and effective status."""
 
+	# JP: Vision の設定と有効状態を返す
+	# EN: Return vision preference and effective status
 	return JSONResponse(vision_state())
 
 
 @router.post('/api/vision')
 async def set_vision(request: Request) -> JSONResponse:
+	# JP: Vision の有効/無効を更新
+	# EN: Update vision preference
 	payload = await read_json_payload(request)
 	if not isinstance(payload, dict) or 'enabled' not in payload:
 		return JSONResponse({'error': 'enabled フラグを指定してください。'}, status_code=400)
@@ -56,6 +64,8 @@ async def set_vision(request: Request) -> JSONResponse:
 async def update_model_settings(request: Request) -> JSONResponse:
 	"""Update LLM selection and recycle controller without restart."""
 
+	# JP: モデル設定を保存し、必要ならコントローラーを更新
+	# EN: Persist model settings and refresh controller if needed
 	payload = await read_json_payload(request)
 	selection = payload if isinstance(payload, dict) else {}
 	applied: dict[str, Any] | None = None
@@ -67,6 +77,8 @@ async def update_model_settings(request: Request) -> JSONResponse:
 
 		applied = update_override(selection if selection else None)
 
+		# JP: 稼働中のコントローラーには即時反映
+		# EN: Apply changes to the running controller
 		controller = get_controller_if_initialized()
 		if controller is not None:
 			controller.update_llm()
@@ -74,6 +86,8 @@ async def update_model_settings(request: Request) -> JSONResponse:
 		provider = applied.get('provider') if isinstance(applied, dict) else None
 		model = applied.get('model') if isinstance(applied, dict) else None
 		if provider and model:
+			# JP: UI へモデル変更通知
+			# EN: Notify UI about model changes
 			_broadcaster.publish(
 				{
 					'type': 'model',
@@ -87,6 +101,8 @@ async def update_model_settings(request: Request) -> JSONResponse:
 			)
 
 		if request.headers.get('X-Platform-Propagation') != '1' and applied:
+			# JP: ループ防止のためヘッダーが無い場合のみ同期
+			# EN: Avoid sync loops using the propagation header
 			notify_platform(
 				{
 					'provider': applied.get('provider', ''),

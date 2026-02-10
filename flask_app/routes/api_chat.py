@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+# JP: チャット/フォローアップの API
+# EN: Chat and follow-up API endpoints
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
@@ -30,6 +32,8 @@ def _build_recent_conversation_context(
 	messages: list[dict[str, Any]],
 	limit: int,
 ) -> str | None:
+	# JP: 直近の会話だけを抽出し、ステップログは除外して短いコンテキストを作る
+	# EN: Build a short recent-context block while excluding step-log messages
 	if limit <= 0 or not messages:
 		return None
 
@@ -52,6 +56,8 @@ def _build_recent_conversation_context(
 	if not tail:
 		return None
 
+	# JP: LLM に渡すための人間可読な履歴文に整形
+	# EN: Format a human-readable history snippet for the LLM
 	lines = ['以下は直近の会話履歴です。必要に応じて参照してください。']
 	for entry in tail:
 		role_label = 'ユーザー' if entry['role'] == 'user' else 'アシスタント'
@@ -64,13 +70,16 @@ async def chat(request: Request) -> JSONResponse:
 	payload = await read_json_payload(request)
 	prompt = (payload.get('prompt') or '').strip()
 	start_new_task = bool(payload.get('new_task'))
-	# Trusted callers can bypass the initial AI review when they already planned concrete steps.
+	# JP: 信頼された呼び出し元のみ、初回の会話レビューをスキップ可能
+	# EN: Trusted callers may skip the initial conversation review
 	skip_conversation_review = bool(payload.get('skip_conversation_review'))
 
 	if not prompt:
 		return JSONResponse({'error': 'プロンプトを入力してください。'}, status_code=400)
 
 	try:
+		# JP: 入力の安全性を事前にチェックしてブロックを防ぐ
+		# EN: Pre-check prompt safety and block unsafe input early
 		guard_result = await check_prompt_safety(prompt)
 	except InputGuardError as exc:
 		logger.warning('Safety guard check failed: %s', exc)
@@ -84,6 +93,8 @@ async def chat(request: Request) -> JSONResponse:
 		)
 
 	try:
+		# JP: 実行中のコントローラーを取得（初期化も含む）
+		# EN: Get or initialize the agent controller
 		controller = get_agent_controller()
 	except AgentControllerError as exc:
 		_append_history_message('user', prompt)
@@ -117,6 +128,8 @@ async def chat(request: Request) -> JSONResponse:
 		return JSONResponse({'messages': _copy_history(), 'run_summary': error_message})
 
 	if start_new_task:
+		# JP: 新規タスク開始は実行中でない時のみ許可
+		# EN: Allow starting a new task only when the agent is idle
 		if controller.is_running():
 			_append_history_message('user', prompt)
 			message = 'エージェント実行中は新しいタスクを開始できません。現在の実行が完了するまでお待ちください。'
@@ -139,7 +152,8 @@ async def chat(request: Request) -> JSONResponse:
 
 	_append_history_message('user', prompt)
 
-	# First prompt of a task: decide if browser actions are needed
+	# JP: 初回プロンプトはブラウザ操作の要否をAIレビューで判定する
+	# EN: For the first prompt, decide whether browser actions are needed
 	if not skip_conversation_review and not controller.is_running() and not controller.has_handled_initial_prompt():
 		analysis = _analyze_conversation_history(_copy_history(), loop=controller.loop)
 		if not analysis.get('needs_action'):
@@ -158,6 +172,8 @@ async def chat(request: Request) -> JSONResponse:
 			return JSONResponse({'messages': _copy_history(), 'run_summary': reply})
 
 	if controller.is_running():
+		# JP: 実行中はフォローアップとして指示をキューに積む
+		# EN: If running, enqueue as a follow-up instruction
 		was_paused = controller.is_paused()
 		try:
 			controller.enqueue_follow_up(prompt)
@@ -187,6 +203,8 @@ async def chat(request: Request) -> JSONResponse:
 	def on_complete(result_or_error: Any) -> None:
 		try:
 			if isinstance(result_or_error, Exception):
+				# JP: 例外時は要約メッセージを返してステータス更新
+				# EN: On error, report a summarized message and update status
 				exc = result_or_error
 				if isinstance(exc, AgentControllerError):
 					message = finalize_summary(f'エージェントの実行に失敗しました: {exc}')
@@ -225,6 +243,8 @@ async def chat(request: Request) -> JSONResponse:
 				return
 
 			agent_history = run_result.filtered_history or run_result.history
+			# JP: ステップ履歴をチャット履歴へ反映する
+			# EN: Project step history into the chat history
 			step_messages = _format_history_messages(agent_history)
 			for step_number, content in step_messages:
 				message_id = run_result.step_message_ids.get(step_number)
@@ -239,6 +259,8 @@ async def chat(request: Request) -> JSONResponse:
 					controller.remember_step_message_id(step_number, new_id)
 					run_result.step_message_ids[step_number] = new_id
 
+			# JP: 最終的な要約を作成してUIへ通知
+			# EN: Create a final summary and notify the UI
 			summary_message = _summarize_history(agent_history)
 			_append_history_message('assistant', summary_message)
 			_broadcaster.publish(
@@ -273,6 +295,8 @@ async def chat(request: Request) -> JSONResponse:
 	)
 
 	try:
+		# JP: 非同期で実行し、即座に 202 を返す
+		# EN: Run asynchronously and return 202 immediately
 		controller.run(
 			prompt,
 			background=True,
@@ -326,6 +350,8 @@ async def agent_relay(request: Request) -> JSONResponse:
 		return JSONResponse({'error': 'プロンプトを入力してください。'}, status_code=400)
 
 	try:
+		# JP: メインチャット履歴に影響せず、コントローラーのみ利用する
+		# EN: Use the controller without touching main chat history
 		controller = get_agent_controller()
 	except AgentControllerError as exc:
 		logger.warning('Failed to initialize agent controller for agent relay: %s', exc)
@@ -334,7 +360,8 @@ async def agent_relay(request: Request) -> JSONResponse:
 		logger.exception('Unexpected error while preparing agent controller for agent relay')
 		return JSONResponse({'error': f'エージェントの初期化中に予期しないエラーが発生しました: {exc}'}, status_code=500)
 
-	# First prompt of a task: decide if browser actions are needed
+	# JP: 外部エージェントにも初回レビューを適用
+	# EN: Apply the initial review for external agent requests as well
 	if not controller.is_running() and not controller.has_handled_initial_prompt():
 		analysis = _analyze_conversation_history([{'role': 'user', 'content': prompt}], loop=controller.loop)
 		if not analysis.get('needs_action'):
@@ -354,6 +381,8 @@ async def agent_relay(request: Request) -> JSONResponse:
 			)
 
 	if controller.is_running():
+		# JP: 実行中はフォローアップとして扱う
+		# EN: Treat as follow-up when already running
 		was_paused = controller.is_paused()
 		try:
 			controller.enqueue_follow_up(prompt)
@@ -378,6 +407,8 @@ async def agent_relay(request: Request) -> JSONResponse:
 		)
 
 	try:
+		# JP: 履歴に残さない同期実行（外部利用向け）
+		# EN: Run synchronously without recording history (external use)
 		run_result = controller.run(prompt, record_history=False)
 	except AgentControllerError as exc:
 		logger.warning('Failed to execute agent relay request: %s', exc)

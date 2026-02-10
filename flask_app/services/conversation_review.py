@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field, ValidationError
 from browser_use.llm.exceptions import ModelProviderError
 from browser_use.llm.messages import SystemMessage, UserMessage
 
+# JP: 会話履歴からブラウザ操作の要否を判定するレビュー機能
+# EN: Conversation review that decides whether browser actions are needed
 from ..core.config import logger
 from ..core.env import _CONVERSATION_CONTEXT_WINDOW
 from ..core.exceptions import AgentControllerError
@@ -19,6 +21,8 @@ from .llm_factory import _create_selected_llm
 class ConversationAnalysis(BaseModel):
 	"""Data model for the result of conversation analysis."""
 
+	# JP: ブラウザ操作の要否と返答内容を含む構造化結果
+	# EN: Structured output including action need and reply content
 	should_reply: bool = Field(
 		..., description='True if the assistant should provide a helpful reply even when no browser action is required.'
 	)
@@ -41,6 +45,8 @@ class ConversationAnalysis(BaseModel):
 def _build_error_response(reason: str) -> dict[str, Any]:
 	"""Return a consistently shaped failure payload for the endpoint."""
 
+	# JP: 失敗時も同一フォーマットで返して呼び出し側の処理を簡潔にする
+	# EN: Keep a stable payload shape to simplify callers
 	return {
 		'should_reply': False,
 		'reply': '',
@@ -55,6 +61,8 @@ def _build_error_response(reason: str) -> dict[str, Any]:
 def _normalize_analysis_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
 	"""Fill missing or malformed fields with safe defaults before validation."""
 
+	# JP: 欠落フィールドを補完し、異常値を安全側へ補正
+	# EN: Fill missing fields and coerce invalid values to safe defaults
 	if payload is None:
 		return {}
 
@@ -87,6 +95,8 @@ def _normalize_analysis_payload(payload: dict[str, Any] | None) -> dict[str, Any
 
 def _sanitize_json_string(text: str) -> str:
 	"""Sanitize a string for JSON parsing by fixing common LLM output issues."""
+	# JP: LLM出力の改行/タブ等を簡易的にエスケープ補正
+	# EN: Lightly sanitize common newline/tab issues in LLM JSON output
 	# Fix unescaped newlines in string values
 	# This is a simplified approach - replace literal newlines with escaped ones
 	# within what appears to be JSON string content
@@ -103,6 +113,8 @@ def _sanitize_json_string(text: str) -> str:
 
 def _extract_json_from_text(text: str) -> dict | None:
 	"""Extracts JSON from text, tolerating markdown code blocks and sanitizing."""
+	# JP: ```json``` 形式と生の JSON の両方に対応
+	# EN: Handle both ```json``` blocks and raw JSON blobs
 	# Try to sanitize the text first
 	sanitized_text = _sanitize_json_string(text)
 
@@ -137,6 +149,8 @@ def _get_completion_payload(response: Any) -> Any:
 	field to stay compatible with older `browser-use` builds or third-party
 	clients.
 	"""
+	# JP: 新旧インターフェース両対応のため複数属性を確認
+	# EN: Support both new and legacy response shapes
 	if hasattr(response, 'completion'):
 		return response.completion
 	if hasattr(response, 'result'):
@@ -150,6 +164,8 @@ async def _retry_with_json_correction(
 	llm: Any, messages: list[Any], failed_output: str, error: Exception, max_retries: int = 2
 ) -> dict[str, Any] | None:
 	"""Retry LLM call with JSON correction prompt after parse failure."""
+	# JP: 失敗した JSON を短く抜粋し、修正指示を追加して再試行
+	# EN: Retry with a correction prompt including a truncated bad output
 	truncated_output = failed_output[:1500] + '...' if len(failed_output) > 1500 else failed_output
 
 	correction_message = UserMessage(
@@ -170,6 +186,8 @@ async def _retry_with_json_correction(
 	retry_messages = messages + [correction_message]
 
 	for attempt in range(max_retries):
+		# JP: 最大回数までリトライし、成功したら即返す
+		# EN: Retry up to max_retries and return immediately on success
 		try:
 			response = await llm.ainvoke(retry_messages)
 			response_text = _get_completion_payload(response)
@@ -194,6 +212,8 @@ async def _retry_with_json_correction(
 
 async def _fallback_to_text_parsing(llm: Any, messages: list[Any]) -> dict[str, Any]:
 	"""Fallback path when structured output is unavailable."""
+	# JP: Structured output が使えない場合に JSON 抽出で対応
+	# EN: Fallback to JSON extraction when structured output fails
 	try:
 		response = await llm.ainvoke(messages)
 		response_text = _get_completion_payload(response)
@@ -225,6 +245,8 @@ async def _fallback_to_text_parsing(llm: Any, messages: list[Any]) -> dict[str, 
 
 
 def _looks_like_refusal(text: str) -> bool:
+	# JP: 「拒否」に見える文言を簡易的に検出
+	# EN: Heuristically detect refusal-like replies
 	if not text:
 		return True
 	lowered = text.lower()
@@ -245,6 +267,8 @@ def _looks_like_refusal(text: str) -> bool:
 
 
 def _stringify_reply(payload: Any) -> str:
+	# JP: 返答候補を文字列に正規化
+	# EN: Normalize reply payload into a string
 	if isinstance(payload, str):
 		return payload.strip()
 	if isinstance(payload, dict):
@@ -261,6 +285,8 @@ def _stringify_reply(payload: Any) -> str:
 
 async def _generate_direct_reply_async(llm: Any, conversation_history: list[dict[str, Any]]) -> str:
 	"""Generate a direct answer when no browser action is required."""
+	# JP: ブラウザ不要時に直接回答を生成
+	# EN: Generate a direct reply when no browser action is needed
 	if not conversation_history:
 		return ''
 
@@ -297,6 +323,8 @@ async def _ensure_direct_reply_async(
 	llm: Any,
 	conversation_history: list[dict[str, Any]],
 ) -> dict[str, Any]:
+	# JP: needs_action が False の場合は直接回答を補強する
+	# EN: Ensure a direct reply when no action is required
 	if not analysis_payload or analysis_payload.get('needs_action'):
 		return analysis_payload
 
@@ -322,6 +350,8 @@ def _trim_conversation_history(
 	The first user message anchors context, and the tail keeps the latest turns
 	for the LLM. Duplicates are removed using message ids when present.
 	"""
+	# JP: 最初のユーザー発話をアンカーにし、最新の会話を優先
+	# EN: Anchor on the first user message and keep the latest turns
 	if window_size is None:
 		window_size = _CONVERSATION_CONTEXT_WINDOW
 	if not conversation_history or window_size <= 0:
@@ -365,6 +395,8 @@ async def _analyze_conversation_history_async(conversation_history: list[dict[st
 	Analyze conversation history using LLM to determine if browser operations are needed
 	and whether the browser agent should proactively speak up.
 	"""
+	# JP: LLM を使ってブラウザ操作の必要性を解析
+	# EN: Use LLM to analyze whether browser actions are required
 	llm = None
 	try:
 		llm = _create_selected_llm()
@@ -373,6 +405,8 @@ async def _analyze_conversation_history_async(conversation_history: list[dict[st
 		return _build_error_response(f'LLMの初期化に失敗しました: {exc}')
 
 	# Format conversation history for analysis
+	# JP: LLM に渡すための会話テキストを整形
+	# EN: Format conversation history into a text block for the LLM
 	conversation_history = _trim_conversation_history(conversation_history)
 	conversation_text = ''
 	for msg in conversation_history:
@@ -381,6 +415,8 @@ async def _analyze_conversation_history_async(conversation_history: list[dict[st
 		conversation_text += f'{role}: {content}\n'
 
 	# Create a prompt to analyze the conversation
+	# JP: ブラウザ操作に特化した判定プロンプト
+	# EN: Prompt specialized for browser-action decisioning
 	analysis_prompt = f"""あなたは「ブラウザ操作に強い」アシスタントです。
 
 【役割】
@@ -430,6 +466,8 @@ JSONのみで出力:
 
 	try:
 		# Use LLM to generate structured analysis
+		# JP: 可能なら構造化出力（Pydantic）で取得
+		# EN: Prefer structured output (Pydantic) when supported
 		messages = [
 			SystemMessage(content='You are an expert in analyzing conversations.'),
 			UserMessage(role='user', content=analysis_prompt),
@@ -461,6 +499,8 @@ JSONのみで出力:
 		logger.exception('Unexpected error during conversation history analysis')
 		return _build_error_response(f'予期しないエラーが発生しました: {exc}')
 	finally:
+		# JP: LLM クライアントを安全にクローズ
+		# EN: Close the LLM client safely
 		if llm:
 			aclose = getattr(llm, 'aclose', None)
 			if callable(aclose):
@@ -485,6 +525,8 @@ def _analyze_conversation_history(
 	from a synchronous request context. Falls back to manual loop creation if an
 	event loop is already running (e.g., in tests).
 	"""
+	# JP: 同期コンテキスト向けにイベントループを調整
+	# EN: Adapt async analysis for synchronous callers
 	if loop and loop.is_running():
 		try:
 			future = asyncio.run_coroutine_threadsafe(_analyze_conversation_history_async(conversation_history), loop)

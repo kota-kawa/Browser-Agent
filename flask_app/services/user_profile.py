@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+# JP: ユーザープロファイル（自由文）の保存/読み込み
+# EN: Load/save a free-form user profile
 from ..core.config import logger
 
 _USER_PROFILE_PATH = Path('local_user_profile.json')
@@ -10,6 +12,8 @@ _MAX_USER_PROFILE_CHARS = 2000
 
 
 def _normalize_user_profile(text: str | None) -> str:
+	# JP: 改行を正規化し、最大長で切り詰める
+	# EN: Normalize newlines and truncate to max length
 	if not text:
 		return ''
 	normalized = str(text).replace('\r\n', '\n').replace('\r', '\n').strip()
@@ -19,6 +23,8 @@ def _normalize_user_profile(text: str | None) -> str:
 
 
 def load_user_profile() -> str:
+	# JP: ローカル JSON からユーザープロファイルを読み込む
+	# EN: Read the profile text from local JSON
 	try:
 		if _USER_PROFILE_PATH.exists():
 			payload = json.loads(_USER_PROFILE_PATH.read_text(encoding='utf-8'))
@@ -30,6 +36,8 @@ def load_user_profile() -> str:
 
 
 def save_user_profile(text: str | None) -> str:
+	# JP: 空なら削除、値があれば JSON として保存
+	# EN: Delete when empty; otherwise persist as JSON
 	normalized = _normalize_user_profile(text)
 	try:
 		if normalized:

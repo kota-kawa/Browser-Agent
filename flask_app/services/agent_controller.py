@@ -62,6 +62,8 @@ class BrowserAgentController:
 	) -> None:
 		self._cdp_url = cdp_url
 		self._max_steps = max_steps
+		# JP: 同期APIから安全に呼び出すため、専用イベントループをバックグラウンドで起動する
+		# EN: Spin up a dedicated event loop thread so sync callers can schedule coroutines safely
 		self._loop = asyncio.new_event_loop()
 		self._thread = threading.Thread(
 			target=self._run_loop,
@@ -87,6 +89,8 @@ class BrowserAgentController:
 		self._session_recreated = False
 		self._start_page_ready = False
 		self._initial_prompt_handled = False
+		# JP: プロセス終了時にクリーンアップを行う
+		# EN: Ensure cleanup on process exit
 		atexit.register(self.shutdown)
 
 	@property
@@ -101,6 +105,8 @@ class BrowserAgentController:
 		    int | None: Timeout in seconds, or None/<=0 to disable.
 		"""
 
+		# JP: 環境変数で明示指定がない場合はタイムアウト無し
+		# EN: No timeout unless explicitly configured via env var
 		raw = os.environ.get('BROWSER_USE_STEP_TIMEOUT')
 		if raw is None:
 			# Default: disable step timeout to allow long-running tasks.
@@ -118,15 +124,21 @@ class BrowserAgentController:
 			return None
 
 	def _run_loop(self) -> None:
+		# JP: 専用スレッド内のイベントループを永続稼働させる
+		# EN: Keep the dedicated event loop running forever
 		asyncio.set_event_loop(self._loop)
 		self._loop.run_forever()
 
 	async def _ensure_browser_session(self) -> BrowserSession:
+		# JP: 既存セッションがあれば再利用し、無ければ新規作成する
+		# EN: Reuse an existing session when available; otherwise create a new one
 		if self._browser_session is not None:
 			with self._state_lock:
 				self._session_recreated = False
 			return self._browser_session
 
+		# JP: CDP URL が未設定なら即エラー（ブラウザに接続できない）
+		# EN: Fail fast when CDP URL is missing (no browser connection)
 		if not self._cdp_url:
 			raise AgentControllerError('Chrome DevToolsのCDP URLが検出できませんでした。BROWSER_USE_CDP_URL を設定してください。')
 
@@ -138,6 +150,8 @@ class BrowserAgentController:
 		) -> ViewportSize | None:
 			"""Create a viewport from environment variables if either is defined."""
 
+			# JP: 幅/高さのどちらかが設定されている場合のみ有効化
+			# EN: Enable only when at least one of width/height is provided
 			width_raw = os.environ.get(width_key)
 			height_raw = os.environ.get(height_key)
 
@@ -152,6 +166,8 @@ class BrowserAgentController:
 		window_size: ViewportSize | None = None
 		screen_size: ViewportSize | None = None
 
+		# JP: BROWSER_WINDOW_* を優先し、無ければ Selenium 互換の変数を見る
+		# EN: Prefer BROWSER_WINDOW_*; fall back to Selenium-compatible env vars
 		browser_window = _viewport_from_env('BROWSER_WINDOW_WIDTH', 'BROWSER_WINDOW_HEIGHT', 1920, 1080)
 		if browser_window is not None:
 			window_size = browser_window
@@ -162,6 +178,8 @@ class BrowserAgentController:
 				window_size = selenium_window
 				screen_size = selenium_window
 
+		# JP: keep_alive=True でセッションを継続し、同一ブラウザを再利用する
+		# EN: keep_alive=True keeps the browser session warm across runs
 		profile = BrowserProfile(
 			cdp_url=self._cdp_url,
 			keep_alive=True,
@@ -203,6 +221,8 @@ class BrowserAgentController:
 			model_output: AgentOutput,
 			step_number: int,
 		) -> None:
+			# JP: ステップごとの要約を履歴へ追記し、UI更新用IDを保持する
+			# EN: Append per-step summaries to history and track message IDs for UI updates
 			if not record_history:
 				return
 			try:
@@ -220,6 +240,8 @@ class BrowserAgentController:
 		register_callback = handle_new_step if record_history else None
 
 		def _create_new_agent(initial_task: str) -> Agent:
+			# JP: モデル選択とプロバイダ情報を読み取り、Vision 有効可否を判断する
+			# EN: Load model selection/provider and decide whether vision can be enabled
 			selection = _load_selection('browser')
 			provider = selection.get('provider', '')
 			model = str(selection.get('model', ''))
@@ -237,6 +259,8 @@ class BrowserAgentController:
 					model_from_llm,
 				)
 
+			# JP: システムプロンプトはカスタムがあれば上書きし、無ければ拡張メッセージに連結
+			# EN: Use a custom system prompt if available; otherwise extend the default message
 			custom_system_prompt = _build_custom_system_prompt(
 				force_disable_vision=vision_disabled,
 				provider=provider_from_llm,
@@ -252,6 +276,8 @@ class BrowserAgentController:
 					base_extension += f'\n\n{additional_system_message}'
 				extend_system_message = base_extension
 
+			# JP: 危険なアクションを除外して安全側に寄せる
+			# EN: Exclude risky actions to keep the agent safer by default
 			tools = Tools(exclude_actions=['read_file', 'search_google'])
 			step_timeout = self._resolve_step_timeout()
 			fresh_agent = Agent(
@@ -267,6 +293,8 @@ class BrowserAgentController:
 				use_vision=not vision_disabled,
 				step_timeout=step_timeout,
 			)
+			# JP: 初期URLが未指定なら開始ページへ移動するアクションを追加
+			# EN: If no initial URL is set, add a navigation action to the start page
 			start_url = self._get_resume_url() or _DEFAULT_START_URL
 			if start_url and not fresh_agent.initial_actions:
 				try:
@@ -286,6 +314,8 @@ class BrowserAgentController:
 			existing_agent = self._agent
 			agent_running = self._is_running
 
+		# JP: 実行中の二重起動を防止
+		# EN: Prevent concurrent runs
 		if agent_running:
 			raise AgentControllerError('エージェントは実行中です。')
 
@@ -294,6 +324,8 @@ class BrowserAgentController:
 			with self._state_lock:
 				self._agent = agent
 		else:
+			# JP: 既存エージェントをフォローアップとして再利用する
+			# EN: Reuse the existing agent for a follow-up task
 			agent = existing_agent
 			agent.browser_session = session
 			agent.register_new_step_callback = register_callback
@@ -312,6 +344,8 @@ class BrowserAgentController:
 			except Exception as exc:
 				raise AgentControllerError(f'追加の指示の適用に失敗しました: {exc}') from exc
 
+		# JP: 既存履歴の末尾を記録して差分だけを抽出できるようにする
+		# EN: Capture history tail position so we can filter new entries only
 		history_items = getattr(agent, 'history', None)
 		if history_items is not None:
 			history_start_index = len(history_items.history)
@@ -325,6 +359,8 @@ class BrowserAgentController:
 			except Exception:
 				self._logger.debug('Failed to pre-attach browser watchdogs', exc_info=True)
 
+		# JP: 実行状態フラグを更新して実行中として扱う
+		# EN: Mark controller as running before invoking the agent
 		with self._state_lock:
 			self._current_agent = agent
 			self._is_running = True
@@ -358,6 +394,8 @@ class BrowserAgentController:
 				filtered_history=filtered_history,
 			)
 		finally:
+			# JP: keep_alive セッションではイベントバスを掃除し、問題があればローテーション
+			# EN: For keep_alive sessions, drain the event bus; rotate on failure
 			keep_alive = session.browser_profile.keep_alive
 			rotate_session = False
 			if keep_alive:
@@ -385,6 +423,8 @@ class BrowserAgentController:
 						await session.event_bus.stop(clear=True, timeout=1.0)
 
 					def _resync_agent_event_bus() -> None:
+						# JP: 既存エージェントとセッションの EventBus を同期し直す
+						# EN: Resynchronize the agent's EventBus with the session
 						with self._state_lock:
 							candidate = self._agent or self._current_agent
 						if candidate is None:
@@ -478,6 +518,8 @@ class BrowserAgentController:
 					await session.stop()
 
 			if rotate_session:
+				# JP: 完全にセッションを回収して次回に新規作成させる
+				# EN: Fully retire the session so the next run starts fresh
 				with suppress(Exception):
 					await session.stop()
 				kill_method = getattr(session, 'kill', None)
@@ -508,6 +550,8 @@ class BrowserAgentController:
 				self._paused = False
 
 	def _pop_browser_session(self) -> BrowserSession | None:
+		# JP: 共有セッション参照を外し、次回は新規作成させる
+		# EN: Drop the shared session reference so a new one will be created
 		with self._state_lock:
 			session = self._browser_session
 			self._browser_session = None
@@ -520,6 +564,8 @@ class BrowserAgentController:
 		if session is None:
 			return
 
+		# JP: 既存イベントループ上で停止処理を実行する
+		# EN: Stop the session on the dedicated event loop
 		async def _shutdown() -> None:
 			with suppress(Exception):
 				await session.stop()
@@ -535,6 +581,8 @@ class BrowserAgentController:
 			)
 
 	async def _async_shutdown(self) -> None:
+		# JP: コントローラー停止時にセッションとLLMを順に閉じる
+		# EN: Close session and LLM in order during controller shutdown
 		session = self._pop_browser_session()
 		if session is not None:
 			with suppress(Exception):
@@ -565,6 +613,8 @@ class BrowserAgentController:
 			self._logger.debug('Unexpected error while closing LLM client', exc_info=True)
 
 	def _call_in_loop(self, func: Callable[[], None]) -> None:
+		# JP: 同期関数をイベントループで実行して結果を待つ
+		# EN: Execute a sync function inside the event loop and wait for completion
 		async def _invoke() -> None:
 			func()
 
@@ -576,6 +626,8 @@ class BrowserAgentController:
 			agent = self._current_agent
 			running = self._is_running
 
+		# JP: 実行中でない場合はフォローアップを受け付けない
+		# EN: Reject follow-up instructions when the agent is not running
 		if not agent or not running:
 			raise AgentControllerError('エージェントは実行中ではありません。')
 
@@ -592,6 +644,8 @@ class BrowserAgentController:
 	def _prepare_agent_for_follow_up(self, agent: Agent, *, force_resume_navigation: bool = False) -> None:
 		"""Clear completion flags so follow-up runs can execute new steps."""
 
+		# JP: 完了フラグをリセットして次の指示を実行可能にする
+		# EN: Reset completion flags so the next run can proceed
 		cleared = False
 
 		with suppress(AttributeError):
@@ -605,6 +659,8 @@ class BrowserAgentController:
 		resume_url = self._get_resume_url()
 		prepared_resume = False
 
+		# JP: セッション再作成時は直前のURLへ戻すことで継続性を確保
+		# EN: After session recreation, resume at the last known URL for continuity
 		if force_resume_navigation and resume_url:
 			try:
 				agent.initial_url = resume_url
@@ -626,6 +682,8 @@ class BrowserAgentController:
 			agent.state.follow_up_task = True
 
 	def _record_step_message_id(self, step_number: int, message_id: int) -> None:
+		# JP: ステップ番号と履歴メッセージIDの対応を記録する
+		# EN: Store mapping between step number and history message ID
 		with self._step_message_lock:
 			self._step_message_ids[step_number] = message_id
 
@@ -634,6 +692,8 @@ class BrowserAgentController:
 			return self._step_message_ids.get(step_number)
 
 	def _clear_step_message_ids(self) -> None:
+		# JP: 直近実行のメッセージIDをクリアする
+		# EN: Clear cached message IDs from the last run
 		with self._step_message_lock:
 			self._step_message_ids.clear()
 
@@ -644,6 +704,8 @@ class BrowserAgentController:
 	def set_start_page(self, url: str | None) -> None:
 		"""Override the next start/resume URL and reset warmup state."""
 
+		# JP: URLを正規化し、次回起動時の開始ページに反映する
+		# EN: Normalize the URL and apply it as the next start page
 		normalized = _normalize_start_url(url) if url else None
 		with self._state_lock:
 			self._resume_url = normalized
@@ -658,6 +720,8 @@ class BrowserAgentController:
 			return self._resume_url
 
 	def _update_resume_url_from_history(self, history: AgentHistoryList) -> None:
+		# JP: about:/chrome:// などの内部URLは再開対象から除外する
+		# EN: Skip internal URLs (about:/chrome://) when deriving resume targets
 		resume_url: str | None = None
 		try:
 			for entry in reversed(history.history):
@@ -740,6 +804,8 @@ class BrowserAgentController:
 	def ensure_start_page_ready(self) -> None:
 		"""Ensure the embedded browser session opens the configured start URL."""
 
+		# JP: UI表示用の開始ページを事前に起動しておく
+		# EN: Warm up the start page so the embedded UI is ready
 		start_url = self._get_resume_url() or _DEFAULT_START_URL
 		if not start_url:
 			return
@@ -753,6 +819,8 @@ class BrowserAgentController:
 		if running or shutdown:
 			return
 
+		# JP: 非同期でブラウザを起動し開始ページへ移動する
+		# EN: Start the browser asynchronously and navigate to the start page
 		async def _warmup() -> str | None:
 			session = await self._ensure_browser_session()
 			try:
@@ -805,6 +873,8 @@ class BrowserAgentController:
 		extra tabs.
 		"""
 
+		# JP: WebArena 実行前に不要なタブを閉じて安定性を確保する
+		# EN: Close extra tabs before WebArena runs to keep the session stable
 		async def _close() -> None:
 			session = await self._ensure_browser_session()
 			# Enumerate tabs using the CDP helper for speed
@@ -842,6 +912,8 @@ class BrowserAgentController:
 
 	def update_llm(self) -> None:
 		"""Update the LLM instance based on current global settings."""
+		# JP: 設定を読み直して新しい LLM を差し替える
+		# EN: Reload settings and swap in a new LLM instance
 		try:
 			new_llm = _create_selected_llm()
 		except Exception as exc:
@@ -870,6 +942,8 @@ class BrowserAgentController:
 			raise AgentControllerError(f'モデルの更新処理に失敗しました: {exc}') from exc
 
 	def reset(self) -> None:
+		# JP: 実行中でなければセッションと状態を完全に初期化する
+		# EN: Fully reset session and state when not running
 		with self._state_lock:
 			if self._is_running:
 				raise AgentControllerError('エージェント実行中はリセットできません。')
@@ -891,6 +965,8 @@ class BrowserAgentController:
 			return self._vision_enabled
 
 	def prepare_for_new_task(self) -> None:
+		# JP: 新規タスク開始前にエージェント状態をクリアする
+		# EN: Clear agent state before starting a new task
 		with self._state_lock:
 			if self._is_running:
 				raise AgentControllerError('エージェント実行中は新しいタスクを開始できません。')
@@ -909,6 +985,8 @@ class BrowserAgentController:
 		background: bool = False,
 		completion_callback: Callable[[AgentRunResult | Exception], None] | None = None,
 	) -> AgentRunResult | None:
+		# JP: 同期APIから非同期実行を起動し、必要ならバックグラウンドで返す
+		# EN: Launch async execution from a sync API, optionally returning immediately
 		if self._shutdown:
 			raise AgentControllerError('エージェントコントローラーは停止済みです。')
 
@@ -928,6 +1006,8 @@ class BrowserAgentController:
 			if background:
 
 				def _on_complete(f: Any) -> None:
+					# JP: バックグラウンド完了時にコールバックへ通知する
+					# EN: Notify completion callback when background run finishes
 					if not completion_callback:
 						return
 					try:
@@ -952,6 +1032,8 @@ class BrowserAgentController:
 
 	def evaluate_in_browser(self, script: str) -> Any:
 		"""Execute JavaScript in the current browser session."""
+		# JP: CDP 経由で JS を評価し、値だけを返す
+		# EN: Evaluate JS via CDP and return the raw value
 		if not self._browser_session:
 			raise AgentControllerError('ブラウザセッションが存在しません。')
 
@@ -981,6 +1063,8 @@ class BrowserAgentController:
 			self._initial_prompt_handled = True
 
 	def shutdown(self) -> None:
+		# JP: シャットダウンフラグを立て、スレッド/セッションを安全に停止する
+		# EN: Mark shutdown and safely stop thread/session resources
 		if self._shutdown:
 			return
 		self._shutdown = True

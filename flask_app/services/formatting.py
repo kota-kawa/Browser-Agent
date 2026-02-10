@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+# JP: 履歴・ステップ表示を整形するユーティリティ
+# EN: Utilities for formatting history and step outputs
 from pathlib import Path
 from typing import Any
 
@@ -8,6 +10,8 @@ try:
 	from browser_use.agent.views import ActionResult, AgentHistoryList, AgentOutput
 	from browser_use.browser.views import BrowserStateSummary
 except ModuleNotFoundError:
+	# JP: 開発環境で browser_use を直接参照するためパスを調整
+	# EN: Adjust sys.path to import browser_use in local dev
 	import sys
 
 	ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -16,6 +20,8 @@ except ModuleNotFoundError:
 	from browser_use.agent.views import ActionResult, AgentHistoryList, AgentOutput
 	from browser_use.browser.views import BrowserStateSummary
 
+# JP: UI/下流処理が検知する終了マーカー
+# EN: Final-response marker for UI and downstream consumers
 _FINAL_RESPONSE_NOTICE = '※ ブラウザエージェントの応答はここで終了です。'
 _FINAL_RESPONSE_MARKER = '[browser-agent-final]'
 
@@ -23,6 +29,8 @@ _FINAL_RESPONSE_MARKER = '[browser-agent-final]'
 def _append_final_response_notice(message: str) -> str:
 	"""Append a human/machine readable marker signalling that output is final."""
 
+	# JP: 既に付与済みなら重複させない
+	# EN: Avoid duplicating the marker if already present
 	base = (message or '').strip()
 	if _FINAL_RESPONSE_MARKER in base:
 		return base
@@ -33,11 +41,15 @@ def _append_final_response_notice(message: str) -> str:
 
 
 def _compact_text(text: str) -> str:
+	# JP: 余計な前後空白を削除
+	# EN: Trim leading/trailing whitespace
 	return text.strip()
 
 
 def _stringify_value(value: Any) -> str:
 	"""Format a value as string without truncation."""
+	# JP: dict/list は JSON にして読みやすくする
+	# EN: Pretty-print dict/list as JSON when possible
 	if isinstance(value, str):
 		return value.strip()
 	elif isinstance(value, (dict, list)):
@@ -50,6 +62,8 @@ def _stringify_value(value: Any) -> str:
 
 
 def _format_action(action) -> str:
+	# JP: アクション名とパラメータを人間向けに整形
+	# EN: Render action name and params for readability
 	action_dump = action.model_dump(exclude_none=True)
 	if not action_dump:
 		return '不明なアクション'
@@ -70,6 +84,8 @@ def _format_action(action) -> str:
 
 def _format_result(result: ActionResult) -> str:
 	"""Format action result without truncation."""
+	# JP: エラー優先で表示し、無ければ要素を連結
+	# EN: Prefer error text; otherwise join available segments
 	if result.error:
 		return _compact_text(result.error)
 
@@ -92,6 +108,8 @@ def _format_result(result: ActionResult) -> str:
 
 
 def _format_step_entry(index: int, step: Any) -> str:
+	# JP: ステップ1件分をチャット表示向けに整形
+	# EN: Format a single step entry for chat display
 	lines: list[str] = [f'ステップ{index}']
 	state = getattr(step, 'state', None)
 	if state:
@@ -123,6 +141,8 @@ def _format_step_entry(index: int, step: Any) -> str:
 
 
 def _iter_history_steps(history: AgentHistoryList) -> list[tuple[int, Any]]:
+	# JP: step_number を正規化しつつ順序付きリストへ変換
+	# EN: Normalize step numbers and return an ordered list
 	steps: list[tuple[int, Any]] = []
 	next_index = 1
 	for step in history.history:
@@ -136,6 +156,8 @@ def _iter_history_steps(history: AgentHistoryList) -> list[tuple[int, Any]]:
 
 
 def _format_history_messages(history: AgentHistoryList) -> list[tuple[int, str]]:
+	# JP: 履歴をステップ番号と表示文のペアに変換
+	# EN: Convert history into (step_number, message) pairs
 	return [(step_number, _format_step_entry(step_number, step)) for step_number, step in _iter_history_steps(history)]
 
 
@@ -145,6 +167,8 @@ def _format_step_plan(
 	model_output: AgentOutput,
 ) -> str:
 	"""Format a step plan without truncation."""
+	# JP: 実行前の計画をステップ単位で整形
+	# EN: Format pre-execution step plans
 	lines: list[str] = [f'ステップ{step_number}']
 
 	if model_output.evaluation_previous_goal:
@@ -162,6 +186,8 @@ def _format_step_plan(
 
 
 def _summarize_history(history: AgentHistoryList) -> str:
+	# JP: 実行結果の要約を生成して最終応答にする
+	# EN: Build a summary of the run as the final response
 	steps = _iter_history_steps(history)
 	total_steps = max((step_number for step_number, _ in steps), default=0)
 	success = history.is_successful()

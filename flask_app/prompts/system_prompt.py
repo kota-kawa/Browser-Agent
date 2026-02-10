@@ -4,12 +4,15 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+# JP: システムプロンプトの読み込みと埋め込みを担当
+# EN: Load and render the system prompt template
 from browser_use.model_selection import _load_selection
 
 from ..core.config import logger
 from ..services.user_profile import load_user_profile
 
-# List of models that are not multimodal and should not receive vision inputs
+# JP: 画像入力（Vision）に非対応のモデル一覧
+# EN: Models that are not multimodal and must not receive vision inputs
 NON_MULTIMODAL_MODELS = [
 	'llama-3.3-70b-versatile',
 	'llama-3.1-8b-instant',
@@ -19,6 +22,8 @@ NON_MULTIMODAL_MODELS = [
 VISION_CAPABLE_PROVIDERS = {'claude', 'gemini', 'openai'}
 _NON_MULTIMODAL_MODELS_LOWER = {model.lower() for model in NON_MULTIMODAL_MODELS}
 
+# JP: 既定の言語ルール（日本語出力など）
+# EN: Default language rules (Japanese output, etc.)
 _LANGUAGE_EXTENSION = (
 	'### Additional Language Guidelines\n'
 	'- All thought processes, action evaluations, memories, next goals, final reports, etc., must be written in natural Japanese.\n'
@@ -35,6 +40,8 @@ _DEFAULT_MAX_ACTIONS_PER_STEP = 10
 def _should_disable_vision(provider: str | None, model: str | None) -> bool:
 	"""Return True when the selected model/provider should not receive vision inputs."""
 
+	# JP: プロバイダとモデルの組み合わせから Vision 可否を判定
+	# EN: Decide vision capability based on provider/model
 	provider_normalized = (provider or '').strip().lower()
 	model_normalized = (model or '').strip().lower()
 
@@ -48,12 +55,16 @@ def _should_disable_vision(provider: str | None, model: str | None) -> bool:
 
 
 def _system_prompt_candidate_paths() -> tuple[Path, ...]:
+	# JP: システムプロンプトはこのモジュール直下のみ許可
+	# EN: Only allow prompt templates colocated with this module
 	script_path = Path(__file__).resolve()
 	# Only allow the prompt that lives alongside this module
 	return (script_path.parent / _SYSTEM_PROMPT_FILENAME,)
 
 
 def _load_custom_system_prompt_template() -> str | None:
+	# JP: テンプレートを一度だけ読み込みキャッシュする
+	# EN: Load and cache the template once
 	global _CUSTOM_SYSTEM_PROMPT_TEMPLATE
 	if _CUSTOM_SYSTEM_PROMPT_TEMPLATE is not None:
 		return _CUSTOM_SYSTEM_PROMPT_TEMPLATE or None
@@ -82,6 +93,8 @@ def _build_custom_system_prompt(
 	provider: str | None = None,
 	model: str | None = None,
 ) -> str | None:
+	# JP: テンプレートに現在時刻・ユーザープロファイル等を埋め込む
+	# EN: Inject current time and user profile into the template
 	template = _load_custom_system_prompt_template()
 	if not template:
 		return None
@@ -93,6 +106,8 @@ def _build_custom_system_prompt(
 	vision_disabled = force_disable_vision or _should_disable_vision(provider, model)
 
 	if vision_disabled:
+		# JP: Vision を使わないモデル向けに関連セクションを削除
+		# EN: Remove vision sections for non-vision models
 		# Remove vision-related sections for non-multimodal models
 		template = re.sub(r'<browser_vision>.*?</browser_vision>\n', '', template, flags=re.DOTALL)
 		# Adjust reasoning rules to remove dependency on screenshots
@@ -106,6 +121,8 @@ def _build_custom_system_prompt(
 		)
 
 	now = datetime.now().astimezone()
+	# JP: ローカル日時の文字列を生成して埋め込む
+	# EN: Build a localized datetime string for the prompt
 	weekday_ja = '月火水木金土日'[now.weekday()]
 	current_datetime_line = (
 		f'{now.strftime("%Y-%m-%d %H:%M %Z (UTC%z, %A)")}'
