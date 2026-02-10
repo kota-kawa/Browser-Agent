@@ -73,11 +73,11 @@ async def chat(request: Request) -> JSONResponse:
 	try:
 		guard_result = await check_prompt_safety(prompt)
 	except InputGuardError as exc:
-		logger.warning('Llama Guard check failed: %s', exc)
+		logger.warning('Safety guard check failed: %s', exc)
 		return JSONResponse({'error': f'入力の安全性チェックに失敗しました: {exc}'}, status_code=503)
 
 	if not guard_result.is_safe:
-		logger.info('Blocked prompt by Llama Guard. Categories: %s', ','.join(guard_result.categories))
+		logger.info('Blocked prompt by safety guard. Categories: %s', ','.join(guard_result.categories))
 		return JSONResponse(
 			{'error': '入力内容が安全性チェックによりブロックされました。別の表現でお試しください。'},
 			status_code=400,
