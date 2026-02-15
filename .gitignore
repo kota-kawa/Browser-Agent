@@ -101,6 +101,7 @@ screenshot.png
 # JSON exclusions with exceptions
 *.json
 !package.json
+!flask_app/frontend/package-lock.json
 !tsconfig.json
 !docs/docs.json
 
