@@ -4,6 +4,8 @@
   <img src="static/Browser-Agent-Icon.png" width="800" alt="Browser-Agent Icon">
 </p>
 
+## UI Preview
+
 <p align="center">
   <img src="assets/images/Browser-Agent-Screenshot.png" width="1000" alt="Browser-Agent UI Screenshot">
 </p>
@@ -97,6 +99,8 @@ See [LICENSE.md](LICENSE.md) for details.
 <summary>日本語</summary>
 
 # Browser-Agent
+
+## UIプレビュー
 
 <p align="center">
   <img src="assets/images/Browser-Agent-Screenshot.png" width="1000" alt="Browser-Agent UI スクリーンショット">
