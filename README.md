@@ -4,6 +4,10 @@
   <img src="static/Browser-Agent-Icon.png" width="800" alt="Browser-Agent Icon">
 </p>
 
+<p align="center">
+  <img src="assets/images/Browser-Agent-Screenshot.png" width="1000" alt="Browser-Agent UI Screenshot">
+</p>
+
 A browser automation agent with a FastAPI web interface powered by modern LLMs. Control a real browser with natural language, watch it in real time, and run benchmarks like WebArena.
 
 ## 🚀 Overview
@@ -93,6 +97,10 @@ See [LICENSE.md](LICENSE.md) for details.
 <summary>日本語</summary>
 
 # Browser-Agent
+
+<p align="center">
+  <img src="assets/images/Browser-Agent-Screenshot.png" width="1000" alt="Browser-Agent UI スクリーンショット">
+</p>
 
 最新のLLMを活用したFastAPIベースのブラウザ自動化エージェントです。自然言語でブラウザを操作でき、実行状況をリアルタイムで可視化し、WebArenaのようなベンチマークも実行できます。
 
