@@ -59,6 +59,11 @@ Visit **http://localhost:5005** in your browser.
 ### WebArena
 Use the **WebArena** tab in the UI or call the API endpoints below.
 
+### Demo Videos
+Click each link below to open YouTube and play the video.
+- [AI news search demo](https://youtu.be/qXbq_8NWp1Y): Shows the agent searching for AI-related news.
+- [Amazon AirPods lowest price demo](https://youtu.be/EaJG-JRtuKs): Shows the agent checking the lowest AirPods price on Amazon.
+
 ### API Endpoints
 - `POST /api/chat`: Send a task to the agent.
 - `GET /api/stream`: Subscribe to the event stream.
@@ -141,6 +146,11 @@ docker compose up --build
 
 ### WebArena
 UIの **WebArena** タブ、またはAPIから実行できます。
+
+### デモ動画
+以下のリンクをクリックすると、YouTubeで動画が再生されます。
+- [AI関連ニュース検索デモ](https://youtu.be/qXbq_8NWp1Y): エージェントがAI関連ニュースを検索する様子。
+- [AmazonでAirPodsの最安値を調べるデモ](https://youtu.be/EaJG-JRtuKs): エージェントがAmazonでAirPodsの最安値を調べる様子。
 
 ### API エンドポイント
 - `POST /api/chat`: エージェントにタスクを送信します。
