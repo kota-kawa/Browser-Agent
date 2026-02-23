@@ -23,6 +23,13 @@
   <img src="assets/images/Browser-Agent-Screenshot.png" width="1000" alt="Browser-Agent UI Screenshot">
 </p>
 
+## 🎬 Demo Videos
+Click a thumbnail to open the video on YouTube.
+
+| [![Demo Video 1: Agent searches AI-related news](https://img.youtube.com/vi/qXbq_8NWp1Y/hqdefault.jpg)](https://youtu.be/qXbq_8NWp1Y) | [![Demo Video 2: Agent finds the lowest AirPods price on Amazon](https://img.youtube.com/vi/EaJG-JRtuKs/hqdefault.jpg)](https://youtu.be/EaJG-JRtuKs) |
+| --- | --- |
+| Agent searches AI-related news | Agent finds the lowest AirPods price on Amazon |
+
 A browser automation agent with a FastAPI web interface powered by modern LLMs. Control a real browser with natural language, watch it in real time, and run benchmarks like WebArena.
 
 ## 🚀 Overview
@@ -78,13 +85,6 @@ Visit **http://localhost:5005** in your browser.
 ### WebArena
 Use the **WebArena** tab in the UI or call the API endpoints below.
 
-## 🎬 Demo Videos
-Click a thumbnail to open the video on YouTube.
-
-| [![Demo Video 1: Agent searches AI-related news](https://img.youtube.com/vi/qXbq_8NWp1Y/hqdefault.jpg)](https://youtu.be/qXbq_8NWp1Y) | [![Demo Video 2: Agent finds the lowest AirPods price on Amazon](https://img.youtube.com/vi/EaJG-JRtuKs/hqdefault.jpg)](https://youtu.be/EaJG-JRtuKs) |
-| --- | --- |
-| Agent searches AI-related news | Agent finds the lowest AirPods price on Amazon |
-
 ### API Endpoints
 - `POST /api/chat`: Send a task to the agent.
 - `GET /api/stream`: Subscribe to the event stream.
@@ -129,6 +129,13 @@ See [LICENSE.md](LICENSE.md) for details.
 <p align="center">
   <img src="assets/images/Browser-Agent-Screenshot.png" width="1000" alt="Browser-Agent UI スクリーンショット">
 </p>
+
+## 🎬 デモ動画
+サムネイルをクリックすると、YouTubeで動画が再生されます。
+
+| [![デモ動画1: エージェントがAI関連ニュースを検索](https://img.youtube.com/vi/qXbq_8NWp1Y/hqdefault.jpg)](https://youtu.be/qXbq_8NWp1Y) | [![デモ動画2: エージェントがAmazonでAirPodsの最安値を調査](https://img.youtube.com/vi/EaJG-JRtuKs/hqdefault.jpg)](https://youtu.be/EaJG-JRtuKs) |
+| --- | --- |
+| エージェントがAI関連ニュースを検索する様子 | エージェントがAmazonでAirPodsの最安値を調べる様子 |
 
 最新のLLMを活用したFastAPIベースのブラウザ自動化エージェントです。自然言語でブラウザを操作でき、実行状況をリアルタイムで可視化し、WebArenaのようなベンチマークも実行できます。
 
@@ -184,13 +191,6 @@ docker compose up --build
 
 ### WebArena
 UIの **WebArena** タブ、またはAPIから実行できます。
-
-## 🎬 デモ動画
-サムネイルをクリックすると、YouTubeで動画が再生されます。
-
-| [![デモ動画1: エージェントがAI関連ニュースを検索](https://img.youtube.com/vi/qXbq_8NWp1Y/hqdefault.jpg)](https://youtu.be/qXbq_8NWp1Y) | [![デモ動画2: エージェントがAmazonでAirPodsの最安値を調査](https://img.youtube.com/vi/EaJG-JRtuKs/hqdefault.jpg)](https://youtu.be/EaJG-JRtuKs) |
-| --- | --- |
-| エージェントがAI関連ニュースを検索する様子 | エージェントがAmazonでAirPodsの最安値を調べる様子 |
 
 ### API エンドポイント
 - `POST /api/chat`: エージェントにタスクを送信します。
