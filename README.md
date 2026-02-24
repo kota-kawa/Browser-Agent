@@ -29,13 +29,13 @@
 <tr>
 <td align="center" width="50%">
 <a href="https://youtu.be/qXbq_8NWp1Y">
-<img src="https://img.youtube.com/vi/qXbq_8NWp1Y/mqdefault.jpg" width="320" alt="Demo 1"/>
+<img src="https://img.youtube.com/vi/qXbq_8NWp1Y/mqdefault.jpg" width="100%" alt="Demo 1"/>
 </a><br/>
 <b>Agent searches AI-related news</b>
 </td>
 <td align="center" width="50%">
 <a href="https://youtu.be/EaJG-JRtuKs">
-<img src="https://img.youtube.com/vi/EaJG-JRtuKs/mqdefault.jpg" width="320" alt="Demo 2"/>
+<img src="https://img.youtube.com/vi/EaJG-JRtuKs/mqdefault.jpg" width="100%" alt="Demo 2"/>
 </a><br/>
 <b>Agent finds lowest AirPods price on Amazon</b>
 </td>
@@ -148,13 +148,13 @@ See [LICENSE.md](LICENSE.md) for details.
 <tr>
 <td align="center" width="50%">
 <a href="https://youtu.be/qXbq_8NWp1Y">
-<img src="https://img.youtube.com/vi/qXbq_8NWp1Y/mqdefault.jpg" width="320" alt="デモ1"/>
+<img src="https://img.youtube.com/vi/qXbq_8NWp1Y/mqdefault.jpg" width="100%" alt="デモ1"/>
 </a><br/>
 <b>エージェントがAI関連ニュースを検索する様子</b>
 </td>
 <td align="center" width="50%">
 <a href="https://youtu.be/EaJG-JRtuKs">
-<img src="https://img.youtube.com/vi/EaJG-JRtuKs/mqdefault.jpg" width="320" alt="デモ2"/>
+<img src="https://img.youtube.com/vi/EaJG-JRtuKs/mqdefault.jpg" width="100%" alt="デモ2"/>
 </a><br/>
 <b>エージェントがAmazonでAirPodsの最安値を調べる様子</b>
 </td>
