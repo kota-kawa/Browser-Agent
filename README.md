@@ -25,7 +25,7 @@
 
 ## 🎬 Demo Videos
 
-<table>
+<table width="100%">
 <tr>
 <td align="center" width="50%">
 <a href="https://youtu.be/qXbq_8NWp1Y">
@@ -144,7 +144,7 @@ See [LICENSE.md](LICENSE.md) for details.
 
 ## 🎬 デモ動画
 
-<table>
+<table width="100%">
 <tr>
 <td align="center" width="50%">
 <a href="https://youtu.be/qXbq_8NWp1Y">
