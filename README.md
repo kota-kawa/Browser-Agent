@@ -24,13 +24,23 @@
 </p>
 
 ## 🎬 Demo Videos
-Click a thumbnail to open the video on YouTube.
 
-[![Demo Video 1: Agent searches AI-related news](https://img.youtube.com/vi/qXbq_8NWp1Y/maxresdefault.jpg)](https://youtu.be/qXbq_8NWp1Y)
-**Agent searches AI-related news**
-
-[![Demo Video 2: Agent finds the lowest AirPods price on Amazon](https://img.youtube.com/vi/EaJG-JRtuKs/maxresdefault.jpg)](https://youtu.be/EaJG-JRtuKs)
-**Agent finds the lowest AirPods price on Amazon**
+<table>
+<tr>
+<td align="center" width="50%">
+<a href="https://youtu.be/qXbq_8NWp1Y">
+<img src="https://img.youtube.com/vi/qXbq_8NWp1Y/mqdefault.jpg" width="320" alt="Demo 1"/>
+</a><br/>
+<b>Agent searches AI-related news</b>
+</td>
+<td align="center" width="50%">
+<a href="https://youtu.be/EaJG-JRtuKs">
+<img src="https://img.youtube.com/vi/EaJG-JRtuKs/mqdefault.jpg" width="320" alt="Demo 2"/>
+</a><br/>
+<b>Agent finds lowest AirPods price on Amazon</b>
+</td>
+</tr>
+</table>
 
 A browser automation agent with a FastAPI web interface powered by modern LLMs. Control a real browser with natural language, watch it in real time, and run benchmarks like WebArena.
 
@@ -133,13 +143,23 @@ See [LICENSE.md](LICENSE.md) for details.
 </p>
 
 ## 🎬 デモ動画
-サムネイルをクリックすると、YouTubeで動画が再生されます。
 
-[![デモ動画1: エージェントがAI関連ニュースを検索](https://img.youtube.com/vi/qXbq_8NWp1Y/maxresdefault.jpg)](https://youtu.be/qXbq_8NWp1Y)
-**エージェントがAI関連ニュースを検索する様子**
-
-[![デモ動画2: エージェントがAmazonでAirPodsの最安値を調査](https://img.youtube.com/vi/EaJG-JRtuKs/maxresdefault.jpg)](https://youtu.be/EaJG-JRtuKs)
-**エージェントがAmazonでAirPodsの最安値を調べる様子**
+<table>
+<tr>
+<td align="center" width="50%">
+<a href="https://youtu.be/qXbq_8NWp1Y">
+<img src="https://img.youtube.com/vi/qXbq_8NWp1Y/mqdefault.jpg" width="320" alt="デモ1"/>
+</a><br/>
+<b>エージェントがAI関連ニュースを検索する様子</b>
+</td>
+<td align="center" width="50%">
+<a href="https://youtu.be/EaJG-JRtuKs">
+<img src="https://img.youtube.com/vi/EaJG-JRtuKs/mqdefault.jpg" width="320" alt="デモ2"/>
+</a><br/>
+<b>エージェントがAmazonでAirPodsの最安値を調べる様子</b>
+</td>
+</tr>
+</table>
 
 最新のLLMを活用したFastAPIベースのブラウザ自動化エージェントです。自然言語でブラウザを操作でき、実行状況をリアルタイムで可視化し、WebArenaのようなベンチマークも実行できます。
 
