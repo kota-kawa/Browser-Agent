@@ -2,6 +2,8 @@ from __future__ import annotations
 
 # JP: FastAPI アプリ本体とミドルウェアを構成するエントリポイント
 # EN: Entry point that wires the FastAPI app and middleware
+from typing import TYPE_CHECKING
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -10,6 +12,9 @@ from .core.config import APP_STATIC_DIR
 from .routes import register_routes
 from .services.agent_runtime import get_agent_controller
 from .webarena import router as webarena_router
+
+if TYPE_CHECKING:
+	from .services.agent_controller import BrowserAgentController
 
 # JP: API サーバー本体
 # EN: FastAPI application instance
@@ -27,7 +32,7 @@ app.include_router(webarena_router)
 register_routes(app)
 
 
-def _get_agent_controller():
+def _get_agent_controller() -> BrowserAgentController:
 	# JP: 遅延初期化されたコントローラーを取得
 	# EN: Fetch the lazily initialized controller
 	return get_agent_controller()

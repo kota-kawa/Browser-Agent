@@ -3,7 +3,7 @@ from __future__ import annotations
 # JP: UI テンプレートの配信ルート
 # EN: Routes for serving UI templates
 from fastapi import APIRouter, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from ..core.config import APP_STATIC_DIR, APP_TEMPLATE_DIR, logger
@@ -34,7 +34,7 @@ def favicon_png() -> FileResponse:
 
 
 @router.get('/')
-def index(request: Request):
+def index(request: Request) -> Response:
 	# JP: ブラウザセッションのウォームアップを試みて UI を返す
 	# EN: Warm up browser session if possible and serve the UI
 	try:
@@ -55,7 +55,7 @@ def index(request: Request):
 
 
 @router.get('/agent-result')
-def agent_result(request: Request):
+def agent_result(request: Request) -> Response:
 	# JP: 結果ページも同様にウォームアップを試みる
 	# EN: Attempt warmup before serving the result page
 	try:
