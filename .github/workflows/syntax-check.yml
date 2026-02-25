@@ -55,9 +55,6 @@ jobs:
   typescript-syntax:
     name: TypeScript Syntax Check
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: fastapi_app/frontend
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -75,7 +72,9 @@ jobs:
           cache-dependency-path: fastapi_app/frontend/package-lock.json
 
       - name: Install frontend dependencies
-        run: npm ci
+        working-directory: fastapi_app/frontend
+        run: npm ci --include=dev
 
       - name: Check TypeScript syntax
+        working-directory: fastapi_app/frontend
         run: npx tsc --project tsconfig.json --noEmit --noCheck
