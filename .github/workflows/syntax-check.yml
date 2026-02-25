@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: flask_app/frontend
+        working-directory: fastapi_app/frontend
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -67,7 +67,7 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-          cache-dependency-path: flask_app/frontend/package-lock.json
+          cache-dependency-path: fastapi_app/frontend/package-lock.json
 
       - name: Install frontend dependencies
         run: npm ci
