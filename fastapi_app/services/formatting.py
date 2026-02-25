@@ -9,6 +9,7 @@ from typing import Any
 try:
 	from browser_use.agent.views import ActionResult, AgentHistoryList, AgentOutput
 	from browser_use.browser.views import BrowserStateSummary
+	from browser_use.tools.registry.views import ActionModel
 except ModuleNotFoundError:
 	# JP: 開発環境で browser_use を直接参照するためパスを調整
 	# EN: Adjust sys.path to import browser_use in local dev
@@ -19,6 +20,7 @@ except ModuleNotFoundError:
 		sys.path.insert(0, str(ROOT_DIR))
 	from browser_use.agent.views import ActionResult, AgentHistoryList, AgentOutput
 	from browser_use.browser.views import BrowserStateSummary
+	from browser_use.tools.registry.views import ActionModel
 
 # JP: UI/下流処理が検知する終了マーカー
 # EN: Final-response marker for UI and downstream consumers
@@ -61,7 +63,7 @@ def _stringify_value(value: Any) -> str:
 		return str(value)
 
 
-def _format_action(action) -> str:
+def _format_action(action: ActionModel) -> str:
 	# JP: アクション名とパラメータを人間向けに整形
 	# EN: Render action name and params for readability
 	action_dump = action.model_dump(exclude_none=True)

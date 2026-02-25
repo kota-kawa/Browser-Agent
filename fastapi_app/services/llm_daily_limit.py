@@ -3,14 +3,20 @@ from __future__ import annotations
 import threading
 from dataclasses import dataclass
 from datetime import date, datetime
+from typing import TypeVar
 
 # JP: LLM 呼び出し回数に日次制限を適用するラッパー
 # EN: Wrapper that applies a daily limit to LLM calls
 from browser_use.llm.base import BaseChatModel
 from browser_use.llm.exceptions import ModelRateLimitError
+from browser_use.llm.messages import BaseMessage
+from browser_use.llm.views import ChatInvokeCompletion
+from pydantic import BaseModel
 
 from ..core.config import logger
 from ..core.env import _LLM_DAILY_API_LIMIT
+
+T = TypeVar('T', bound=BaseModel)
 
 
 @dataclass
@@ -80,7 +86,10 @@ def apply_daily_llm_limit(llm: BaseChatModel) -> BaseChatModel:
 
 	original_ainvoke = llm.ainvoke
 
-	async def limited_ainvoke(messages, output_format=None):
+	async def limited_ainvoke(
+		messages: list[BaseMessage],
+		output_format: type[T] | None = None,
+	) -> ChatInvokeCompletion[T] | ChatInvokeCompletion[str]:
 		model_name = getattr(llm, 'model', None)
 		_check_and_increment(state, str(model_name) if model_name is not None else None)
 		return await original_ainvoke(messages, output_format)

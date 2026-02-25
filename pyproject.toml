@@ -1,7 +1,7 @@
 [project]
 name = "browser-agent"
 description = "Make websites accessible for AI agents"
-authors = [{ name = "kota-kawa", email = "kota7kawagoe@gmail.com" }]
+authors = [{ name = "Kota Kawagoe", email = "kota7kawagoe@gmail.com" }]
 version = "0.7.8"
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
