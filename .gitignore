@@ -101,14 +101,14 @@ screenshot.png
 # JSON exclusions with exceptions
 *.json
 !package.json
-!flask_app/frontend/package-lock.json
+!fastapi_app/frontend/package-lock.json
 !tsconfig.json
 !docs/docs.json
 
 # Text file exclusions with exceptions
 *.txt
 !requirements.txt
-!flask_app/requirements.txt
+!fastapi_app/requirements.txt
 !LICENSE
 
 # --- Specific Local Files ---
@@ -129,7 +129,7 @@ uv.lock
 all_github_issues_progress.md
 all_github_issues.md
 *.Identifier
-flask_app/static/dist/
-flask_app/frontend/node_modules/
-!flask_app/frontend/src/lib/
-!flask_app/frontend/src/lib/**
+fastapi_app/static/dist/
+fastapi_app/frontend/node_modules/
+!fastapi_app/frontend/src/lib/
+!fastapi_app/frontend/src/lib/**
