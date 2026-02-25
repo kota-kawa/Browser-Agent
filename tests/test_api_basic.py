@@ -4,7 +4,7 @@ import types
 
 import pytest
 
-import flask_app.routes.api_chat as api_chat
+import fastapi_app.routes.api_chat as api_chat
 
 
 class _FakeMeta:
@@ -85,7 +85,14 @@ class _FakeController:
     def resume(self):
         self._paused = False
 
-    def run(self, prompt, background=False, completion_callback=None, record_history=True):
+    def run(
+        self,
+        prompt,
+        background=False,
+        completion_callback=None,
+        record_history=True,
+        additional_system_message=None,
+    ):
         if background:
             return None
         return _FakeRunResult()
@@ -107,7 +114,11 @@ class _FakeRequest:
 
 @pytest.fixture()
 def controller(monkeypatch):
+    async def _safe_prompt(*_args, **_kwargs):
+        return types.SimpleNamespace(is_safe=True, categories=())
+
     monkeypatch.setattr(api_chat, "get_agent_controller", lambda: _FakeController())
+    monkeypatch.setattr(api_chat, "check_prompt_safety", _safe_prompt)
     monkeypatch.setattr(
         api_chat,
         "_analyze_conversation_history",

@@ -18,10 +18,10 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 
-from flask_app.core.config import APP_TEMPLATE_DIR
-from flask_app.core.env import _BROWSER_URL, _WEBARENA_MAX_STEPS, _normalize_start_url
-from flask_app.services.formatting import _format_history_messages
-from flask_app.routes.utils import read_json_payload
+from fastapi_app.core.config import APP_TEMPLATE_DIR
+from fastapi_app.core.env import _BROWSER_URL, _WEBARENA_MAX_STEPS, _normalize_start_url
+from fastapi_app.services.formatting import _format_history_messages
+from fastapi_app.routes.utils import read_json_payload
 
 from . import router
 
@@ -562,7 +562,7 @@ async def run_task(request: Request):
 
 	try:
 		# Import here to avoid circular dependency
-		from flask_app.services.agent_runtime import get_agent_controller
+		from fastapi_app.services.agent_runtime import get_agent_controller
 		controller = get_agent_controller()
 
 		intent = ''
@@ -632,7 +632,7 @@ async def run_batch(request: Request):
 	if not selected_tasks:
 		return JSONResponse({'error': '実行可能なタスクがありません。'}, status_code=400)
 
-	from flask_app.services.agent_runtime import get_agent_controller
+	from fastapi_app.services.agent_runtime import get_agent_controller
 
 	controller = get_agent_controller()
 

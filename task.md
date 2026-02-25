@@ -7,13 +7,13 @@
 ## やること (Must)
 <!-- 具体的なタスクリスト -->
 - [ ] 現行エントリ3本 (`index`/`webarena`/`agent_result`) を全て `.tsx` 化し、TypeScript でビルドできるようにする。
-- [ ] Vite 設定の入力を `.tsx` に更新し、出力が `flask_app/static/dist/{index,webarena,agent_result}.js` のままになることを保証する。
+- [ ] Vite 設定の入力を `.tsx` に更新し、出力が `fastapi_app/static/dist/{index,webarena,agent_result}.js` のままになることを保証する。
 - [ ] `tsconfig.json` と `vite-env.d.ts` を追加し、`strict` 系オプションを有効化する。
 - [ ] `window.__INDEX_APP_PROPS__`, `__WEBARENA_APP_PROPS__`, `__AGENT_RESULT_APP_PROPS__` の型定義を用意する。
 - [ ] `fetch` 先 API 応答の型定義を作成し、`response.ok` 判定や必要フィールドの存在チェックを維持する。
 - [ ] 既存の DOM 操作/ResizeObserver/SSE 再接続/Thinking 表示などの挙動を TypeScript で再現し、回帰を起こさない。
-- [ ] `npm run build` で `flask_app/static/dist` が生成されること、`npm run typecheck` が通ることを前提化する (必要なら script 追加)。
-- [ ] `flask_app/static/js` の旧アセットが未使用であることを確認し、不要なら削除または参照を完全に廃止する。
+- [ ] `npm run build` で `fastapi_app/static/dist` が生成されること、`npm run typecheck` が通ることを前提化する (必要なら script 追加)。
+- [ ] `fastapi_app/static/js` の旧アセットが未使用であることを確認し、不要なら削除または参照を完全に廃止する。
 - [ ] README/運用メモに TypeScript 移行後のビルド/開発手順を追記する (必要な場合のみ)。
 
 ## やらないこと (Non-goals)
@@ -25,7 +25,7 @@
 
 ## 受け入れ基準 (Acceptance Criteria)
 <!-- 完了とみなす条件 -->
-- [ ] `flask_app/frontend` が TypeScript でビルド可能で、`npm run build` 後に `flask_app/static/dist/index.js` などが生成される。
+- [ ] `fastapi_app/frontend` が TypeScript でビルド可能で、`npm run build` 後に `fastapi_app/static/dist/index.js` などが生成される。
 - [ ] `npm run typecheck` (または `tsc --noEmit`) がエラーなしで完了する。
 - [ ] `/`, `/webarena`, `/agent_result` で従来どおりの表示と主要操作 (SSE 更新・チャット送信・一時停止/再開・リセット・WebArena 実行/バッチ実行) が動作する。
 - [ ] 既存の挙動が一切変わっていないこと (UI/UX・レスポンス・タイミング・状態遷移を含む)。
@@ -36,14 +36,14 @@
 ## 影響範囲 (Impact/Scope)
 <!-- 変更するファイルや注意すべき既存機能 -->
 - **触るファイル**:
-  - `flask_app/frontend/src/*`
-  - `flask_app/frontend/vite.config.js`
-  - `flask_app/frontend/package.json`
-  - `flask_app/frontend/tsconfig.json`
-  - `flask_app/frontend/src/vite-env.d.ts` など型定義ファイル
-  - `flask_app/templates/*.html` (必要な場合のみ)
-  - `flask_app/static/dist/*` (ビルド生成物)
-  - `flask_app/static/js/*` (不要化または削除の場合)
+  - `fastapi_app/frontend/src/*`
+  - `fastapi_app/frontend/vite.config.js`
+  - `fastapi_app/frontend/package.json`
+  - `fastapi_app/frontend/tsconfig.json`
+  - `fastapi_app/frontend/src/vite-env.d.ts` など型定義ファイル
+  - `fastapi_app/templates/*.html` (必要な場合のみ)
+  - `fastapi_app/static/dist/*` (ビルド生成物)
+  - `fastapi_app/static/js/*` (不要化または削除の場合)
 - **壊しちゃいけない挙動**:
   - SSE ストリームの接続/再接続とステータス表示
   - チャット履歴の取得/表示/スクロール制御

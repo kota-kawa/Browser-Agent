@@ -18,7 +18,7 @@ COPY pyproject.toml README.md ./
 COPY browser_use/ browser_use/
 
 # Copy FastAPI requirements
-COPY flask_app/requirements.txt ./
+COPY fastapi_app/requirements.txt ./
 
 # Install FastAPI requirements and local browser_use package
 # We install requirements first (which might pull browser-use from PyPI)
@@ -27,15 +27,15 @@ RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir .
 
 # Copy frontend source and build
-COPY flask_app/frontend/ flask_app/frontend/
-RUN cd flask_app/frontend && npm install && npm run build
+COPY fastapi_app/frontend/ fastapi_app/frontend/
+RUN cd fastapi_app/frontend && npm install && npm run build
 
 # Copy FastAPI application code
-# Keep the flask_app package under the flask_app directory so imports like flask_app.* keep working.
-COPY flask_app/ flask_app/
+# Keep the fastapi_app package under the fastapi_app directory so imports like fastapi_app.* keep working.
+COPY fastapi_app/ fastapi_app/
 
 ENV UVICORN_HOST=0.0.0.0 \
     UVICORN_PORT=5005
 
 # Force rebuild to apply latest fixes
-CMD ["uvicorn", "flask_app.app:app", "--host", "0.0.0.0", "--port", "5005"]
+CMD ["uvicorn", "fastapi_app.app:app", "--host", "0.0.0.0", "--port", "5005"]
