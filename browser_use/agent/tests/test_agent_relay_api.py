@@ -175,7 +175,7 @@ browser_use.BrowserProfile = type('BrowserProfile', (), {})
 browser_use.BrowserSession = type('BrowserSession', (), {})
 browser_use.Tools = type('Tools', (), {})
 
-from flask_app.routes import api_chat as api_chat_module
+from fastapi_app.routes import api_chat as api_chat_module
 
 
 class _StubController:

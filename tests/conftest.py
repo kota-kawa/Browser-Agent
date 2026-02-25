@@ -192,7 +192,16 @@ def _install_browser_use_stubs():
     }
 
     llm_base_stub.BaseChatModel = _BaseChatModel
-    llm_exceptions_stub.ModelProviderError = Exception
+    class _ModelProviderError(Exception):
+        pass
+
+    class _ModelRateLimitError(Exception):
+        def __init__(self, message=None, model=None):
+            super().__init__(message)
+            self.model = model
+
+    llm_exceptions_stub.ModelProviderError = _ModelProviderError
+    llm_exceptions_stub.ModelRateLimitError = _ModelRateLimitError
     llm_messages_stub.SystemMessage = _Message
     llm_messages_stub.UserMessage = _Message
     llm_openai_stub.ChatOpenAI = _ChatOpenAI

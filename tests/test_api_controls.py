@@ -1,0 +1,74 @@
+import json
+
+from fastapi_app.core.exceptions import AgentControllerError
+from fastapi_app.routes import api_controls
+
+
+class _FakeController:
+    def __init__(self, reset_error=None, pause_error=None, resume_error=None):
+        self._reset_error = reset_error
+        self._pause_error = pause_error
+        self._resume_error = resume_error
+
+    def reset(self):
+        if self._reset_error:
+            raise self._reset_error
+
+    def pause(self):
+        if self._pause_error:
+            raise self._pause_error
+
+    def resume(self):
+        if self._resume_error:
+            raise self._resume_error
+
+
+def _body(response):
+    return json.loads(response.body.decode("utf-8"))
+
+
+def test_reset_conversation_success_without_controller(monkeypatch):
+    monkeypatch.setattr(api_controls, "get_controller_if_initialized", lambda: None)
+    monkeypatch.setattr(api_controls, "_reset_history", lambda: [{"id": 1, "content": "x"}])
+
+    response = api_controls.reset_conversation()
+    assert response.status_code == 200
+    assert _body(response)["messages"] == [{"id": 1, "content": "x"}]
+
+
+def test_reset_conversation_returns_400_on_controller_error(monkeypatch):
+    controller = _FakeController(reset_error=AgentControllerError("bad reset"))
+    monkeypatch.setattr(api_controls, "get_controller_if_initialized", lambda: controller)
+
+    response = api_controls.reset_conversation()
+    assert response.status_code == 400
+    assert "bad reset" in _body(response)["error"]
+
+
+def test_pause_and_resume_success(monkeypatch):
+    controller = _FakeController()
+    monkeypatch.setattr(api_controls, "get_existing_controller", lambda: controller)
+
+    pause_res = api_controls.pause_agent()
+    resume_res = api_controls.resume_agent()
+
+    assert pause_res.status_code == 200
+    assert _body(pause_res)["status"] == "paused"
+    assert resume_res.status_code == 200
+    assert _body(resume_res)["status"] == "resumed"
+
+
+def test_pause_and_resume_return_400_for_agent_controller_error(monkeypatch):
+    pause_controller = _FakeController(pause_error=AgentControllerError("cant pause"))
+    resume_controller = _FakeController(resume_error=AgentControllerError("cant resume"))
+
+    monkeypatch.setattr(api_controls, "get_existing_controller", lambda: pause_controller)
+    pause_res = api_controls.pause_agent()
+    assert pause_res.status_code == 400
+    assert "cant pause" in _body(pause_res)["error"]
+
+    monkeypatch.setattr(api_controls, "get_existing_controller", lambda: resume_controller)
+    resume_res = api_controls.resume_agent()
+    assert resume_res.status_code == 400
+    assert "cant resume" in _body(resume_res)["error"]
+

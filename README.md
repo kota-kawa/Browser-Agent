@@ -103,7 +103,7 @@ Use the **WebArena** tab in the UI or call the API endpoints below.
 ```
 /
 ├── browser_use/       # Core agent logic, DOM manipulation, tools
-├── flask_app/         # FastAPI web server, API routes, UI templates
+├── fastapi_app/         # FastAPI web server, API routes, UI templates
 │   ├── core/          # Config and environment setup
 │   ├── services/      # Business logic (Agent Controller, History)
 │   ├── routes/        # API endpoints
@@ -218,7 +218,7 @@ UIの **WebArena** タブ、またはAPIから実行できます。
 ```
 /
 ├── browser_use/       # コアエージェントロジック、DOM操作、ツール
-├── flask_app/         # FastAPI Webサーバー、APIルート、UIテンプレート
+├── fastapi_app/         # FastAPI Webサーバー、APIルート、UIテンプレート
 │   ├── core/          # 設定と環境構築
 │   ├── services/      # ビジネスロジック（Agent Controller, History）
 │   ├── routes/        # APIエンドポイント

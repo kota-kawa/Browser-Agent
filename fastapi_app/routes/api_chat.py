@@ -25,7 +25,7 @@ from .utils import read_json_payload
 
 router = APIRouter()
 
-_STEP_MESSAGE_RE = re.compile(r'^ステップ\\d+')
+_STEP_MESSAGE_RE = re.compile(r'^ステップ\d+')
 
 
 def _build_recent_conversation_context(

@@ -1,14 +1,14 @@
 # Agent Playbook
 
 ## 目的と全体像
-- このリポジトリは `browser_use` のフルソースと、FastAPI ベースのブラウザ操作エージェント UI/API (`flask_app/`) を同梱します。
-- 主要な変更点は `flask_app/services/agent_controller.py` の `BrowserAgentController` と `flask_app/routes/` の HTTP エンドポイント群です。Gemini ベースの LLM、Chrome DevTools (CDP) セッション、EventBus を常駐させ、SSE で UI に進捗を配信します。
+- このリポジトリは `browser_use` のフルソースと、FastAPI ベースのブラウザ操作エージェント UI/API (`fastapi_app/`) を同梱します。
+- 主要な変更点は `fastapi_app/services/agent_controller.py` の `BrowserAgentController` と `fastapi_app/routes/` の HTTP エンドポイント群です。Gemini ベースの LLM、Chrome DevTools (CDP) セッション、EventBus を常駐させ、SSE で UI に進捗を配信します。
 - `IMPLEMENTATION_SUMMARY.md` は本ファイルに統合されました。最新の仕様はこのファイルを参照してください。
 
 ## ディレクトリ構成の要点
 - `browser_use/` : OSS 本体。`agent/`, `controller/`, `browser/`, `llm/`, `tokens/`, `tools/`, `telemetry/`, `mcp/` などに機能が分類されています。
   - `browser_use/agent/scratchpad.py`: エージェントが構造化データを一時保存するための「メモ帳」機能。
-- `flask_app/` : Web サーバー、SSE、静的 UI、Docker `Dockerfile.flask`、`requirements.txt` を含むアプリ本体 (FastAPI)。
+- `fastapi_app/` : Web サーバー、SSE、静的 UI、Docker `Dockerfile.flask`、`requirements.txt` を含むアプリ本体 (FastAPI)。
   - `core/` (設定/環境), `services/` (実行ロジック), `routes/` (HTTP), `prompts/` (system prompt) に分割。
   - `webarena/`: WebArena ベンチマーク実行環境とルート定義。
 - `frontend/`: Vite + React フロントエンドソース。ビルド成果物は `static/dist/` に出力。
@@ -17,10 +17,10 @@
 - `examples/` : サンプル集。
 - `docker/` とトップレベル `Dockerfile*` : Chrome/VNC コンテナと FastAPI コンテナのビルド設定。
 - `bin/` : `setup.sh`, `test.sh`, `lint.sh`。`uv` ベースの開発環境を前提。
-- `flask_app/prompts/system_prompt_browser_agent.md` : FastAPI アプリが読み込むカスタム system prompt。
+- `fastapi_app/prompts/system_prompt_browser_agent.md` : FastAPI アプリが読み込むカスタム system prompt。
 
 ## Runtime/Controller の仕組み
-- `BrowserAgentController` (`flask_app/services/agent_controller.py`)
+- `BrowserAgentController` (`fastapi_app/services/agent_controller.py`)
   - CDP URL を検出 (`_resolve_cdp_url`) し、`BrowserSession` を常駐させるスレッド＋イベントループを持ちます。
   - `ChatGoogle` (Gemini) を生成し、`Agent` を初期化。
   - `enqueue_follow_up`, `pause`, `resume`, `reset` など状態管理 API を公開。
@@ -61,17 +61,17 @@
 - `POST /webarena/run_batch` : WebArena バッチ実行。
 
 ## LLM・プロンプト関連
-- `flask_app/prompts/system_prompt_browser_agent.md`
+- `fastapi_app/prompts/system_prompt_browser_agent.md`
   - `{max_actions}`, `{current_datetime}` プレースホルダ対応。
   - `<scratchpad>` セクションでメモ帳機能の使用法を定義。
   - `read_file` アクションの禁止や、日本語応答の強制が含まれています。
-- `flask_app/prompts/system_prompt.py`: システムプロンプト構築ロジック。タイムゾーンを考慮した日時を注入します。
+- `fastapi_app/prompts/system_prompt.py`: システムプロンプト構築ロジック。タイムゾーンを考慮した日時を注入します。
 
 ## ビルド・実行・検証
-- **フロントエンドビルド**: `cd flask_app/frontend && npm install && npm run build`
+- **フロントエンドビルド**: `cd fastapi_app/frontend && npm install && npm run build`
 - **セットアップ**: `./bin/setup.sh` (uv venv + 依存インストール)。
 - **起動**:
-  - 直接: `uv run uvicorn flask_app.app:app --host 0.0.0.0 --port 5005` (別途 Chrome 必要)
+  - 直接: `uv run uvicorn fastapi_app.app:app --host 0.0.0.0 --port 5005` (別途 Chrome 必要)
   - Docker: `docker compose up --build`
 - **テスト**:
   - `./bin/test.sh`
@@ -83,7 +83,7 @@
 ## セキュリティ & 設定
 - `secrets.env` に API キーを設定 (コミット禁止)。
 - `BROWSER_USE_LOGGING_LEVEL` でログレベル制御。
-- LLM 応答の JSON パースは `flask_app/services/conversation_review.py` で堅牢に行われ、Markdown ブロック除去などに対応しています。
+- LLM 応答の JSON パースは `fastapi_app/services/conversation_review.py` で堅牢に行われ、Markdown ブロック除去などに対応しています。
 
 ## Critical Instruction / 重要指示
 どれだけ時間とコストをかけてもよいので、確実に目標が達成されるようにしてほしい。

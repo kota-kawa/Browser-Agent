@@ -1,7 +1,7 @@
 [project]
-name = "browser-use"
+name = "browser-agent"
 description = "Make websites accessible for AI agents"
-authors = [{ name = "Gregor Zunic" }]
+authors = [{ name = "kota-kawa", email = "kota7kawagoe@gmail.com" }]
 version = "0.7.8"
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
@@ -89,7 +89,7 @@ all = [
 
 
 [project.urls]
-Repository = "https://github.com/browser-use/browser-use"
+Repository = "https://github.com/kota-kawa/Browser-Agent"
 
 [project.scripts]
 browseruse = "browser_use.cli:main"

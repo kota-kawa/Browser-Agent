@@ -9,12 +9,12 @@ services:
       - '5005:5005'
     volumes:
       - ./:/app
-      - browser_agent_dist:/app/flask_app/static/dist
+      - browser_agent_dist:/app/fastapi_app/static/dist
     environment:
       - EMBED_BROWSER_URL=http://127.0.0.1:7900/vnc_lite.html?autoconnect=1&resize=scale&scale=auto&view_clip=false
     command:
       - uvicorn
-      - flask_app.app:app
+      - fastapi_app.app:app
       - --host
       - 0.0.0.0
       - --port

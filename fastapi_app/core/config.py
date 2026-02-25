@@ -16,7 +16,7 @@ load_secrets_env()
 # EN: Derive log level from FastAPI/Flask compatible env vars
 log_level = os.environ.get('FASTAPI_LOG_LEVEL') or os.environ.get('FLASK_LOG_LEVEL', 'INFO')
 logging.basicConfig(level=log_level)
-logger = logging.getLogger('flask_app.app')
+logger = logging.getLogger('fastapi_app.app')
 
 # JP: テンプレートと静的ファイルのベースディレクトリ
 # EN: Base directories for templates and static assets

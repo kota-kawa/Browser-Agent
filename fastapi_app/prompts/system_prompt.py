@@ -80,7 +80,7 @@ def _load_custom_system_prompt_template() -> str | None:
 				break
 
 	logger.warning(
-		'Custom system prompt file %s not found next to flask_app; no other prompt sources will be used.',
+		'Custom system prompt file %s not found next to fastapi_app; no other prompt sources will be used.',
 		_system_prompt_candidate_paths()[0],
 	)
 	_CUSTOM_SYSTEM_PROMPT_TEMPLATE = ''

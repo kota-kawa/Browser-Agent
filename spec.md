@@ -6,9 +6,9 @@
 - [ ] `strict` 系コンパイラ設定を有効化し、`any`/`@ts-ignore` は原則禁止 (例外は理由コメント必須)。
 - [ ] 既存の画面構成/文言/データフロー/UX を保持し、機能回帰を起こさない。
 - [ ] 既存の動作は一切変更しない (挙動・タイミング・状態遷移・レスポンス内容・副作用を含む)。
-- [ ] 既存の CSS (`flask_app/static/css/base.css` + ページ別 CSS) をそのまま利用し、JS 側でスタイルを作り直さない。
+- [ ] 既存の CSS (`fastapi_app/static/css/base.css` + ページ別 CSS) をそのまま利用し、JS 側でスタイルを作り直さない。
 - [ ] API は現行エンドポイントを前提とし、フロント側から仕様変更を要求しない。
-- [ ] ビルド成果物は `flask_app/static/dist` に固定し、テンプレート参照名は `index.js` / `webarena.js` / `agent_result.js` を維持する。
+- [ ] ビルド成果物は `fastapi_app/static/dist` に固定し、テンプレート参照名は `index.js` / `webarena.js` / `agent_result.js` を維持する。
 
 ## コーディング規約 (Coding Conventions)
 <!-- 言語ごとのスタイルガイド、フォーマッター設定など -->
@@ -51,11 +51,11 @@
 
 ## ディレクトリ構成方針 (Directory Structure Policy)
 <!-- ファイルの配置ルール、モジュール分割の方針 -->
-- `flask_app/frontend/src/`
+- `fastapi_app/frontend/src/`
   - ルートにエントリ `index.tsx`, `webarena.tsx`, `agent_result.tsx` を配置する。
   - 共通部品は `components/`、共通ロジックは `lib/`、型定義は `types/` に集約する。
   - グローバル型拡張は `src/types/global.d.ts` もしくは `src/vite-env.d.ts` に配置する。
-- `flask_app/static/css/base.css` とページ別 CSS は引き続きテンプレートで読み込み、Vite 側で CSS をバンドルしない (必要があれば別途検討)。
+- `fastapi_app/static/css/base.css` とページ別 CSS は引き続きテンプレートで読み込み、Vite 側で CSS をバンドルしない (必要があれば別途検討)。
 
 ## Vite ビルド方針
 - `build.outDir`: `../static/dist`
@@ -78,7 +78,7 @@
 - **Type Check**:
   - `tsc --noEmit` を必須とする。
 - **Build Smoke**:
-  - `npm run build` が成功し、`flask_app/static/dist` に必要なエントリファイルが生成されること。
+  - `npm run build` が成功し、`fastapi_app/static/dist` に必要なエントリファイルが生成されること。
 - **Manual**:
   - `/` で SSE 更新、チャット送信、停止/再開/リセットが動作すること。
   - `/webarena` でモデル選択・Vision 切替・タスク実行/バッチ実行が動作すること。
