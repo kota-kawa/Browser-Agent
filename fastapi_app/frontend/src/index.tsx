@@ -127,6 +127,23 @@ const formatMessageTimestamp = (timestamp: string) => {
   };
 };
 
+// JP: ナビゲーションがリロード起点かどうかを判定
+// EN: Detect whether the current page load was caused by a reload
+const isReloadNavigation = () => {
+  const entries =
+    typeof window.performance?.getEntriesByType === 'function'
+      ? window.performance.getEntriesByType('navigation')
+      : [];
+  const entry = entries[0] as { type?: unknown } | undefined;
+  if (entry && typeof entry.type === 'string') {
+    return entry.type === 'reload';
+  }
+
+  // NOTE: Legacy fallback for browsers without Navigation Timing Level 2
+  const legacyType = window.performance?.navigation?.type;
+  return legacyType === 1;
+};
+
 // JP: ステップログから進行中情報を抽出
 // EN: Extract step info from step-log messages
 const extractStepInfo = (content: string | null | undefined): StepInfo | null => {
@@ -550,6 +567,27 @@ const App = () => {
     }
   }, [requestScrollToBottom, setStatus, updateConversationState]);
 
+  const resetForReload = useCallback(async () => {
+    try {
+      const { data } = await post<ResetResponse>('/api/reset', {
+        fallback: {},
+        errorMessage: 'リロード時の初期化に失敗しました。',
+        throwOnParseError: false,
+      });
+      updateConversationState(data.messages || [], { syncStep: true });
+      requestScrollToBottom();
+      clearStepActivity();
+      setIsRunning(false);
+      setIsPaused(false);
+      setStatus('ページ再読み込みにより、履歴とブラウザ状態を初期化しました。', 'info');
+      return true;
+    } catch (error) {
+      const err = error as { message?: string };
+      setStatus(err.message || 'リロード時の初期化に失敗しました。', 'error');
+      return false;
+    }
+  }, [clearStepActivity, requestScrollToBottom, setStatus, updateConversationState]);
+
   const handleResetEvent = useCallback(() => {
     dispatchConversation({ type: 'reset' });
     setStatus('履歴をリセットしました。', 'success');
@@ -737,16 +775,35 @@ const App = () => {
     };
   }, [appendOrUpdateMessage, clearStepActivity, handleResetEvent, loadModels, refreshVisionState, setStatus]);
 
-  // JP: 初期ロード時に履歴・設定・SSEを同期
-  // EN: Sync history/config/SSE on initial load
+  // JP: 初期ロード時に必要ならリロード初期化を実行し、その後に履歴・設定・SSEを同期
+  // EN: Optionally reset on reload, then sync history/config/SSE on initial load
   useEffect(() => {
-    setupEventStream();
-    loadHistory();
-    loadModels();
-    loadUserProfile();
-    refreshVisionState();
+    let disposed = false;
+
+    const initialize = async () => {
+      if (isReloadNavigation()) {
+        const resetSucceeded = await resetForReload();
+        if (!resetSucceeded) {
+          await loadHistory();
+        }
+      } else {
+        await loadHistory();
+      }
+
+      if (disposed) {
+        return;
+      }
+
+      setupEventStream();
+      loadModels();
+      loadUserProfile();
+      refreshVisionState();
+    };
+
+    initialize();
 
     return () => {
+      disposed = true;
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
@@ -764,7 +821,7 @@ const App = () => {
         statusClearTimerRef.current = null;
       }
     };
-  }, [loadHistory, loadModels, loadUserProfile, refreshVisionState, setupEventStream]);
+  }, [loadHistory, loadModels, loadUserProfile, refreshVisionState, resetForReload, setupEventStream]);
 
   const shouldBusy = pendingAssistantResponse || stepInProgress;
 

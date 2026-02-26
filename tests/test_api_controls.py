@@ -13,12 +13,24 @@ class _FakeController:
         self._reset_error = reset_error
         self._pause_error = pause_error
         self._resume_error = resume_error
+        self.ensure_start_page_ready_calls = 0
+        self.close_additional_tabs_calls = 0
 
     # EN: Define function `reset`.
     # JP: 関数 `reset` を定義する。
     def reset(self):
         if self._reset_error:
             raise self._reset_error
+
+    # EN: Define function `ensure_start_page_ready`.
+    # JP: 関数 `ensure_start_page_ready` を定義する。
+    def ensure_start_page_ready(self):
+        self.ensure_start_page_ready_calls += 1
+
+    # EN: Define function `close_additional_tabs`.
+    # JP: 関数 `close_additional_tabs` を定義する。
+    def close_additional_tabs(self):
+        self.close_additional_tabs_calls += 1
 
     # EN: Define function `pause`.
     # JP: 関数 `pause` を定義する。
@@ -61,6 +73,19 @@ def test_reset_conversation_returns_400_on_controller_error(monkeypatch):
     assert "bad reset" in _body(response)["error"]
 
 
+# EN: Define function `test_reset_conversation_normalizes_browser_state`.
+# JP: 関数 `test_reset_conversation_normalizes_browser_state` を定義する。
+def test_reset_conversation_normalizes_browser_state(monkeypatch):
+    controller = _FakeController()
+    monkeypatch.setattr(api_controls, "get_controller_if_initialized", lambda: controller)
+    monkeypatch.setattr(api_controls, "_reset_history", lambda: [])
+
+    response = api_controls.reset_conversation()
+    assert response.status_code == 200
+    assert controller.ensure_start_page_ready_calls == 1
+    assert controller.close_additional_tabs_calls == 1
+
+
 # EN: Define function `test_pause_and_resume_success`.
 # JP: 関数 `test_pause_and_resume_success` を定義する。
 def test_pause_and_resume_success(monkeypatch):
@@ -91,4 +116,3 @@ def test_pause_and_resume_return_400_for_agent_controller_error(monkeypatch):
     resume_res = api_controls.resume_agent()
     assert resume_res.status_code == 400
     assert "cant resume" in _body(resume_res)["error"]
-

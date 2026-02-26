@@ -23,6 +23,17 @@ def reset_conversation() -> JSONResponse:
 	if controller is not None:
 		try:
 			controller.reset()
+			# JP: リセット直後に開始ページへ戻し、余分なタブを閉じて初期表示を揃える
+			# EN: Normalize browser view after reset (start page + single tab)
+			try:
+				ensure_start_page_ready = getattr(controller, 'ensure_start_page_ready', None)
+				if callable(ensure_start_page_ready):
+					ensure_start_page_ready()
+				close_additional_tabs = getattr(controller, 'close_additional_tabs', None)
+				if callable(close_additional_tabs):
+					close_additional_tabs()
+			except Exception:
+				logger.debug('Failed to normalize browser state after reset', exc_info=True)
 		except AgentControllerError as exc:
 			return JSONResponse({'error': str(exc)}, status_code=400)
 		except Exception as exc:
