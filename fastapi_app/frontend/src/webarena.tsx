@@ -11,28 +11,12 @@ import type {
   WebArenaTask,
   WebArenaTasksResponse,
 } from './types/api';
-/**
- * EN: Import required modules.
- * JP: 必要なモジュールをインポートする。
- */
 import type { WebArenaAppProps } from './types/app';
-/**
- * EN: Import required modules.
- * JP: 必要なモジュールをインポートする。
- */
 import { getJson, postJson, requestJson } from './lib/api';
 
 const initialData: Partial<WebArenaAppProps> = window.__WEBARENA_APP_PROPS__ || {};
-/**
- * EN: Declare variable `browserUrl`.
- * JP: 変数 `browserUrl` を宣言する。
- */
 const browserUrl = initialData.browserUrl || '';
 const envDefaults: Partial<EnvUrls> = initialData.envUrls || {};
-/**
- * EN: Declare variable `supportedSites`.
- * JP: 変数 `supportedSites` を宣言する。
- */
 const supportedSites = Array.isArray(initialData.supportedSites)
   ? initialData.supportedSites
   : [];
@@ -134,10 +118,6 @@ const App = () => {
 
   const [statusMessage, setStatusMessage] = useState('');
   const [statusColor, setStatusColor] = useState('var(--text-muted)');
-  /**
-   * EN: Declare variable `statusTimerRef`.
-   * JP: 変数 `statusTimerRef` を宣言する。
-   */
   const statusTimerRef = useRef<number | null>(null);
 
   const [runInProgress, setRunInProgress] = useState(false);
@@ -146,31 +126,15 @@ const App = () => {
 
   const [logState, setLogState] = useState<LogState>({ type: 'idle' });
 
-  /**
-   * EN: Declare variable `setStatus`.
-   * JP: 変数 `setStatus` を宣言する。
-   */
   const setStatus = useCallback((message: string, color?: string, clearAfterMs?: number) => {
     setStatusMessage(message);
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (color) {
       setStatusColor(color);
     }
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (statusTimerRef.current) {
       clearTimeout(statusTimerRef.current);
       statusTimerRef.current = null;
     }
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (clearAfterMs) {
       statusTimerRef.current = window.setTimeout(() => {
         setStatusMessage('');
@@ -189,17 +153,9 @@ const App = () => {
       >('/api/models', {
         throwOnNonOk: false,
       });
-      /**
-       * EN: Declare variable `dataPayload`.
-       * JP: 変数 `dataPayload` を宣言する。
-       */
       const dataPayload = data as
         | ModelOption[]
         | { models?: ModelOption[]; current?: ModelSelection };
-      /**
-       * EN: Declare variable `models`.
-       * JP: 変数 `models` を宣言する。
-       */
       const models = Array.isArray(dataPayload)
         ? dataPayload
         : Array.isArray((dataPayload as { models?: ModelOption[] }).models)
@@ -207,31 +163,15 @@ const App = () => {
           : [];
       setModelOptions(models);
 
-      /**
-       * EN: Declare variable `current`.
-       * JP: 変数 `current` を宣言する。
-       */
       const current =
         !Array.isArray(dataPayload) &&
         typeof (dataPayload as { current?: unknown }).current === 'object'
           ? ((dataPayload as { current?: ModelSelection }).current ?? null)
           : null;
-      /**
-       * EN: Declare variable `desired`.
-       * JP: 変数 `desired` を宣言する。
-       */
       const desired = encodeModelSelection(current);
-      /**
-       * EN: Declare variable `hasDesired`.
-       * JP: 変数 `hasDesired` を宣言する。
-       */
       const hasDesired =
         desired && models.some((model) => encodeModelSelection(model) === desired);
 
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (hasDesired) {
         setSelectedModelValue(desired);
       } else if (models.length) {
@@ -243,10 +183,6 @@ const App = () => {
     }
   }, []);
 
-  /**
-   * EN: Declare variable `applyModel`.
-   * JP: 変数 `applyModel` を宣言する。
-   */
   const applyModel = useCallback(async (selection: ModelSelection) => {
     await postJson('/model_settings', selection, {
       parseJson: false,
@@ -312,15 +248,7 @@ const App = () => {
   }, [loadTasks]);
 
   useEffect(() => {
-    /**
-     * EN: Return a value from this scope.
-     * JP: このスコープから値を返す。
-     */
     return () => {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (statusTimerRef.current) {
         clearTimeout(statusTimerRef.current);
         statusTimerRef.current = null;
@@ -329,38 +257,22 @@ const App = () => {
   }, []);
 
   /**
-   * EN: Declare callable constant `handleModelChange`.
-   * JP: 呼び出し可能な定数 `handleModelChange` を宣言する。
+   * EN: Define function `handleModelChange`.
+   * JP: 関数 `handleModelChange` を定義する。
    */
   const handleModelChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
-    /**
-     * EN: Declare variable `value`.
-     * JP: 変数 `value` を宣言する。
-     */
     const value = event.target.value;
     setSelectedModelValue(value);
     let selection: ModelSelection;
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
       selection = JSON.parse(value) as ModelSelection;
     } catch (error) {
       setStatus('モデル設定の解析に失敗しました。', 'var(--accent-danger)', 3000);
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return;
     }
 
     setStatus('モデルを変更中...', 'var(--text-muted)');
     setModelBusy(true);
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
       await applyModel(selection);
       setStatus('モデルを変更しました。', 'var(--text-muted)', 3000);
@@ -373,20 +285,12 @@ const App = () => {
   };
 
   /**
-   * EN: Declare callable constant `handleVisionToggle`.
-   * JP: 呼び出し可能な定数 `handleVisionToggle` を宣言する。
+   * EN: Define function `handleVisionToggle`.
+   * JP: 関数 `handleVisionToggle` を定義する。
    */
   const handleVisionToggle = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    /**
-     * EN: Declare variable `enabled`.
-     * JP: 変数 `enabled` を宣言する。
-     */
     const enabled = event.target.checked;
     setVisionBusy(true);
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
       await postJson('/api/vision', { enabled }, { parseJson: false, throwOnNonOk: false });
     } catch (error) {
@@ -399,21 +303,13 @@ const App = () => {
   };
 
   /**
-   * EN: Declare callable constant `handleTaskSelect`.
-   * JP: 呼び出し可能な定数 `handleTaskSelect` を宣言する。
+   * EN: Define function `handleTaskSelect`.
+   * JP: 関数 `handleTaskSelect` を定義する。
    */
   const handleTaskSelect = (taskId: number | 'custom') => {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (taskId === 'custom') {
       setIsCustom(true);
       setSelectedTaskId(null);
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return;
     }
     setIsCustom(false);
@@ -421,29 +317,13 @@ const App = () => {
   };
 
   /**
-   * EN: Declare callable constant `handleCustomCardClick`.
-   * JP: 呼び出し可能な定数 `handleCustomCardClick` を宣言する。
+   * EN: Define function `handleCustomCardClick`.
+   * JP: 関数 `handleCustomCardClick` を定義する。
    */
   const handleCustomCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    /**
-     * EN: Declare variable `target`.
-     * JP: 変数 `target` を宣言する。
-     */
     const target = event.target as HTMLElement;
-    /**
-     * EN: Declare variable `tagName`.
-     * JP: 変数 `tagName` を宣言する。
-     */
     const tagName = target.tagName;
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return;
     }
     handleTaskSelect('custom');
@@ -480,21 +360,9 @@ const App = () => {
       },
     };
 
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (isCustom) {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (!customIntent.trim()) {
         alert('カスタムタスクの指示を入力してください。');
-        /**
-         * EN: Return a value from this scope.
-         * JP: このスコープから値を返す。
-         */
         return;
       }
       payload.custom_task = { intent: customIntent, start_url: customUrl };
@@ -502,10 +370,6 @@ const App = () => {
       payload.task_id = selectedTaskId;
     }
 
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (selectedSite) {
       payload.selected_site = selectedSite;
     }
@@ -514,10 +378,6 @@ const App = () => {
     setRunInProgress(true);
     setLogState({ type: 'single-running' });
 
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
       const { data } = await postJson<WebArenaRunResult & { error?: string }, typeof payload>(
         '/webarena/run',
@@ -529,10 +389,6 @@ const App = () => {
       setLogState({ type: 'single-result', result: data });
       setStatus('完了', 'var(--accent-success)');
     } catch (error) {
-      /**
-       * EN: Declare variable `err`.
-       * JP: 変数 `err` を宣言する。
-       */
       const err = error as { message?: string };
       setLogState({ type: 'error', message: err.message, prefix: 'エラーが発生しました: ' });
       setStatus('エラー', 'var(--accent-danger)');
@@ -551,10 +407,6 @@ const App = () => {
 
     let taskIds: number[] = [];
     try {
-      /**
-       * EN: Declare variable `siteQuery`.
-       * JP: 変数 `siteQuery` を宣言する。
-       */
       const siteQuery = selectedSite ? `&site=${selectedSite}` : '';
       const { data: taskData } = await getJson<WebArenaTasksResponse>(
         `/webarena/tasks?page=1&per_page=1000${siteQuery}`,
@@ -564,10 +416,6 @@ const App = () => {
       );
       taskIds = (taskData.tasks || []).map((task) => task.task_id);
     } catch (error) {
-      /**
-       * EN: Declare variable `err`.
-       * JP: 変数 `err` を宣言する。
-       */
       const err = error as { message?: string };
       setLogState({
         type: 'error',
@@ -576,38 +424,18 @@ const App = () => {
       });
       setStatus('エラー', 'var(--accent-danger)');
       setBatchInProgress(false);
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return;
     }
 
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (!taskIds.length) {
       setLogState({ type: 'error', message: '表示中のタスクがありません。', prefix: '' });
       setStatus('エラー', 'var(--accent-danger)');
       setBatchInProgress(false);
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return;
     }
 
     const results: WebArenaRunResult[] = [];
-    /**
-     * EN: Declare variable `successCount`.
-     * JP: 変数 `successCount` を宣言する。
-     */
     let successCount = 0;
-    /**
-     * EN: Declare variable `startTime`.
-     * JP: 変数 `startTime` を宣言する。
-     */
     const startTime = Date.now();
 
     setLogState({
@@ -622,20 +450,8 @@ const App = () => {
       },
     });
 
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
-      /**
-       * EN: Iterate with a loop.
-       * JP: ループで処理を繰り返す。
-       */
       for (let index = 0; index < taskIds.length; index += 1) {
-        /**
-         * EN: Declare variable `taskId`.
-         * JP: 変数 `taskId` を宣言する。
-         */
         const taskId = taskIds[index];
         setLogState({
           type: 'batch',
@@ -650,10 +466,6 @@ const App = () => {
         });
 
         let data: WebArenaRunResult;
-        /**
-         * EN: Wrap logic with exception handling.
-         * JP: 例外処理のためにブロックを囲む。
-         */
         try {
           const { data: responseData, response } = await requestJson<
             WebArenaRunResult & { error?: string }
@@ -675,10 +487,6 @@ const App = () => {
             },
             { throwOnNonOk: false }
           );
-          /**
-           * EN: Branch logic based on a condition.
-           * JP: 条件に応じて処理を分岐する。
-           */
           if (!response.ok) {
             data = {
               task_id: taskId,
@@ -691,10 +499,6 @@ const App = () => {
             data = responseData;
           }
         } catch (error) {
-          /**
-           * EN: Declare variable `err`.
-           * JP: 変数 `err` を宣言する。
-           */
           const err = error as { message?: string };
           data = {
             task_id: taskId,
@@ -706,10 +510,6 @@ const App = () => {
         }
 
         results.push(data);
-        /**
-         * EN: Branch logic based on a condition.
-         * JP: 条件に応じて処理を分岐する。
-         */
         if (data.success) {
           successCount += 1;
         }
@@ -727,30 +527,10 @@ const App = () => {
         });
       }
 
-      /**
-       * EN: Declare variable `endTime`.
-       * JP: 変数 `endTime` を宣言する。
-       */
       const endTime = Date.now();
-      /**
-       * EN: Declare variable `totalTimeMs`.
-       * JP: 変数 `totalTimeMs` を宣言する。
-       */
       const totalTimeMs = endTime - startTime;
-      /**
-       * EN: Declare variable `totalMinutes`.
-       * JP: 変数 `totalMinutes` を宣言する。
-       */
       const totalMinutes = Math.floor(totalTimeMs / 60000);
-      /**
-       * EN: Declare callable constant `totalSeconds`.
-       * JP: 呼び出し可能な定数 `totalSeconds` を宣言する。
-       */
       const totalSeconds = ((totalTimeMs % 60000) / 1000).toFixed(1);
-      /**
-       * EN: Declare variable `timeText`.
-       * JP: 変数 `timeText` を宣言する。
-       */
       const timeText =
         totalMinutes > 0 ? `${totalMinutes}分 ${totalSeconds}秒` : `${totalSeconds}秒`;
 
@@ -767,10 +547,6 @@ const App = () => {
         },
       });
 
-      /**
-       * EN: Wrap logic with exception handling.
-       * JP: 例外処理のためにブロックを囲む。
-       */
       try {
         setStatus('結果を保存中...', 'var(--accent-info)');
         await postJson('/webarena/save_results', { results }, {
@@ -783,10 +559,6 @@ const App = () => {
         setStatus('完了 (保存失敗)', 'var(--accent-success)');
       }
     } catch (error) {
-      /**
-       * EN: Declare variable `err`.
-       * JP: 変数 `err` を宣言する。
-       */
       const err = error as { message?: string };
       setLogState({
         type: 'batch',
@@ -807,32 +579,20 @@ const App = () => {
   };
 
   /**
-   * EN: Declare callable constant `handleEnvChange`.
-   * JP: 呼び出し可能な定数 `handleEnvChange` を宣言する。
+   * EN: Define function `handleEnvChange`.
+   * JP: 関数 `handleEnvChange` を定義する。
    */
   const handleEnvChange = (key: keyof EnvUrls) => (event: React.FormEvent<HTMLInputElement>) => {
-    /**
-     * EN: Declare variable `target`.
-     * JP: 変数 `target` を宣言する。
-     */
     const target = event.target as HTMLInputElement;
     setEnvUrls((prev) => ({ ...prev, [key]: target.value }));
   };
 
   /**
-   * EN: Declare callable constant `renderLogs`.
-   * JP: 呼び出し可能な定数 `renderLogs` を宣言する。
+   * EN: Define function `renderLogs`.
+   * JP: 関数 `renderLogs` を定義する。
    */
   const renderLogs = () => {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (logState.type === 'single-running') {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return (
         <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
           <i>Running task... check browser view</i>
@@ -840,15 +600,7 @@ const App = () => {
       );
     }
 
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (logState.type === 'error') {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return (
         <div style={{ color: 'red', padding: '20px' }}>
           {logState.prefix || ''}
@@ -857,20 +609,8 @@ const App = () => {
       );
     }
 
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (logState.type === 'single-result') {
-      /**
-       * EN: Declare variable `result`.
-       * JP: 変数 `result` を宣言する。
-       */
       const result = logState.result;
-      /**
-       * EN: Declare variable `summaryStyle`.
-       * JP: 変数 `summaryStyle` を宣言する。
-       */
       const summaryStyle = {
         padding: '16px',
         marginBottom: '16px',
@@ -878,10 +618,6 @@ const App = () => {
         background: result.success ? '#f0fdf4' : '#fef2f2',
         border: `1px solid ${result.success ? '#bbf7d0' : '#fecaca'}`,
       };
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return (
         <div>
           <div style={summaryStyle}>
@@ -926,45 +662,17 @@ const App = () => {
       );
     }
 
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (logState.type === 'batch') {
-      /**
-       * EN: Declare variable `batch`.
-       * JP: 変数 `batch` を宣言する。
-       */
       const batch = logState.batch;
-      /**
-       * EN: Declare variable `total`.
-       * JP: 変数 `total` を宣言する。
-       */
       const total = batch.total || 0;
-      /**
-       * EN: Declare variable `currentIndex`.
-       * JP: 変数 `currentIndex` を宣言する。
-       */
       const currentIndex = batch.currentIndex || 0;
-      /**
-       * EN: Declare variable `pct`.
-       * JP: 変数 `pct` を宣言する。
-       */
       const pct = total > 0 ? Math.max(5, Math.round((currentIndex / total) * 100)) : 0;
-      /**
-       * EN: Declare variable `progressLabel`.
-       * JP: 変数 `progressLabel` を宣言する。
-       */
       const progressLabel =
         batch.status === 'complete'
           ? '完了'
           : batch.status === 'error'
             ? 'エラー'
             : '一括実行中';
-      /**
-       * EN: Declare variable `progressMessage`.
-       * JP: 変数 `progressMessage` を宣言する。
-       */
       const progressMessage =
         batch.status === 'complete'
           ? `成功 ${batch.successCount || 0} / ${total} 件`
@@ -974,10 +682,6 @@ const App = () => {
               ? `TASK ${batch.currentTaskId} を実行中... (${currentIndex}/${total})`
               : `実行中... (${currentIndex}/${total})`;
 
-      /**
-       * EN: Declare variable `summary`.
-       * JP: 変数 `summary` を宣言する。
-       */
       const summary =
         batch.status === 'complete' ? (
           <div className="wa-batch-summary">
@@ -991,10 +695,6 @@ const App = () => {
           </div>
         ) : null;
 
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return (
         <div>
           {summary}
@@ -1066,22 +766,10 @@ const App = () => {
       );
     }
 
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (logState.type === 'blank') {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return null;
     }
 
-    /**
-     * EN: Return a value from this scope.
-     * JP: このスコープから値を返す。
-     */
     return (
       <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '20px' }}>
         タスクを選択して「評価を実行」をクリックしてください。
@@ -1089,31 +777,11 @@ const App = () => {
     );
   };
 
-  /**
-   * EN: Declare variable `resultBadge`.
-   * JP: 変数 `resultBadge` を宣言する。
-   */
   const resultBadge = useMemo(() => {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (logState.type !== 'single-result') {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return { visible: false, text: '', className: 'wa-badge' };
     }
-    /**
-     * EN: Declare variable `success`.
-     * JP: 変数 `success` を宣言する。
-     */
     const success = logState.result?.success;
-    /**
-     * EN: Return a value from this scope.
-     * JP: このスコープから値を返す。
-     */
     return {
       visible: true,
       text: success ? 'SUCCESS' : 'FAILURE',
@@ -1121,19 +789,11 @@ const App = () => {
     };
   }, [logState]);
 
-  /**
-   * EN: Declare variable `visionBadgeText`.
-   * JP: 変数 `visionBadgeText` を宣言する。
-   */
   const visionBadgeText = visionState.loading
     ? 'CHECKING'
     : visionState.supported
       ? 'SUPPORTED'
       : 'UNSUPPORTED';
-  /**
-   * EN: Declare variable `visionBadgeClass`.
-   * JP: 変数 `visionBadgeClass` を宣言する。
-   */
   const visionBadgeClass = `wa-badge ${
     visionState.loading
       ? 'wa-badge-pending'
@@ -1142,22 +802,10 @@ const App = () => {
         : 'wa-badge-fail'
   }`;
 
-  /**
-   * EN: Declare variable `visionHint`.
-   * JP: 変数 `visionHint` を宣言する。
-   */
   let visionHint = 'モデルがサポートしていればスクリーンショットを送信します。';
-  /**
-   * EN: Branch logic based on a condition.
-   * JP: 条件に応じて処理を分岐する。
-   */
   if (visionState.error) {
     visionHint = visionState.error;
   } else if (!visionState.loading) {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (!visionState.supported) {
       visionHint = '選択中のモデルはスクリーンショット非対応です。GPT/Gemini/Claude 系のみ対応。';
     } else if (visionState.effective) {
@@ -1167,21 +815,9 @@ const App = () => {
     }
   }
 
-  /**
-   * EN: Declare variable `runDisabled`.
-   * JP: 変数 `runDisabled` を宣言する。
-   */
   const runDisabled = runInProgress || modelBusy || batchInProgress;
-  /**
-   * EN: Declare variable `batchDisabled`.
-   * JP: 変数 `batchDisabled` を宣言する。
-   */
   const batchDisabled = batchInProgress;
 
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return (
     <div className="wa-layout">
       <aside className="wa-sidebar">
@@ -1504,15 +1140,7 @@ const App = () => {
   );
 };
 
-/**
- * EN: Declare variable `root`.
- * JP: 変数 `root` を宣言する。
- */
 const root = document.getElementById('root');
-/**
- * EN: Branch logic based on a condition.
- * JP: 条件に応じて処理を分岐する。
- */
 if (root) {
   createRoot(root).render(<App />);
 }

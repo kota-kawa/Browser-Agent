@@ -1,37 +1,19 @@
-# EN: Describe this block with a docstring.
-# JP: このブロックの説明をドキュメント文字列で記述する。
 """Base watchdog class for browser monitoring components."""
 
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 import inspect
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 import time
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from collections.abc import Iterable
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from typing import Any, ClassVar
 
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from bubus import BaseEvent, EventBus
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from pydantic import BaseModel, ConfigDict, Field
 
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from browser_use.browser.session import BrowserSession
 
 
 # EN: Define class `BaseWatchdog`.
 # JP: クラス `BaseWatchdog` を定義する。
 class BaseWatchdog(BaseModel):
-	# EN: Describe this block with a docstring.
-	# JP: このブロックの説明をドキュメント文字列で記述する。
 	"""Base class for all browser watchdogs.
 
 	Watchdogs monitor browser state and emit events based on changes.
@@ -40,8 +22,6 @@ class BaseWatchdog(BaseModel):
 	Handler methods should be named: on_EventTypeName(self, event: EventTypeName)
 	"""
 
-	# EN: Assign value to model_config.
-	# JP: model_config に値を代入する。
 	model_config = ConfigDict(
 		arbitrary_types_allowed=True,  # allow non-serializable objects like EventBus/BrowserSession in fields
 		extra='forbid',  # dont allow implicit class/instance state, everything must be a properly typed Field or PrivateAttr
@@ -51,19 +31,11 @@ class BaseWatchdog(BaseModel):
 
 	# Class variables to statically define the list of events relevant to each watchdog
 	# (not enforced, just to make it easier to understand the code and debug watchdogs at runtime)
-	# EN: Assign annotated value to LISTENS_TO.
-	# JP: LISTENS_TO に型付きの値を代入する。
 	LISTENS_TO: ClassVar[list[type[BaseEvent[Any]]]] = []  # Events this watchdog listens to
-	# EN: Assign annotated value to EMITS.
-	# JP: EMITS に型付きの値を代入する。
 	EMITS: ClassVar[list[type[BaseEvent[Any]]]] = []  # Events this watchdog emits
 
 	# Core dependencies
-	# EN: Assign annotated value to event_bus.
-	# JP: event_bus に型付きの値を代入する。
 	event_bus: EventBus = Field()
-	# EN: Assign annotated value to browser_session.
-	# JP: browser_session に型付きの値を代入する。
 	browser_session: BrowserSession = Field()
 
 	# Shared state that other watchdogs might need to access should not be defined on BrowserSession, not here!
@@ -80,19 +52,13 @@ class BaseWatchdog(BaseModel):
 	# JP: 関数 `logger` を定義する。
 	@property
 	def logger(self):
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""Get the logger from the browser session."""
-		# EN: Return a value from the function.
-		# JP: 関数から値を返す。
 		return self.browser_session.logger
 
 	# EN: Define function `attach_handler_to_session`.
 	# JP: 関数 `attach_handler_to_session` を定義する。
 	@staticmethod
 	def attach_handler_to_session(browser_session: 'BrowserSession', event_class: type[BaseEvent[Any]], handler) -> None:
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""Attach a single event handler to a browser session.
 
 		Args:
@@ -100,49 +66,25 @@ class BaseWatchdog(BaseModel):
 			event_class: The event class to listen for
 			handler: The handler method (must start with 'on_' and end with event type)
 		"""
-		# EN: Assign value to event_bus.
-		# JP: event_bus に値を代入する。
 		event_bus = browser_session.event_bus
 
 		# Validate handler naming convention
-		# EN: Validate a required condition.
-		# JP: 必須条件を検証する。
 		assert hasattr(handler, '__name__'), 'Handler must have a __name__ attribute'
-		# EN: Validate a required condition.
-		# JP: 必須条件を検証する。
 		assert handler.__name__.startswith('on_'), f'Handler {handler.__name__} must start with "on_"'
-		# EN: Validate a required condition.
-		# JP: 必須条件を検証する。
 		assert handler.__name__.endswith(event_class.__name__), (
 			f'Handler {handler.__name__} must end with event type {event_class.__name__}'
 		)
 
 		# Get the watchdog instance if this is a bound method
-		# EN: Assign value to watchdog_instance.
-		# JP: watchdog_instance に値を代入する。
 		watchdog_instance = getattr(handler, '__self__', None)
-		# EN: Assign value to watchdog_class_name.
-		# JP: watchdog_class_name に値を代入する。
 		watchdog_class_name = watchdog_instance.__class__.__name__ if watchdog_instance else 'Unknown'
 
 		# Color codes for logging
-		# EN: Assign value to red.
-		# JP: red に値を代入する。
 		red = '\033[91m'
-		# EN: Assign value to green.
-		# JP: green に値を代入する。
 		green = '\033[92m'
-		# EN: Assign value to yellow.
-		# JP: yellow に値を代入する。
 		yellow = '\033[93m'
-		# EN: Assign value to magenta.
-		# JP: magenta に値を代入する。
 		magenta = '\033[95m'
-		# EN: Assign value to cyan.
-		# JP: cyan に値を代入する。
 		cyan = '\033[96m'
-		# EN: Assign value to reset.
-		# JP: reset に値を代入する。
 		reset = '\033[0m'
 
 		# Create a wrapper function with unique name to avoid duplicate handler warnings
@@ -154,25 +96,17 @@ class BaseWatchdog(BaseModel):
 			# JP: 非同期関数 `unique_handler` を定義する。
 			async def unique_handler(event):
 				# just for debug logging, not used for anything else
-				# EN: Assign value to parent_event.
-				# JP: parent_event に値を代入する。
 				parent_event = event_bus.event_history.get(event.event_parent_id) if event.event_parent_id else None
-				# EN: Assign value to grandparent_event.
-				# JP: grandparent_event に値を代入する。
 				grandparent_event = (
 					event_bus.event_history.get(parent_event.event_parent_id)
 					if parent_event and parent_event.event_parent_id
 					else None
 				)
-				# EN: Assign value to parent.
-				# JP: parent に値を代入する。
 				parent = (
 					f'{yellow}↲  triggered by {cyan}on_{parent_event.event_type}#{parent_event.event_id[-4:]}{reset}'
 					if parent_event
 					else f'{magenta}👈 by Agent{reset}'
 				)
-				# EN: Assign value to grandparent.
-				# JP: grandparent に値を代入する。
 				grandparent = (
 					(
 						f'{yellow}↲  under {cyan}{grandparent_event.event_type}#{grandparent_event.event_id[-4:]}{reset}'
@@ -182,258 +116,134 @@ class BaseWatchdog(BaseModel):
 					if parent_event
 					else ''
 				)
-				# EN: Assign value to event_str.
-				# JP: event_str に値を代入する。
 				event_str = f'#{event.event_id[-4:]}'
-				# EN: Assign value to time_start.
-				# JP: time_start に値を代入する。
 				time_start = time.time()
-				# EN: Assign value to watchdog_and_handler_str.
-				# JP: watchdog_and_handler_str に値を代入する。
 				watchdog_and_handler_str = f'[{watchdog_class_name}.{actual_handler.__name__}({event_str})]'.ljust(54)
-				# EN: Evaluate an expression.
-				# JP: 式を評価する。
 				browser_session.logger.debug(
 					f'{cyan}🚌 {watchdog_and_handler_str} ⏳ Starting...      {reset} {parent} {grandparent}'
 				)
 
-				# EN: Handle exceptions around this block.
-				# JP: このブロックで例外処理を行う。
 				try:
 					# **EXECUTE THE EVENT HANDLER FUNCTION**
-					# EN: Assign value to result.
-					# JP: result に値を代入する。
 					result = await actual_handler(event)
 
-					# EN: Branch logic based on a condition.
-					# JP: 条件に応じて処理を分岐する。
 					if isinstance(result, Exception):
-						# EN: Raise an exception.
-						# JP: 例外を送出する。
 						raise result
 
 					# just for debug logging, not used for anything else
-					# EN: Assign value to time_end.
-					# JP: time_end に値を代入する。
 					time_end = time.time()
-					# EN: Assign value to time_elapsed.
-					# JP: time_elapsed に値を代入する。
 					time_elapsed = time_end - time_start
-					# EN: Assign value to result_summary.
-					# JP: result_summary に値を代入する。
 					result_summary = '' if result is None else f' ➡️ {magenta}<{type(result).__name__}>{reset}'
-					# EN: Assign value to parents_summary.
-					# JP: parents_summary に値を代入する。
 					parents_summary = f' {parent}'.replace('↲  triggered by ', f'⤴  {green}returned to  {cyan}').replace(
 						'👈 by Agent', f'👉 {green}returned to  {magenta}Agent{reset}'
 					)
-					# EN: Evaluate an expression.
-					# JP: 式を評価する。
 					browser_session.logger.debug(
 						f'{green}🚌 {watchdog_and_handler_str} ✅ Succeeded ({time_elapsed:.2f}s){reset}{result_summary}{parents_summary}'
 					)
-					# EN: Return a value from the function.
-					# JP: 関数から値を返す。
 					return result
 				except Exception as e:
-					# EN: Assign value to time_end.
-					# JP: time_end に値を代入する。
 					time_end = time.time()
-					# EN: Assign value to time_elapsed.
-					# JP: time_elapsed に値を代入する。
 					time_elapsed = time_end - time_start
-					# EN: Assign value to original_error.
-					# JP: original_error に値を代入する。
 					original_error = e
-					# EN: Evaluate an expression.
-					# JP: 式を評価する。
 					browser_session.logger.error(
 						f'{red}🚌 {watchdog_and_handler_str} ❌ Failed ({time_elapsed:.2f}s): {type(e).__name__}: {e}{reset}'
 					)
 
 					# attempt to repair potentially crashed CDP session
-					# EN: Handle exceptions around this block.
-					# JP: このブロックで例外処理を行う。
 					try:
-						# EN: Branch logic based on a condition.
-						# JP: 条件に応じて処理を分岐する。
 						if browser_session.agent_focus and browser_session.agent_focus.target_id:
 							# Common issue with CDP, some calls need the target to be active/foreground to succeed:
 							#   screenshot, scroll, Page.handleJavaScriptDialog, and some others
-							# EN: Evaluate an expression.
-							# JP: 式を評価する。
 							browser_session.logger.debug(
 								f'{yellow}🚌 {watchdog_and_handler_str} ⚠️ Re-foregrounding target to try and recover crashed CDP session\n\t{browser_session.agent_focus}{reset}'
 							)
-							# EN: Delete referenced values.
-							# JP: 参照される値を削除する。
 							del browser_session._cdp_session_pool[browser_session.agent_focus.target_id]
-							# EN: Assign value to target variable.
-							# JP: target variable に値を代入する。
 							browser_session.agent_focus = await browser_session.get_or_create_cdp_session(
 								target_id=browser_session.agent_focus.target_id, new_socket=False
 							)
-							# EN: Evaluate an expression.
-							# JP: 式を評価する。
 							await browser_session.agent_focus.cdp_client.send.Target.activateTarget(
 								params={'targetId': browser_session.agent_focus.target_id}
 							)
 						else:
-							# EN: Evaluate an expression.
-							# JP: 式を評価する。
 							await browser_session.get_or_create_cdp_session(target_id=None, new_socket=False, focus=True)
 					except Exception as sub_error:
-						# EN: Branch logic based on a condition.
-						# JP: 条件に応じて処理を分岐する。
 						if 'ConnectionClosedError' in str(type(sub_error)) or 'ConnectionError' in str(type(sub_error)):
-							# EN: Evaluate an expression.
-							# JP: 式を評価する。
 							browser_session.logger.error(
 								f'{red}🚌 {watchdog_and_handler_str} ❌ Browser closed or CDP Connection disconnected by remote. {red}{type(sub_error).__name__}: {sub_error}{reset}\n'
 							)
-							# EN: Raise an exception.
-							# JP: 例外を送出する。
 							raise
 						else:
-							# EN: Evaluate an expression.
-							# JP: 式を評価する。
 							browser_session.logger.error(
 								f'{red}🚌 {watchdog_and_handler_str} ❌ CDP connected but failed to re-create CDP session after error "{type(original_error).__name__}: {original_error}" in {cyan}{actual_handler.__name__}({event.event_type}#{event.event_id[-4:]}){reset}: due to {red}{type(sub_error).__name__}: {sub_error}{reset}\n'
 							)
 
-					# EN: Raise an exception.
-					# JP: 例外を送出する。
 					raise
 
-			# EN: Return a value from the function.
-			# JP: 関数から値を返す。
 			return unique_handler
 
-		# EN: Assign value to unique_handler.
-		# JP: unique_handler に値を代入する。
 		unique_handler = make_unique_handler(handler)
-		# EN: Assign value to target variable.
-		# JP: target variable に値を代入する。
 		unique_handler.__name__ = f'{watchdog_class_name}.{handler.__name__}'
 
 		# Check if this handler is already registered - throw error if duplicate
-		# EN: Assign value to existing_handlers.
-		# JP: existing_handlers に値を代入する。
 		existing_handlers = event_bus.handlers.get(event_class.__name__, [])
-		# EN: Assign value to handler_names.
-		# JP: handler_names に値を代入する。
 		handler_names = [getattr(h, '__name__', str(h)) for h in existing_handlers]
 
-		# EN: Branch logic based on a condition.
-		# JP: 条件に応じて処理を分岐する。
 		if unique_handler.__name__ in handler_names:
-			# EN: Raise an exception.
-			# JP: 例外を送出する。
 			raise RuntimeError(
 				f'[{watchdog_class_name}] Duplicate handler registration attempted! '
 				f'Handler {unique_handler.__name__} is already registered for {event_class.__name__}. '
 				f'This likely means attach_to_session() was called multiple times.'
 			)
 
-		# EN: Evaluate an expression.
-		# JP: 式を評価する。
 		event_bus.on(event_class, unique_handler)
 
 	# EN: Define function `attach_to_session`.
 	# JP: 関数 `attach_to_session` を定義する。
 	def attach_to_session(self) -> None:
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""Attach watchdog to its browser session and start monitoring.
 
 		This method handles event listener registration. The watchdog is already
 		bound to a browser session via self.browser_session from initialization.
 		"""
 		# Register event handlers automatically based on method names
-		# EN: Validate a required condition.
-		# JP: 必須条件を検証する。
 		assert self.browser_session is not None, 'Root CDP client not initialized - browser may not be connected yet'
 
-		# EN: Import required modules.
-		# JP: 必要なモジュールをインポートする。
 		from browser_use.browser import events
 
-		# EN: Assign value to event_classes.
-		# JP: event_classes に値を代入する。
 		event_classes = {}
-		# EN: Iterate over items in a loop.
-		# JP: ループで要素を順に処理する。
 		for name in dir(events):
-			# EN: Assign value to obj.
-			# JP: obj に値を代入する。
 			obj = getattr(events, name)
-			# EN: Branch logic based on a condition.
-			# JP: 条件に応じて処理を分岐する。
 			if inspect.isclass(obj) and issubclass(obj, BaseEvent) and obj is not BaseEvent:
-				# EN: Assign value to target variable.
-				# JP: target variable に値を代入する。
 				event_classes[name] = obj
 
 		# Find all handler methods (on_EventName)
-		# EN: Assign value to registered_events.
-		# JP: registered_events に値を代入する。
 		registered_events = set()
-		# EN: Iterate over items in a loop.
-		# JP: ループで要素を順に処理する。
 		for method_name in dir(self):
-			# EN: Branch logic based on a condition.
-			# JP: 条件に応じて処理を分岐する。
 			if method_name.startswith('on_') and callable(getattr(self, method_name)):
 				# Extract event name from method name (on_EventName -> EventName)
-				# EN: Assign value to event_name.
-				# JP: event_name に値を代入する。
 				event_name = method_name[3:]  # Remove 'on_' prefix
 
-				# EN: Branch logic based on a condition.
-				# JP: 条件に応じて処理を分岐する。
 				if event_name in event_classes:
-					# EN: Assign value to event_class.
-					# JP: event_class に値を代入する。
 					event_class = event_classes[event_name]
 
 					# ASSERTION: If LISTENS_TO is defined, enforce it
-					# EN: Branch logic based on a condition.
-					# JP: 条件に応じて処理を分岐する。
 					if self.LISTENS_TO:
-						# EN: Validate a required condition.
-						# JP: 必須条件を検証する。
 						assert event_class in self.LISTENS_TO, (
 							f'[{self.__class__.__name__}] Handler {method_name} listens to {event_name} '
 							f'but {event_name} is not declared in LISTENS_TO: {[e.__name__ for e in self.LISTENS_TO]}'
 						)
 
-					# EN: Assign value to handler.
-					# JP: handler に値を代入する。
 					handler = getattr(self, method_name)
 
 					# Use the static helper to attach the handler
-					# EN: Evaluate an expression.
-					# JP: 式を評価する。
 					self.attach_handler_to_session(self.browser_session, event_class, handler)
-					# EN: Evaluate an expression.
-					# JP: 式を評価する。
 					registered_events.add(event_class)
 
 		# ASSERTION: If LISTENS_TO is defined, ensure all declared events have handlers
-		# EN: Branch logic based on a condition.
-		# JP: 条件に応じて処理を分岐する。
 		if self.LISTENS_TO:
-			# EN: Assign value to missing_handlers.
-			# JP: missing_handlers に値を代入する。
 			missing_handlers = set(self.LISTENS_TO) - registered_events
-			# EN: Branch logic based on a condition.
-			# JP: 条件に応じて処理を分岐する。
 			if missing_handlers:
-				# EN: Assign value to missing_names.
-				# JP: missing_names に値を代入する。
 				missing_names = [e.__name__ for e in missing_handlers]
-				# EN: Evaluate an expression.
-				# JP: 式を評価する。
 				self.logger.warning(
 					f'[{self.__class__.__name__}] LISTENS_TO declares {missing_names} '
 					f'but no handlers found (missing on_{"_, on_".join(missing_names)} methods)'
@@ -442,65 +252,31 @@ class BaseWatchdog(BaseModel):
 	# EN: Define function `__del__`.
 	# JP: 関数 `__del__` を定義する。
 	def __del__(self) -> None:
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""Clean up any running tasks during garbage collection."""
 
 		# A BIT OF MAGIC: Cancel any private attributes that look like asyncio tasks
-		# EN: Handle exceptions around this block.
-		# JP: このブロックで例外処理を行う。
 		try:
-			# EN: Iterate over items in a loop.
-			# JP: ループで要素を順に処理する。
 			for attr_name in dir(self):
 				# e.g. _browser_crash_watcher_task = asyncio.Task
-				# EN: Branch logic based on a condition.
-				# JP: 条件に応じて処理を分岐する。
 				if attr_name.startswith('_') and attr_name.endswith('_task'):
-					# EN: Handle exceptions around this block.
-					# JP: このブロックで例外処理を行う。
 					try:
-						# EN: Assign value to task.
-						# JP: task に値を代入する。
 						task = getattr(self, attr_name)
-						# EN: Branch logic based on a condition.
-						# JP: 条件に応じて処理を分岐する。
 						if hasattr(task, 'cancel') and callable(task.cancel) and not task.done():
-							# EN: Evaluate an expression.
-							# JP: 式を評価する。
 							task.cancel()
 							# self.logger.debug(f'[{self.__class__.__name__}] Cancelled {attr_name} during cleanup')
 					except Exception:
-						# EN: Keep a placeholder statement.
-						# JP: プレースホルダー文を維持する。
 						pass  # Ignore errors during cleanup
 
 				# e.g. _cdp_download_tasks = WeakSet[asyncio.Task] or list[asyncio.Task]
-				# EN: Branch logic based on a condition.
-				# JP: 条件に応じて処理を分岐する。
 				if attr_name.startswith('_') and attr_name.endswith('_tasks') and isinstance(getattr(self, attr_name), Iterable):
-					# EN: Iterate over items in a loop.
-					# JP: ループで要素を順に処理する。
 					for task in getattr(self, attr_name):
-						# EN: Handle exceptions around this block.
-						# JP: このブロックで例外処理を行う。
 						try:
-							# EN: Branch logic based on a condition.
-							# JP: 条件に応じて処理を分岐する。
 							if hasattr(task, 'cancel') and callable(task.cancel) and not task.done():
-								# EN: Evaluate an expression.
-								# JP: 式を評価する。
 								task.cancel()
 								# self.logger.debug(f'[{self.__class__.__name__}] Cancelled {attr_name} during cleanup')
 						except Exception:
-							# EN: Keep a placeholder statement.
-							# JP: プレースホルダー文を維持する。
 							pass  # Ignore errors during cleanup
 		except Exception as e:
-			# EN: Import required modules.
-			# JP: 必要なモジュールをインポートする。
 			from browser_use.utils import logger
 
-			# EN: Evaluate an expression.
-			# JP: 式を評価する。
 			logger.error(f'⚠️ Error during BrowserSession {self.__class__.__name__} gargabe collection __del__(): {type(e)}: {e}')

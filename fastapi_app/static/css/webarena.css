@@ -1,8 +1,4 @@
 /* WebArena Styles */
-/*
- * EN: Define styles for `.page-webarena .wa-layout`.
- * JP: `.page-webarena .wa-layout` のスタイルを定義する。
- */
 .page-webarena .wa-layout {
   display: grid;
   grid-template-columns: 340px minmax(0, 1fr);
@@ -13,10 +9,6 @@
   min-height: 600px;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-sidebar`.
- * JP: `.page-webarena .wa-sidebar` のスタイルを定義する。
- */
 .page-webarena .wa-sidebar {
   display: flex;
   flex-direction: column;
@@ -30,10 +22,6 @@
   box-shadow: 0 14px 40px -32px rgba(15, 23, 42, 0.1);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-header`.
- * JP: `.page-webarena .wa-header` のスタイルを定義する。
- */
 .page-webarena .wa-header {
   display: flex;
   flex-direction: column;
@@ -42,10 +30,6 @@
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-header h1`.
- * JP: `.page-webarena .wa-header h1` のスタイルを定義する。
- */
 .page-webarena .wa-header h1 {
   font-size: 1.25rem;
   font-weight: 700;
@@ -53,10 +37,6 @@
   margin: 0;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-back-link`.
- * JP: `.page-webarena .wa-back-link` のスタイルを定義する。
- */
 .page-webarena .wa-back-link {
   font-size: 0.85rem;
   color: var(--text-muted);
@@ -68,28 +48,16 @@
   transition: color 0.2s;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-back-link:hover`.
- * JP: `.page-webarena .wa-back-link:hover` のスタイルを定義する。
- */
 .page-webarena .wa-back-link:hover {
   color: var(--accent-primary);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-section`.
- * JP: `.page-webarena .wa-section` のスタイルを定義する。
- */
 .page-webarena .wa-section {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-section-title`.
- * JP: `.page-webarena .wa-section-title` のスタイルを定義する。
- */
 .page-webarena .wa-section-title {
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -100,10 +68,6 @@
 }
 
 /* Config Accordion */
-/*
- * EN: Define styles for `.page-webarena .wa-config-details summary`.
- * JP: `.page-webarena .wa-config-details summary` のスタイルを定義する。
- */
 .page-webarena .wa-config-details summary {
   cursor: pointer;
   list-style: none;
@@ -120,18 +84,10 @@
   transition: all 0.2s;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-config-details summary:hover`.
- * JP: `.page-webarena .wa-config-details summary:hover` のスタイルを定義する。
- */
 .page-webarena .wa-config-details summary:hover {
   background: #f1f5f9;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-config-details[open] summary`.
- * JP: `.page-webarena .wa-config-details[open] summary` のスタイルを定義する。
- */
 .page-webarena .wa-config-details[open] summary {
   border-color: rgba(148, 163, 184, 0.3);
   background: #fff;
@@ -139,27 +95,15 @@
   border-bottom-right-radius: 0;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-config-details summary::after`.
- * JP: `.page-webarena .wa-config-details summary::after` のスタイルを定義する。
- */
 .page-webarena .wa-config-details summary::after {
   content: '+';
   font-size: 1.1em;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-config-details[open] summary::after`.
- * JP: `.page-webarena .wa-config-details[open] summary::after` のスタイルを定義する。
- */
 .page-webarena .wa-config-details[open] summary::after {
   content: '−';
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-config-content`.
- * JP: `.page-webarena .wa-config-content` のスタイルを定義する。
- */
 .page-webarena .wa-config-content {
   padding: 14px;
   background: #fff;
@@ -172,30 +116,18 @@
   gap: 10px;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-input-group`.
- * JP: `.page-webarena .wa-input-group` のスタイルを定義する。
- */
 .page-webarena .wa-input-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-input-group label`.
- * JP: `.page-webarena .wa-input-group label` のスタイルを定義する。
- */
 .page-webarena .wa-input-group label {
   font-size: 0.75rem;
   font-weight: 600;
   color: #64748b;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-input`.
- * JP: `.page-webarena .wa-input` のスタイルを定義する。
- */
 .page-webarena .wa-input {
   padding: 8px 10px;
   border: 1px solid #cbd5e1;
@@ -205,10 +137,6 @@
   color: var(--text-base);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-input:focus`.
- * JP: `.page-webarena .wa-input:focus` のスタイルを定義する。
- */
 .page-webarena .wa-input:focus {
   outline: none;
   border-color: var(--accent-primary);
@@ -216,10 +144,6 @@
 }
 
 /* Tasks */
-/*
- * EN: Define styles for `.page-webarena .wa-task-list`.
- * JP: `.page-webarena .wa-task-list` のスタイルを定義する。
- */
 .page-webarena .wa-task-list {
   display: flex;
   flex-direction: column;
@@ -227,10 +151,6 @@
   min-height: 0;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-task-card`.
- * JP: `.page-webarena .wa-task-card` のスタイルを定義する。
- */
 .page-webarena .wa-task-card {
   padding: 12px;
   border-radius: 12px;
@@ -241,30 +161,18 @@
   position: relative;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-task-card:hover`.
- * JP: `.page-webarena .wa-task-card:hover` のスタイルを定義する。
- */
 .page-webarena .wa-task-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   border-color: rgba(37, 99, 235, 0.4);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-task-card.active`.
- * JP: `.page-webarena .wa-task-card.active` のスタイルを定義する。
- */
 .page-webarena .wa-task-card.active {
   background: #eff6ff;
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 1px var(--accent-primary);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-task-id`.
- * JP: `.page-webarena .wa-task-id` のスタイルを定義する。
- */
 .page-webarena .wa-task-id {
   font-size: 0.75rem;
   font-weight: 700;
@@ -272,10 +180,6 @@
   margin-bottom: 4px;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-task-desc`.
- * JP: `.page-webarena .wa-task-desc` のスタイルを定義する。
- */
 .page-webarena .wa-task-desc {
   font-size: 0.85rem;
   color: #334155;
@@ -286,10 +190,6 @@
   overflow: hidden;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-main-col`.
- * JP: `.page-webarena .wa-main-col` のスタイルを定義する。
- */
 .page-webarena .wa-main-col {
   display: flex;
   flex-direction: column;
@@ -298,10 +198,6 @@
   overflow: hidden;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-browser-container`.
- * JP: `.page-webarena .wa-browser-container` のスタイルを定義する。
- */
 .page-webarena .wa-browser-container {
   flex: 3; /* Allocate more space to browser */
   border-radius: 20px;
@@ -312,10 +208,6 @@
   min-height: 0;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-results-container`.
- * JP: `.page-webarena .wa-results-container` のスタイルを定義する。
- */
 .page-webarena .wa-results-container {
   flex: 2;
   background: #fff;
@@ -326,10 +218,6 @@
   overflow: hidden;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-results-header`.
- * JP: `.page-webarena .wa-results-header` のスタイルを定義する。
- */
 .page-webarena .wa-results-header {
   padding: 12px 20px;
   border-bottom: 1px solid #e2e8f0;
@@ -339,10 +227,6 @@
   align-items: center;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-results-header h3`.
- * JP: `.page-webarena .wa-results-header h3` のスタイルを定義する。
- */
 .page-webarena .wa-results-header h3 {
   margin: 0;
   font-size: 0.9rem;
@@ -350,10 +234,6 @@
   color: #334155;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-log-area`.
- * JP: `.page-webarena .wa-log-area` のスタイルを定義する。
- */
 .page-webarena .wa-log-area {
   flex: 1;
   overflow-y: auto;
@@ -363,10 +243,6 @@
   color: #334155;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-progress-card`.
- * JP: `.page-webarena .wa-progress-card` のスタイルを定義する。
- */
 .page-webarena .wa-progress-card {
   padding: 12px 14px;
   border: 1px solid rgba(148, 163, 184, 0.3);
@@ -375,10 +251,6 @@
   margin-bottom: 12px;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-progress-meta`.
- * JP: `.page-webarena .wa-progress-meta` のスタイルを定義する。
- */
 .page-webarena .wa-progress-meta {
   display: flex;
   justify-content: space-between;
@@ -388,28 +260,16 @@
   color: #1e293b;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-progress-label`.
- * JP: `.page-webarena .wa-progress-label` のスタイルを定義する。
- */
 .page-webarena .wa-progress-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-progress-count`.
- * JP: `.page-webarena .wa-progress-count` のスタイルを定義する。
- */
 .page-webarena .wa-progress-count {
   color: #0f172a;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-progress-bar`.
- * JP: `.page-webarena .wa-progress-bar` のスタイルを定義する。
- */
 .page-webarena .wa-progress-bar {
   width: 100%;
   height: 10px;
@@ -419,10 +279,6 @@
   margin-top: 8px;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-progress-bar-fill`.
- * JP: `.page-webarena .wa-progress-bar-fill` のスタイルを定義する。
- */
 .page-webarena .wa-progress-bar-fill {
   height: 100%;
   width: 0%;
@@ -431,54 +287,30 @@
   transition: width 200ms ease;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-progress-bar-fill.is-complete`.
- * JP: `.page-webarena .wa-progress-bar-fill.is-complete` のスタイルを定義する。
- */
 .page-webarena .wa-progress-bar-fill.is-complete {
   background: linear-gradient(90deg, #16a34a, #22c55e);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-progress-bar-fill.is-error`.
- * JP: `.page-webarena .wa-progress-bar-fill.is-error` のスタイルを定義する。
- */
 .page-webarena .wa-progress-bar-fill.is-error {
   background: linear-gradient(90deg, #f43f5e, #ef4444);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-progress-current`.
- * JP: `.page-webarena .wa-progress-current` のスタイルを定義する。
- */
 .page-webarena .wa-progress-current {
   margin-top: 8px;
   color: var(--text-muted);
   font-size: 0.86rem;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-step`.
- * JP: `.page-webarena .wa-step` のスタイルを定義する。
- */
 .page-webarena .wa-step {
   padding: 8px 0;
   border-bottom: 1px solid #f1f5f9;
   line-height: 1.5;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-step:last-child`.
- * JP: `.page-webarena .wa-step:last-child` のスタイルを定義する。
- */
 .page-webarena .wa-step:last-child {
   border-bottom: none;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-task-result`.
- * JP: `.page-webarena .wa-task-result` のスタイルを定義する。
- */
 .page-webarena .wa-task-result {
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
@@ -488,10 +320,6 @@
   box-shadow: 0 6px 18px -16px rgba(15, 23, 42, 0.4);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-task-result__head`.
- * JP: `.page-webarena .wa-task-result__head` のスタイルを定義する。
- */
 .page-webarena .wa-task-result__head {
   display: flex;
   justify-content: space-between;
@@ -500,27 +328,15 @@
   margin-bottom: 6px;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-task-result__title`.
- * JP: `.page-webarena .wa-task-result__title` のスタイルを定義する。
- */
 .page-webarena .wa-task-result__title {
   font-weight: 700;
   color: #1e293b;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-task-result__summary`.
- * JP: `.page-webarena .wa-task-result__summary` のスタイルを定義する。
- */
 .page-webarena .wa-task-result__summary {
   color: #334155;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-task-result__evaluation`.
- * JP: `.page-webarena .wa-task-result__evaluation` のスタイルを定義する。
- */
 .page-webarena .wa-task-result__evaluation {
   margin-top: 6px;
   font-size: 0.9em;
@@ -528,10 +344,6 @@
   white-space: pre-wrap;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-step-num`.
- * JP: `.page-webarena .wa-step-num` のスタイルを定義する。
- */
 .page-webarena .wa-step-num {
   display: inline-block;
   min-width: 24px;
@@ -539,10 +351,6 @@
   font-weight: 600;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-pagination`.
- * JP: `.page-webarena .wa-pagination` のスタイルを定義する。
- */
 .page-webarena .wa-pagination {
   display: flex;
   align-items: center;
@@ -550,10 +358,6 @@
   padding-top: 8px;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-btn-sm`.
- * JP: `.page-webarena .wa-btn-sm` のスタイルを定義する。
- */
 .page-webarena .wa-btn-sm {
   padding: 4px 10px;
   font-size: 0.75rem;
@@ -564,27 +368,15 @@
   font-weight: 600;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-btn-sm:hover:not(:disabled)`.
- * JP: `.page-webarena .wa-btn-sm:hover:not(:disabled)` のスタイルを定義する。
- */
 .page-webarena .wa-btn-sm:hover:not(:disabled) {
   background: #e2e8f0;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-btn-sm:disabled`.
- * JP: `.page-webarena .wa-btn-sm:disabled` のスタイルを定義する。
- */
 .page-webarena .wa-btn-sm:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-btn-chip`.
- * JP: `.page-webarena .wa-btn-chip` のスタイルを定義する。
- */
 .page-webarena .wa-btn-chip {
   padding: 6px 12px;
   border-radius: 999px;
@@ -597,18 +389,10 @@
   transition: all 120ms ease;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-btn-chip:hover`.
- * JP: `.page-webarena .wa-btn-chip:hover` のスタイルを定義する。
- */
 .page-webarena .wa-btn-chip:hover {
   background: #e2e8f0;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-btn-chip.active`.
- * JP: `.page-webarena .wa-btn-chip.active` のスタイルを定義する。
- */
 .page-webarena .wa-btn-chip.active {
   background: #0ea5e9;
   color: white;
@@ -616,10 +400,6 @@
 }
 
 /* Status Badges */
-/*
- * EN: Define styles for `.page-webarena .wa-badge`.
- * JP: `.page-webarena .wa-badge` のスタイルを定義する。
- */
 .page-webarena .wa-badge {
   display: inline-flex;
   align-items: center;
@@ -631,26 +411,10 @@
   letter-spacing: 0.05em;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-badge-success`.
- * JP: `.page-webarena .wa-badge-success` のスタイルを定義する。
- */
 .page-webarena .wa-badge-success { background: #dcfce7; color: #15803d; }
-/*
- * EN: Define styles for `.page-webarena .wa-badge-fail`.
- * JP: `.page-webarena .wa-badge-fail` のスタイルを定義する。
- */
 .page-webarena .wa-badge-fail { background: #fee2e2; color: #b91c1c; }
-/*
- * EN: Define styles for `.page-webarena .wa-badge-pending`.
- * JP: `.page-webarena .wa-badge-pending` のスタイルを定義する。
- */
 .page-webarena .wa-badge-pending { background: #e0f2fe; color: #0369a1; }
 
-/*
- * EN: Define styles for `.page-webarena .wa-batch-summary`.
- * JP: `.page-webarena .wa-batch-summary` のスタイルを定義する。
- */
 .page-webarena .wa-batch-summary {
   padding: 14px;
   margin-bottom: 12px;
@@ -660,29 +424,17 @@
   box-shadow: 0 10px 28px -20px rgba(59, 130, 246, 0.35);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-batch-summary__title`.
- * JP: `.page-webarena .wa-batch-summary__title` のスタイルを定義する。
- */
 .page-webarena .wa-batch-summary__title {
   font-weight: 700;
   color: #1d4ed8;
   margin-bottom: 6px;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-batch-summary__stats`.
- * JP: `.page-webarena .wa-batch-summary__stats` のスタイルを定義する。
- */
 .page-webarena .wa-batch-summary__stats {
   font-weight: 600;
   color: #1e293b;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-toggle`.
- * JP: `.page-webarena .wa-toggle` のスタイルを定義する。
- */
 .page-webarena .wa-toggle {
   display: inline-flex;
   align-items: center;
@@ -694,18 +446,10 @@
   box-shadow: 0 10px 24px -20px rgba(15, 23, 42, 0.35);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-toggle input`.
- * JP: `.page-webarena .wa-toggle input` のスタイルを定義する。
- */
 .page-webarena .wa-toggle input {
   display: none;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-toggle-slider`.
- * JP: `.page-webarena .wa-toggle-slider` のスタイルを定義する。
- */
 .page-webarena .wa-toggle-slider {
   position: relative;
   width: 46px;
@@ -716,10 +460,6 @@
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.5);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-toggle-slider::after`.
- * JP: `.page-webarena .wa-toggle-slider::after` のスタイルを定義する。
- */
 .page-webarena .wa-toggle-slider::after {
   content: '';
   position: absolute;
@@ -733,36 +473,20 @@
   transition: transform 0.2s ease;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-toggle input:checked + .wa-toggle-slider`.
- * JP: `.page-webarena .wa-toggle input:checked + .wa-toggle-slider` のスタイルを定義する。
- */
 .page-webarena .wa-toggle input:checked + .wa-toggle-slider {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-toggle input:checked + .wa-toggle-slider::after`.
- * JP: `.page-webarena .wa-toggle input:checked + .wa-toggle-slider::after` のスタイルを定義する。
- */
 .page-webarena .wa-toggle input:checked + .wa-toggle-slider::after {
   transform: translateX(18px);
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-toggle-label`.
- * JP: `.page-webarena .wa-toggle-label` のスタイルを定義する。
- */
 .page-webarena .wa-toggle-label {
   font-weight: 600;
   color: #0f172a;
   letter-spacing: 0.02em;
 }
 
-/*
- * EN: Define styles for `.page-webarena .wa-hint`.
- * JP: `.page-webarena .wa-hint` のスタイルを定義する。
- */
 .page-webarena .wa-hint {
   margin: 6px 0 0;
   font-size: 0.82rem;
@@ -770,24 +494,12 @@
   line-height: 1.5;
 }
 
-/*
- * EN: Declare an at-rule style block.
- * JP: at-rule のスタイルブロックを定義する。
- */
 @media (max-width: 900px) {
-  /*
-   * EN: Define styles for `.page-webarena .wa-layout`.
-   * JP: `.page-webarena .wa-layout` のスタイルを定義する。
-   */
   .page-webarena .wa-layout {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
     height: auto;
   }
-  /*
-   * EN: Define styles for `.page-webarena .wa-sidebar`.
-   * JP: `.page-webarena .wa-sidebar` のスタイルを定義する。
-   */
   .page-webarena .wa-sidebar {
     max-height: 50vh;
   }

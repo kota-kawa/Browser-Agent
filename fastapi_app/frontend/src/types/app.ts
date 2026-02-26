@@ -6,6 +6,10 @@ export interface IndexAppProps {
   browserUrl: string;
 }
 
+/**
+ * EN: Define interface `AgentResultAppProps`.
+ * JP: インターフェース `AgentResultAppProps` を定義する。
+ */
 export interface AgentResultAppProps {
   browserUrl: string;
 }

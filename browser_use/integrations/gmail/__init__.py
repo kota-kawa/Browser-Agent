@@ -1,5 +1,3 @@
-# EN: Describe this block with a docstring.
-# JP: このブロックの説明をドキュメント文字列で記述する。
 """
 Gmail Integration for Browser Use
 Provides Gmail API integration for email reading and verification code extraction.
@@ -20,13 +18,7 @@ Usage:
 
 # @file purpose: Gmail integration for 2FA email authentication and email reading
 
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from .actions import register_gmail_actions
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from .service import GmailService
 
-# EN: Assign value to __all__.
-# JP: __all__ に値を代入する。
 __all__ = ['GmailService', 'register_gmail_actions']
