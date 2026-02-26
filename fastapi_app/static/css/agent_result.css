@@ -1,3 +1,7 @@
+/*
+ * EN: Define styles for `.page-agent-result .full-screen-layout`.
+ * JP: `.page-agent-result .full-screen-layout` のスタイルを定義する。
+ */
 .page-agent-result .full-screen-layout {
   width: 100%;
   height: calc(100vh - clamp(24px, 4vw, 40px));
@@ -6,6 +10,10 @@
   flex-direction: column;
 }
 
+/*
+ * EN: Define styles for `.page-agent-result .browser-pane`.
+ * JP: `.page-agent-result .browser-pane` のスタイルを定義する。
+ */
 .page-agent-result .browser-pane {
   flex: 1;
   height: 100%;

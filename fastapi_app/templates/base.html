@@ -1,18 +1,44 @@
+<!-- EN: Declare the HTML document type. -->
+<!-- JP: HTML の文書型を宣言する。 -->
 <!DOCTYPE html>
+<!-- EN: Start the root HTML element. -->
+<!-- JP: ルート HTML 要素を開始する。 -->
 <html lang="ja">
+  <!-- EN: Start the head metadata section. -->
+  <!-- JP: head のメタデータ領域を開始する。 -->
   <head>
+    <!-- EN: Render the `meta` element. -->
+    <!-- JP: `meta` 要素を描画する。 -->
     <meta charset="utf-8" />
+    <!-- EN: Render the `meta` element. -->
+    <!-- JP: `meta` 要素を描画する。 -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     {% block theme_color %}{% endblock %}
+    <!-- EN: Render the `title` element. -->
+    <!-- JP: `title` 要素を描画する。 -->
     <title>{% block title %}ブラウザ制御デモ{% endblock %}</title>
+    <!-- EN: Render the `link` element. -->
+    <!-- JP: `link` 要素を描画する。 -->
     <link rel="icon" type="image/png" href="/favicon.png" sizes="512x512" />
+    <!-- EN: Render the `link` element. -->
+    <!-- JP: `link` 要素を描画する。 -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <!-- EN: Render the `link` element. -->
+    <!-- JP: `link` 要素を描画する。 -->
     <link rel="shortcut icon" href="/favicon.ico" />
+    <!-- EN: Render the `link` element. -->
+    <!-- JP: `link` 要素を描画する。 -->
     <link rel="apple-touch-icon" href="/favicon.png" />
+    <!-- EN: Render the `link` element. -->
+    <!-- JP: `link` 要素を描画する。 -->
     <link rel="stylesheet" href="{{ request.url_for('static', path='css/base.css') }}" />
     {% block page_styles %}{% endblock %}
   </head>
+  <!-- EN: Start the body content section. -->
+  <!-- JP: body のコンテンツ領域を開始する。 -->
   <body class="{% block body_class %}{% endblock %}">
+    <!-- EN: Render the `div` element. -->
+    <!-- JP: `div` 要素を描画する。 -->
     <div id="root"></div>
     {% block body_scripts %}{% endblock %}
   </body>
