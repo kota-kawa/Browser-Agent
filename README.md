@@ -60,11 +60,11 @@ Browser-Agent combines the `browser_use` library with a FastAPI backend to provi
 
 ```mermaid
 flowchart LR
-    U[User] --> UI[Web UI<br/>React + Vite<br/>Chat + noVNC]
-    UI -->|POST /api/chat<br/>POST /webarena/run| API[FastAPI API Layer<br/>routes + services]
-    API --> C[BrowserAgentController<br/>Queue + EventBus]
-    C --> LLM[LLM Providers<br/>Gemini / OpenAI / Anthropic]
-    C --> B[BrowserSession (CDP)<br/>Remote Chrome]
+    U[User] --> UI[Web UI<br>React + Vite<br>Chat + noVNC]
+    UI -->|POST /api/chat<br>POST /webarena/run| API[FastAPI API Layer<br>routes + services]
+    API --> C[BrowserAgentController<br>Queue + EventBus]
+    C --> LLM[LLM Providers<br>Gemini / OpenAI / Anthropic]
+    C --> B[BrowserSession (CDP)<br>Remote Chrome]
     C -->|SSE /api/stream| UI
 ```
 
@@ -197,11 +197,11 @@ See [LICENSE.md](LICENSE.md) for details.
 
 ```mermaid
 flowchart LR
-    U[ユーザー] --> UI[Web UI<br/>React + Vite<br/>チャット + noVNC]
-    UI -->|POST /api/chat<br/>POST /webarena/run| API[FastAPI APIレイヤー<br/>routes + services]
-    API --> C[BrowserAgentController<br/>キュー + EventBus]
-    C --> LLM[LLMプロバイダ<br/>Gemini / OpenAI / Anthropic]
-    C --> B[BrowserSession (CDP)<br/>リモートChrome]
+    U[ユーザー] --> UI[Web UI<br>React + Vite<br>チャット + noVNC]
+    UI -->|POST /api/chat<br>POST /webarena/run| API[FastAPI APIレイヤー<br>routes + services]
+    API --> C[BrowserAgentController<br>キュー + EventBus]
+    C --> LLM[LLMプロバイダ<br>Gemini / OpenAI / Anthropic]
+    C --> B[BrowserSession (CDP)<br>リモートChrome]
     C -->|SSE /api/stream| UI
 ```
 
