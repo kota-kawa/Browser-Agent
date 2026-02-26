@@ -100,6 +100,8 @@ Use the **WebArena** tab in the UI or call the API endpoints below.
 
 ## 📊 WebArena Browser Agent Evaluation
 
+These results were obtained by running the Browser-Agent on WebArena Shopping tasks (N=187).
+
 | Model | Success / Total | Score |
 | --- | --- | --- |
 | GPT-5.1 | 61 / 187 | 32.6% |
@@ -222,6 +224,8 @@ UIの **WebArena** タブ、またはAPIから実行できます。
 - `POST /webarena/run`: WebArenaの特定タスクを実行します。
 
 ## 📊 WebArenaでのBrowserエージェント評価
+
+この結果は、WebArenaのShoppingタスクでBrowser-Agentを実行したものです（N=187）。
 
 | モデル | 成功数 / 総数 | スコア |
 | --- | --- | --- |
