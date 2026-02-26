@@ -59,13 +59,13 @@ Browser-Agent combines the `browser_use` library with a FastAPI backend to provi
 ## 🏗️ Architecture
 
 ```mermaid
-flowchart LR
-    U[User] --> UI[Web UI<br>React + Vite<br>Chat + noVNC]
-    UI -->|POST /api/chat<br>POST /webarena/run| API[FastAPI API Layer<br>routes + services]
-    API --> C[BrowserAgentController<br>Queue + EventBus]
-    C --> LLM[LLM Providers<br>Gemini / OpenAI / Anthropic]
-    C --> B[BrowserSession (CDP)<br>Remote Chrome]
-    C -->|SSE /api/stream| UI
+flowchart TB
+    user["User"] --> ui["Web UI<br/>(React + Vite)<br/>Chat + noVNC"]
+    ui -->|"POST /api/chat<br/>POST /webarena/run"| api["FastAPI API Layer<br/>(routes + services)"]
+    api --> controller["BrowserAgentController<br/>(Queue + EventBus)"]
+    controller --> llm["LLM Providers<br/>(Gemini / OpenAI / Anthropic)"]
+    controller --> browser["BrowserSession (CDP)<br/>Remote Chrome"]
+    controller -->|"SSE /api/stream"| ui
 ```
 
 ## 🛠️ Quick Start (Docker Compose only)
@@ -196,13 +196,13 @@ See [LICENSE.md](LICENSE.md) for details.
 ## 🏗️ アーキテクチャ図
 
 ```mermaid
-flowchart LR
-    U[ユーザー] --> UI[Web UI<br>React + Vite<br>チャット + noVNC]
-    UI -->|POST /api/chat<br>POST /webarena/run| API[FastAPI APIレイヤー<br>routes + services]
-    API --> C[BrowserAgentController<br>キュー + EventBus]
-    C --> LLM[LLMプロバイダ<br>Gemini / OpenAI / Anthropic]
-    C --> B[BrowserSession (CDP)<br>リモートChrome]
-    C -->|SSE /api/stream| UI
+flowchart TB
+    user_ja["ユーザー"] --> ui_ja["Web UI<br/>(React + Vite)<br/>チャット + noVNC"]
+    ui_ja -->|"POST /api/chat<br/>POST /webarena/run"| api_ja["FastAPI APIレイヤー<br/>(routes + services)"]
+    api_ja --> controller_ja["BrowserAgentController<br/>(キュー + EventBus)"]
+    controller_ja --> llm_ja["LLMプロバイダ<br/>(Gemini / OpenAI / Anthropic)"]
+    controller_ja --> browser_ja["BrowserSession (CDP)<br/>リモートChrome"]
+    controller_ja -->|"SSE /api/stream"| ui_ja
 ```
 
 ## 🛠️ クイックスタート（Docker Composeのみ）
