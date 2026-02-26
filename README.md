@@ -98,6 +98,14 @@ Use the **WebArena** tab in the UI or call the API endpoints below.
 - `GET /api/stream`: Subscribe to the event stream.
 - `POST /webarena/run`: Run a specific WebArena task.
 
+## 📊 WebArena Browser Agent Evaluation
+
+| Model | Success / Total | Score |
+| --- | --- | --- |
+| GPT-5.1 | 61 / 187 | 32.6% |
+| Qwen 32B | 43 / 187 | 23% |
+| GPT-OSS 20B | 49 / 187 | 26% |
+
 ## 📂 Project Structure
 
 ```
@@ -212,6 +220,14 @@ UIの **WebArena** タブ、またはAPIから実行できます。
 - `POST /api/chat`: エージェントにタスクを送信します。
 - `GET /api/stream`: イベントストリームを購読します。
 - `POST /webarena/run`: WebArenaの特定タスクを実行します。
+
+## 📊 WebArenaでのBrowserエージェント評価
+
+| モデル | 成功数 / 総数 | スコア |
+| --- | --- | --- |
+| GPT-5.1 | 61 / 187 | 32.6% |
+| Qwen 32B | 43 / 187 | 23% |
+| GPT-OSS 20B | 49 / 187 | 26% |
 
 ## 📂 プロジェクト構成
 
