@@ -56,6 +56,18 @@ Browser-Agent combines the `browser_use` library with a FastAPI backend to provi
 - **Docker-first** setup with Docker Compose.
 - **Extensible architecture** separating core agent, API services, and UI.
 
+## 🏗️ Architecture
+
+```mermaid
+flowchart LR
+    U[User] --> UI[Web UI<br/>React + Vite<br/>Chat + noVNC]
+    UI -->|POST /api/chat<br/>POST /webarena/run| API[FastAPI API Layer<br/>routes + services]
+    API --> C[BrowserAgentController<br/>Queue + EventBus]
+    C --> LLM[LLM Providers<br/>Gemini / OpenAI / Anthropic]
+    C --> B[BrowserSession (CDP)<br/>Remote Chrome]
+    C -->|SSE /api/stream| UI
+```
+
 ## 🛠️ Quick Start (Docker Compose only)
 
 ### Prerequisites
@@ -180,6 +192,18 @@ See [LICENSE.md](LICENSE.md) for details.
 - **Scratchpad**: 価格・名前・レビューなどの構造化メモ。
 - **Docker Compose前提**のシンプル運用。
 - **拡張可能な構成**: コアエージェント、API、UIを分離。
+
+## 🏗️ アーキテクチャ図
+
+```mermaid
+flowchart LR
+    U[ユーザー] --> UI[Web UI<br/>React + Vite<br/>チャット + noVNC]
+    UI -->|POST /api/chat<br/>POST /webarena/run| API[FastAPI APIレイヤー<br/>routes + services]
+    API --> C[BrowserAgentController<br/>キュー + EventBus]
+    C --> LLM[LLMプロバイダ<br/>Gemini / OpenAI / Anthropic]
+    C --> B[BrowserSession (CDP)<br/>リモートChrome]
+    C -->|SSE /api/stream| UI
+```
 
 ## 🛠️ クイックスタート（Docker Composeのみ）
 
