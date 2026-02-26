@@ -1,7 +1,3 @@
-/*
- * EN: Define styles for `.page-index .layout`.
- * JP: `.page-index .layout` のスタイルを定義する。
- */
 .page-index .layout {
   display: grid;
   grid-template-columns: minmax(360px, 32vw) minmax(0, 1fr);
@@ -15,10 +11,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-pane`.
- * JP: `.page-index .chat-pane` のスタイルを定義する。
- */
 .page-index .chat-pane {
   position: relative;
   display: flex;
@@ -33,19 +25,11 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-pane::before`.
- * JP: `.page-index .chat-pane::before` のスタイルを定義する。
- */
 .page-index .chat-pane::before {
   content: none;
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-pane__content`.
- * JP: `.page-index .chat-pane__content` のスタイルを定義する。
- */
 .page-index .chat-pane__content {
   display: flex;
   flex-direction: column;
@@ -55,10 +39,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-body`.
- * JP: `.page-index .chat-body` のスタイルを定義する。
- */
 .page-index .chat-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -66,15 +46,7 @@
 }
 
 
-/*
- * EN: Declare an at-rule style block.
- * JP: at-rule のスタイルブロックを定義する。
- */
 @supports (backdrop-filter: blur(18px)) {
-  /*
-   * EN: Define styles for `.page-index .chat-pane`.
-   * JP: `.page-index .chat-pane` のスタイルを定義する。
-   */
   .page-index .chat-pane {
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -83,10 +55,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header`.
- * JP: `.page-index .chat-header` のスタイルを定義する。
- */
 .page-index .chat-header {
   display: flex;
   align-items: center;
@@ -94,10 +62,6 @@
   gap: 12px;
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner`.
- * JP: `.page-index .status-banner` のスタイルを定義する。
- */
 .page-index .status-banner {
   display: flex;
   align-items: center;
@@ -114,10 +78,6 @@
   transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner.is-empty`.
- * JP: `.page-index .status-banner.is-empty` のスタイルを定義する。
- */
 .page-index .status-banner.is-empty {
   min-height: 0;
   max-height: 0;
@@ -128,10 +88,6 @@
   pointer-events: none;
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner .status-dot`.
- * JP: `.page-index .status-banner .status-dot` のスタイルを定義する。
- */
 .page-index .status-banner .status-dot {
   width: 8px;
   height: 8px;
@@ -140,10 +96,6 @@
   box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.15);
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner[data-variant='muted']`.
- * JP: `.page-index .status-banner[data-variant='muted']` のスタイルを定義する。
- */
 .page-index .status-banner[data-variant='muted'] {
   background: rgba(148, 163, 184, 0.12);
   border-color: rgba(148, 163, 184, 0.2);
@@ -151,10 +103,6 @@
 }
 
 .page-index .status-banner[data-variant='info'],
-/*
- * EN: Define styles for `.page-index .status-banner[data-variant='progress']`.
- * JP: `.page-index .status-banner[data-variant='progress']` のスタイルを定義する。
- */
 .page-index .status-banner[data-variant='progress'] {
   background: rgba(14, 165, 233, 0.12);
   border-color: rgba(14, 165, 233, 0.22);
@@ -162,94 +110,54 @@
 }
 
 .page-index .status-banner[data-variant='info'] .status-dot,
-/*
- * EN: Define styles for `.page-index .status-banner[data-variant='progress'] .status-dot`.
- * JP: `.page-index .status-banner[data-variant='progress'] .status-dot` のスタイルを定義する。
- */
 .page-index .status-banner[data-variant='progress'] .status-dot {
   background: var(--accent-info);
   box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.18);
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner[data-variant='progress'] .status-dot`.
- * JP: `.page-index .status-banner[data-variant='progress'] .status-dot` のスタイルを定義する。
- */
 .page-index .status-banner[data-variant='progress'] .status-dot {
   animation: pulse 1.4s ease-in-out infinite;
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner[data-variant='success']`.
- * JP: `.page-index .status-banner[data-variant='success']` のスタイルを定義する。
- */
 .page-index .status-banner[data-variant='success'] {
   background: rgba(34, 197, 94, 0.12);
   border-color: rgba(34, 197, 94, 0.2);
   color: #15803d;
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner[data-variant='success'] .status-dot`.
- * JP: `.page-index .status-banner[data-variant='success'] .status-dot` のスタイルを定義する。
- */
 .page-index .status-banner[data-variant='success'] .status-dot {
   background: var(--accent-success);
   box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner[data-variant='warning']`.
- * JP: `.page-index .status-banner[data-variant='warning']` のスタイルを定義する。
- */
 .page-index .status-banner[data-variant='warning'] {
   background: rgba(249, 115, 22, 0.14);
   border-color: rgba(249, 115, 22, 0.25);
   color: #b45309;
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner[data-variant='warning'] .status-dot`.
- * JP: `.page-index .status-banner[data-variant='warning'] .status-dot` のスタイルを定義する。
- */
 .page-index .status-banner[data-variant='warning'] .status-dot {
   background: var(--accent-warning);
   box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.18);
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner[data-variant='error']`.
- * JP: `.page-index .status-banner[data-variant='error']` のスタイルを定義する。
- */
 .page-index .status-banner[data-variant='error'] {
   background: rgba(239, 68, 68, 0.12);
   border-color: rgba(239, 68, 68, 0.24);
   color: #b91c1c;
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner[data-variant='error'] .status-dot`.
- * JP: `.page-index .status-banner[data-variant='error'] .status-dot` のスタイルを定義する。
- */
 .page-index .status-banner[data-variant='error'] .status-dot {
   background: var(--accent-danger);
   box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18);
 }
 
-/*
- * EN: Define styles for `.page-index .status-banner .status-text`.
- * JP: `.page-index .status-banner .status-text` のスタイルを定義する。
- */
 .page-index .status-banner .status-text {
   min-width: 0;
   flex: 1 1 auto;
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-main`.
- * JP: `.page-index .chat-header-main` のスタイルを定義する。
- */
 .page-index .chat-header-main {
   display: flex;
   flex-direction: column;
@@ -258,10 +166,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header h1`.
- * JP: `.page-index .chat-header h1` のスタイルを定義する。
- */
 .page-index .chat-header h1 {
   margin: 0;
   font-size: clamp(1.15rem, 1.8vw, 1.4rem);
@@ -271,10 +175,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-side`.
- * JP: `.page-index .chat-header-side` のスタイルを定義する。
- */
 .page-index .chat-header-side {
   display: flex;
   justify-content: flex-end;
@@ -284,10 +184,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-details`.
- * JP: `.page-index .chat-header-details` のスタイルを定義する。
- */
 .page-index .chat-header-details {
   display: flex;
   flex-direction: column;
@@ -295,10 +191,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-summary`.
- * JP: `.page-index .chat-header-summary` のスタイルを定義する。
- */
 .page-index .chat-header-summary {
   list-style: none;
   display: inline-flex;
@@ -318,40 +210,24 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-summary:focus-visible`.
- * JP: `.page-index .chat-header-summary:focus-visible` のスタイルを定義する。
- */
 .page-index .chat-header-summary:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-summary .icon-settings`.
- * JP: `.page-index .chat-header-summary .icon-settings` のスタイルを定義する。
- */
 .page-index .chat-header-summary .icon-settings {
   opacity: 0.6;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-summary .chevron-icon`.
- * JP: `.page-index .chat-header-summary .chevron-icon` のスタイルを定義する。
- */
 .page-index .chat-header-summary .chevron-icon {
   opacity: 0.4;
   transition: transform 0.3s ease;
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-summary:hover`.
- * JP: `.page-index .chat-header-summary:hover` のスタイルを定義する。
- */
 .page-index .chat-header-summary:hover {
   border-color: #cbd5e1;
   background: #fcfdfe;
@@ -359,38 +235,22 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-summary:hover .icon-settings`.
- * JP: `.page-index .chat-header-summary:hover .icon-settings` のスタイルを定義する。
- */
 .page-index .chat-header-summary:hover .icon-settings {
   transform: rotate(45deg);
   opacity: 0.9;
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-summary::-webkit-details-marker`.
- * JP: `.page-index .chat-header-summary::-webkit-details-marker` のスタイルを定義する。
- */
 .page-index .chat-header-summary::-webkit-details-marker {
   display: none;
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-summary::marker`.
- * JP: `.page-index .chat-header-summary::marker` のスタイルを定義する。
- */
 .page-index .chat-header-summary::marker {
   content: '';
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-details[open] .chat-header-summary`.
- * JP: `.page-index .chat-header-details[open] .chat-header-summary` のスタイルを定義する。
- */
 .page-index .chat-header-details[open] .chat-header-summary {
   background: #f8fafc;
   border-color: var(--accent-primary);
@@ -398,20 +258,12 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-details[open] .chat-header-summary .chevron-icon`.
- * JP: `.page-index .chat-header-details[open] .chat-header-summary .chevron-icon` のスタイルを定義する。
- */
 .page-index .chat-header-details[open] .chat-header-summary .chevron-icon {
   transform: rotate(180deg);
   opacity: 1;
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-controls`.
- * JP: `.page-index .chat-header-controls` のスタイルを定義する。
- */
 .page-index .chat-header-controls {
   position: absolute;
   top: calc(100% + 12px);
@@ -436,23 +288,11 @@
 }
 
 
-/*
- * EN: Declare an at-rule style block.
- * JP: at-rule のスタイルブロックを定義する。
- */
 @keyframes dropdownPop {
-  /*
-   * EN: Define styles for `from`.
-   * JP: `from` のスタイルを定義する。
-   */
   from {
     opacity: 0;
     transform: scale(0.95) translateY(-10px);
   }
-  /*
-   * EN: Define styles for `to`.
-   * JP: `to` のスタイルを定義する。
-   */
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -460,10 +300,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-controls::before`.
- * JP: `.page-index .chat-header-controls::before` のスタイルを定義する。
- */
 .page-index .chat-header-controls::before {
   content: '';
   position: absolute;
@@ -478,10 +314,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-controls .model-selector-group`.
- * JP: `.page-index .chat-header-controls .model-selector-group` のスタイルを定義する。
- */
 .page-index .chat-header-controls .model-selector-group {
   flex-direction: column;
   align-items: stretch;
@@ -489,10 +321,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-controls .model-selector-label`.
- * JP: `.page-index .chat-header-controls .model-selector-label` のスタイルを定義する。
- */
 .page-index .chat-header-controls .model-selector-label {
   font-size: 0.75rem;
   letter-spacing: 0.05em;
@@ -500,10 +328,6 @@
   color: var(--text-muted);
 }
 
-/*
- * EN: Define styles for `.page-index .vision-toggle-group`.
- * JP: `.page-index .vision-toggle-group` のスタイルを定義する。
- */
 .page-index .vision-toggle-group {
   display: flex;
   flex-direction: column;
@@ -514,10 +338,6 @@
   background: linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.9));
 }
 
-/*
- * EN: Define styles for `.page-index .user-profile-group`.
- * JP: `.page-index .user-profile-group` のスタイルを定義する。
- */
 .page-index .user-profile-group {
   display: flex;
   flex-direction: column;
@@ -528,10 +348,6 @@
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.94));
 }
 
-/*
- * EN: Define styles for `.page-index .user-profile-header`.
- * JP: `.page-index .user-profile-header` のスタイルを定義する。
- */
 .page-index .user-profile-header {
   display: flex;
   align-items: center;
@@ -539,10 +355,6 @@
   gap: 8px;
 }
 
-/*
- * EN: Define styles for `.page-index .user-profile-label`.
- * JP: `.page-index .user-profile-label` のスタイルを定義する。
- */
 .page-index .user-profile-label {
   font-size: 0.75rem;
   letter-spacing: 0.06em;
@@ -550,10 +362,6 @@
   color: var(--text-muted);
 }
 
-/*
- * EN: Define styles for `.page-index .user-profile-save`.
- * JP: `.page-index .user-profile-save` のスタイルを定義する。
- */
 .page-index .user-profile-save {
   border: 1px solid var(--border-strong);
   background: white;
@@ -566,20 +374,12 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-/*
- * EN: Define styles for `.page-index .user-profile-save:hover:not(:disabled)`.
- * JP: `.page-index .user-profile-save:hover:not(:disabled)` のスタイルを定義する。
- */
 .page-index .user-profile-save:hover:not(:disabled) {
   border-color: #cbd5e1;
   box-shadow: 0 4px 10px -6px rgba(15, 23, 42, 0.2);
   transform: translateY(-1px);
 }
 
-/*
- * EN: Define styles for `.page-index .user-profile-save:disabled`.
- * JP: `.page-index .user-profile-save:disabled` のスタイルを定義する。
- */
 .page-index .user-profile-save:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -587,10 +387,6 @@
   box-shadow: none;
 }
 
-/*
- * EN: Define styles for `.page-index .user-profile-textarea`.
- * JP: `.page-index .user-profile-textarea` のスタイルを定義する。
- */
 .page-index .user-profile-textarea {
   width: 100%;
   min-height: 96px;
@@ -604,19 +400,11 @@
   resize: vertical;
 }
 
-/*
- * EN: Define styles for `.page-index .user-profile-textarea:focus`.
- * JP: `.page-index .user-profile-textarea:focus` のスタイルを定義する。
- */
 .page-index .user-profile-textarea:focus {
   outline: 2px solid rgba(59, 130, 246, 0.25);
   border-color: var(--accent-primary);
 }
 
-/*
- * EN: Define styles for `.page-index .user-profile-hint`.
- * JP: `.page-index .user-profile-hint` のスタイルを定義する。
- */
 .page-index .user-profile-hint {
   margin: 0;
   font-size: 0.72rem;
@@ -624,10 +412,6 @@
   line-height: 1.4;
 }
 
-/*
- * EN: Define styles for `.page-index .vision-toggle-header`.
- * JP: `.page-index .vision-toggle-header` のスタイルを定義する。
- */
 .page-index .vision-toggle-header {
   display: flex;
   align-items: center;
@@ -635,10 +419,6 @@
   gap: 8px;
 }
 
-/*
- * EN: Define styles for `.page-index .vision-toggle-title`.
- * JP: `.page-index .vision-toggle-title` のスタイルを定義する。
- */
 .page-index .vision-toggle-title {
   font-size: 0.75rem;
   letter-spacing: 0.06em;
@@ -646,10 +426,6 @@
   color: var(--text-muted);
 }
 
-/*
- * EN: Define styles for `.page-index .vision-badge`.
- * JP: `.page-index .vision-badge` のスタイルを定義する。
- */
 .page-index .vision-badge {
   display: inline-flex;
   align-items: center;
@@ -663,37 +439,21 @@
   color: #64748b;
 }
 
-/*
- * EN: Define styles for `.page-index .vision-badge.is-ok`.
- * JP: `.page-index .vision-badge.is-ok` のスタイルを定義する。
- */
 .page-index .vision-badge.is-ok {
   background: #dcfce7;
   color: #15803d;
 }
 
-/*
- * EN: Define styles for `.page-index .vision-badge.is-off`.
- * JP: `.page-index .vision-badge.is-off` のスタイルを定義する。
- */
 .page-index .vision-badge.is-off {
   background: #fee2e2;
   color: #b91c1c;
 }
 
-/*
- * EN: Define styles for `.page-index .vision-badge.is-pending`.
- * JP: `.page-index .vision-badge.is-pending` のスタイルを定義する。
- */
 .page-index .vision-badge.is-pending {
   background: #e2e8f0;
   color: #64748b;
 }
 
-/*
- * EN: Define styles for `.page-index .vision-toggle`.
- * JP: `.page-index .vision-toggle` のスタイルを定義する。
- */
 .page-index .vision-toggle {
   display: inline-flex;
   align-items: center;
@@ -705,18 +465,10 @@
   box-shadow: 0 10px 24px -20px rgba(15, 23, 42, 0.35);
 }
 
-/*
- * EN: Define styles for `.page-index .vision-toggle input`.
- * JP: `.page-index .vision-toggle input` のスタイルを定義する。
- */
 .page-index .vision-toggle input {
   display: none;
 }
 
-/*
- * EN: Define styles for `.page-index .vision-toggle-slider`.
- * JP: `.page-index .vision-toggle-slider` のスタイルを定義する。
- */
 .page-index .vision-toggle-slider {
   position: relative;
   width: 46px;
@@ -727,10 +479,6 @@
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.5);
 }
 
-/*
- * EN: Define styles for `.page-index .vision-toggle-slider::after`.
- * JP: `.page-index .vision-toggle-slider::after` のスタイルを定義する。
- */
 .page-index .vision-toggle-slider::after {
   content: '';
   position: absolute;
@@ -744,36 +492,20 @@
   transition: transform 0.2s ease;
 }
 
-/*
- * EN: Define styles for `.page-index .vision-toggle input:checked + .vision-toggle-slider`.
- * JP: `.page-index .vision-toggle input:checked + .vision-toggle-slider` のスタイルを定義する。
- */
 .page-index .vision-toggle input:checked + .vision-toggle-slider {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
-/*
- * EN: Define styles for `.page-index .vision-toggle input:checked + .vision-toggle-slider::after`.
- * JP: `.page-index .vision-toggle input:checked + .vision-toggle-slider::after` のスタイルを定義する。
- */
 .page-index .vision-toggle input:checked + .vision-toggle-slider::after {
   transform: translateX(18px);
 }
 
-/*
- * EN: Define styles for `.page-index .vision-toggle-label`.
- * JP: `.page-index .vision-toggle-label` のスタイルを定義する。
- */
 .page-index .vision-toggle-label {
   font-weight: 600;
   color: #0f172a;
   letter-spacing: 0.02em;
 }
 
-/*
- * EN: Define styles for `.page-index .vision-toggle-hint`.
- * JP: `.page-index .vision-toggle-hint` のスタイルを定義する。
- */
 .page-index .vision-toggle-hint {
   margin: 0;
   font-size: 0.82rem;
@@ -782,10 +514,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-controls .connection-indicator`.
- * JP: `.page-index .chat-header-controls .connection-indicator` のスタイルを定義する。
- */
 .page-index .chat-header-controls .connection-indicator {
   width: 100%;
   justify-content: flex-start;
@@ -796,10 +524,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-controls .chat-controls`.
- * JP: `.page-index .chat-header-controls .chat-controls` のスタイルを定義する。
- */
 .page-index .chat-header-controls .chat-controls {
   margin: 0;
   display: grid;
@@ -809,10 +533,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-header-controls .control-button`.
- * JP: `.page-index .chat-header-controls .control-button` のスタイルを定義する。
- */
 .page-index .chat-header-controls .control-button {
   width: 100%;
   height: 40px;
@@ -821,10 +541,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .chat-controls`.
- * JP: `.page-index .chat-controls` のスタイルを定義する。
- */
 .page-index .chat-controls {
   display: flex;
   flex-wrap: wrap;
@@ -832,10 +548,6 @@
   justify-content: flex-end;
 }
 
-/*
- * EN: Define styles for `.page-index .messages`.
- * JP: `.page-index .messages` のスタイルを定義する。
- */
 .page-index .messages {
   position: relative;
   flex: 1 1 clamp(220px, 40vh, 440px);
@@ -856,10 +568,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .messages:not(.is-empty)`.
- * JP: `.page-index .messages:not(.is-empty)` のスタイルを定義する。
- */
 .page-index .messages:not(.is-empty) {
   -webkit-mask-image: linear-gradient(
     to bottom,
@@ -878,10 +586,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .messages.is-empty::before`.
- * JP: `.page-index .messages.is-empty::before` のスタイルを定義する。
- */
 .page-index .messages.is-empty::before {
   content: attr(data-empty-text);
   display: block;
@@ -897,37 +601,21 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .messages::-webkit-scrollbar`.
- * JP: `.page-index .messages::-webkit-scrollbar` のスタイルを定義する。
- */
 .page-index .messages::-webkit-scrollbar {
   width: 8px;
 }
 
 
-/*
- * EN: Define styles for `.page-index .messages::-webkit-scrollbar-thumb`.
- * JP: `.page-index .messages::-webkit-scrollbar-thumb` のスタイルを定義する。
- */
 .page-index .messages::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.45);
   border-radius: 999px;
 }
 
 
-/*
- * EN: Define styles for `.page-index .messages::-webkit-scrollbar-track`.
- * JP: `.page-index .messages::-webkit-scrollbar-track` のスタイルを定義する。
- */
 .page-index .messages::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/*
- * EN: Define styles for `.page-index .msg.system.compact.assistant.pending.thinking`.
- * JP: `.page-index .msg.system.compact.assistant.pending.thinking` のスタイルを定義する。
- */
 .page-index .msg.system.compact.assistant.pending.thinking {
   position: relative;
   display: flex;
@@ -945,10 +633,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .thinking-header`.
- * JP: `.page-index .thinking-header` のスタイルを定義する。
- */
 .page-index .thinking-header {
   display: flex;
   align-items: center;
@@ -957,10 +641,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .thinking-agent-icon`.
- * JP: `.page-index .thinking-agent-icon` のスタイルを定義する。
- */
 .page-index .thinking-agent-icon {
   display: block;
   width: 42px;
@@ -975,55 +655,27 @@
 }
 
 
-/*
- * EN: Declare an at-rule style block.
- * JP: at-rule のスタイルブロックを定義する。
- */
 @keyframes thinking-agent-hyper-dynamic {
-  /*
-   * EN: Define styles for `0%`.
-   * JP: `0%` のスタイルを定義する。
-   */
   0% {
     transform: translateY(0) rotate(0deg) scale(1);
     filter: sepia(100%) saturate(1000%) hue-rotate(0deg) drop-shadow(0 0 10px rgba(255, 0, 0, 0.8));
   }
-  /*
-   * EN: Define styles for `20%`.
-   * JP: `20%` のスタイルを定義する。
-   */
   20% {
     transform: translateY(-8px) rotate(15deg) scale(1.2);
     filter: sepia(100%) saturate(1200%) hue-rotate(72deg) drop-shadow(0 0 15px rgba(255, 255, 0, 0.9));
   }
-  /*
-   * EN: Define styles for `40%`.
-   * JP: `40%` のスタイルを定義する。
-   */
   40% {
     transform: translateY(-12px) rotate(0deg) scale(1.3);
     filter: sepia(100%) saturate(1500%) hue-rotate(144deg) drop-shadow(0 0 25px rgba(0, 255, 0, 1.0));
   }
-  /*
-   * EN: Define styles for `60%`.
-   * JP: `60%` のスタイルを定義する。
-   */
   60% {
     transform: translateY(-8px) rotate(-15deg) scale(1.2);
     filter: sepia(100%) saturate(1200%) hue-rotate(216deg) drop-shadow(0 0 15px rgba(0, 255, 255, 0.9));
   }
-  /*
-   * EN: Define styles for `80%`.
-   * JP: `80%` のスタイルを定義する。
-   */
   80% {
     transform: translateY(-4px) rotate(0deg) scale(1.1);
     filter: sepia(100%) saturate(1000%) hue-rotate(288deg) drop-shadow(0 0 10px rgba(0, 0, 255, 0.8));
   }
-  /*
-   * EN: Define styles for `100%`.
-   * JP: `100%` のスタイルを定義する。
-   */
   100% {
     transform: translateY(0) rotate(0deg) scale(1);
     filter: sepia(100%) saturate(1000%) hue-rotate(360deg) drop-shadow(0 0 10px rgba(255, 0, 255, 0.8));
@@ -1031,10 +683,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .thinking-labels`.
- * JP: `.page-index .thinking-labels` のスタイルを定義する。
- */
 .page-index .thinking-labels {
   display: flex;
   flex-direction: column;
@@ -1044,10 +692,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .thinking-title`.
- * JP: `.page-index .thinking-title` のスタイルを定義する。
- */
 .page-index .thinking-title {
   font-size: 0.92rem;
   font-weight: 600;
@@ -1056,10 +700,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .thinking-sub`.
- * JP: `.page-index .thinking-sub` のスタイルを定義する。
- */
 .page-index .thinking-sub {
   font-size: 0.78rem;
   font-weight: 500;
@@ -1068,10 +708,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .msg.system.compact.assistant.pending.thinking .msg-time`.
- * JP: `.page-index .msg.system.compact.assistant.pending.thinking .msg-time` のスタイルを定義する。
- */
 .page-index .msg.system.compact.assistant.pending.thinking .msg-time {
   font-size: 0.72rem;
   color: #64748b;
@@ -1081,33 +717,17 @@
   flex-shrink: 0;
 }
 
-/*
- * EN: Declare an at-rule style block.
- * JP: at-rule のスタイルブロックを定義する。
- */
 @keyframes message-rise {
-  /*
-   * EN: Define styles for `0%`.
-   * JP: `0%` のスタイルを定義する。
-   */
   0% {
     opacity: 0;
     transform: translateY(36px) scale(0.94);
     filter: blur(8px);
   }
-  /*
-   * EN: Define styles for `65%`.
-   * JP: `65%` のスタイルを定義する。
-   */
   65% {
     opacity: 0.95;
     transform: translateY(-4px) scale(1.02);
     filter: blur(0);
   }
-  /*
-   * EN: Define styles for `100%`.
-   * JP: `100%` のスタイルを定義する。
-   */
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1116,10 +736,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message`.
- * JP: `.page-index .message` のスタイルを定義する。
- */
 .page-index .message {
   position: relative;
   display: flex;
@@ -1137,10 +753,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.assistant`.
- * JP: `.page-index .message.assistant` のスタイルを定義する。
- */
 .page-index .message.assistant {
   align-self: flex-start;
   animation: message-rise 0.7s cubic-bezier(0.23, 1, 0.32, 1) both;
@@ -1148,10 +760,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.user`.
- * JP: `.page-index .message.user` のスタイルを定義する。
- */
 .page-index .message.user {
   align-self: flex-end;
   align-items: flex-end;
@@ -1159,15 +767,7 @@
   transform-origin: right bottom;
 }
 
-/*
- * EN: Declare an at-rule style block.
- * JP: at-rule のスタイルブロックを定義する。
- */
 @media (prefers-reduced-motion: reduce) {
-  /*
-   * EN: Define styles for `.page-index .message.assistant`.
-   * JP: `.page-index .message.assistant` のスタイルを定義する。
-   */
   .page-index .message.assistant {
     animation: none;
     transform: none;
@@ -1175,10 +775,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message__header`.
- * JP: `.page-index .message__header` のスタイルを定義する。
- */
 .page-index .message__header {
   display: flex;
   align-items: center;
@@ -1190,19 +786,11 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.user .message__header`.
- * JP: `.page-index .message.user .message__header` のスタイルを定義する。
- */
 .page-index .message.user .message__header {
   flex-direction: row-reverse;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message__title`.
- * JP: `.page-index .message__title` のスタイルを定義する。
- */
 .page-index .message__title {
   display: flex;
   align-items: center;
@@ -1213,10 +801,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message__avatar`.
- * JP: `.page-index .message__avatar` のスタイルを定義する。
- */
 .page-index .message__avatar {
   display: grid;
   place-items: center;
@@ -1228,10 +812,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.assistant .message__avatar`.
- * JP: `.page-index .message.assistant .message__avatar` のスタイルを定義する。
- */
 .page-index .message.assistant .message__avatar {
   background: linear-gradient(135deg, #6366f1, #a855f7);
   color: #fff;
@@ -1239,10 +819,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.user .message__avatar`.
- * JP: `.page-index .message.user .message__avatar` のスタイルを定義する。
- */
 .page-index .message.user .message__avatar {
   background: linear-gradient(135deg, #2563eb, #3b82f6);
   color: #fff;
@@ -1250,49 +826,29 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message__badge`.
- * JP: `.page-index .message__badge` のスタイルを定義する。
- */
 .page-index .message__badge {
   display: none;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.assistant .message__badge`.
- * JP: `.page-index .message.assistant .message__badge` のスタイルを定義する。
- */
 .page-index .message.assistant .message__badge {
   background: rgba(99, 102, 241, 0.18);
   color: #4338ca;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.user .message__badge`.
- * JP: `.page-index .message.user .message__badge` のスタイルを定義する。
- */
 .page-index .message.user .message__badge {
   background: rgba(14, 165, 233, 0.16);
   color: #0f172a;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message__timestamp`.
- * JP: `.page-index .message__timestamp` のスタイルを定義する。
- */
 .page-index .message__timestamp {
   font-size: 0.7rem;
   opacity: 0.7;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message__body`.
- * JP: `.page-index .message__body` のスタイルを定義する。
- */
 .page-index .message__body {
   position: relative;
   padding: 14px 20px;
@@ -1305,10 +861,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.assistant .message__body`.
- * JP: `.page-index .message.assistant .message__body` のスタイルを定義する。
- */
 .page-index .message.assistant .message__body {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.95));
   border: 1px solid rgba(148, 163, 184, 0.3);
@@ -1317,10 +869,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.user .message__body`.
- * JP: `.page-index .message.user .message__body` のスタイルを定義する。
- */
 .page-index .message.user .message__body {
   background: linear-gradient(135deg, #1d4ed8, #0284c7);
   color: #ffffff;
@@ -1330,19 +878,11 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message__body::after`.
- * JP: `.page-index .message__body::after` のスタイルを定義する。
- */
 .page-index .message__body::after {
   content: none;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble`.
- * JP: `.page-index .message .bubble` のスタイルを定義する。
- */
 .page-index .message .bubble {
   position: relative;
   z-index: 1;
@@ -1354,57 +894,33 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble p`.
- * JP: `.page-index .message .bubble p` のスタイルを定義する。
- */
 .page-index .message .bubble p {
   margin: 0 0 0.75em;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble p:last-child`.
- * JP: `.page-index .message .bubble p:last-child` のスタイルを定義する。
- */
 .page-index .message .bubble p:last-child {
   margin-bottom: 0;
 }
 
 
 .page-index .message .bubble ul,
-/*
- * EN: Define styles for `.page-index .message .bubble ol`.
- * JP: `.page-index .message .bubble ol` のスタイルを定義する。
- */
 .page-index .message .bubble ol {
   margin: 0.25em 0 0.75em 1.2em;
   padding-left: 1.1em;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble li`.
- * JP: `.page-index .message .bubble li` のスタイルを定義する。
- */
 .page-index .message .bubble li {
   margin-bottom: 0.35em;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble li:last-child`.
- * JP: `.page-index .message .bubble li:last-child` のスタイルを定義する。
- */
 .page-index .message .bubble li:last-child {
   margin-bottom: 0;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble pre`.
- * JP: `.page-index .message .bubble pre` のスタイルを定義する。
- */
 .page-index .message .bubble pre {
   margin: 0.5em 0;
   padding: 0.75em;
@@ -1416,10 +932,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble code`.
- * JP: `.page-index .message .bubble code` のスタイルを定義する。
- */
 .page-index .message .bubble code {
   font-family: var(--font-mono);
   font-size: 0.86rem;
@@ -1429,10 +941,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble pre code`.
- * JP: `.page-index .message .bubble pre code` のスタイルを定義する。
- */
 .page-index .message .bubble pre code {
   background: transparent;
   padding: 0;
@@ -1440,10 +948,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble blockquote`.
- * JP: `.page-index .message .bubble blockquote` のスタイルを定義する。
- */
 .page-index .message .bubble blockquote {
   margin: 0.6em 0;
   padding: 0.4em 0.9em;
@@ -1454,10 +958,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble hr`.
- * JP: `.page-index .message .bubble hr` のスタイルを定義する。
- */
 .page-index .message .bubble hr {
   border: none;
   height: 1px;
@@ -1466,10 +966,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble table`.
- * JP: `.page-index .message .bubble table` のスタイルを定義する。
- */
 .page-index .message .bubble table {
   width: 100%;
   border-collapse: collapse;
@@ -1479,10 +975,6 @@
 
 
 .page-index .message .bubble th,
-/*
- * EN: Define styles for `.page-index .message .bubble td`.
- * JP: `.page-index .message .bubble td` のスタイルを定義する。
- */
 .page-index .message .bubble td {
   border: 1px solid rgba(148, 163, 184, 0.35);
   padding: 0.45em 0.6em;
@@ -1490,20 +982,12 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble th`.
- * JP: `.page-index .message .bubble th` のスタイルを定義する。
- */
 .page-index .message .bubble th {
   background: rgba(226, 232, 240, 0.75);
   font-weight: 600;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble img`.
- * JP: `.page-index .message .bubble img` のスタイルを定義する。
- */
 .page-index .message .bubble img {
   max-width: 100%;
   border-radius: 12px;
@@ -1511,10 +995,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble a`.
- * JP: `.page-index .message .bubble a` のスタイルを定義する。
- */
 .page-index .message .bubble a {
   color: #2563eb;
   text-decoration: underline;
@@ -1523,10 +1003,6 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.user .message__body a`.
- * JP: `.page-index .message.user .message__body a` のスタイルを定義する。
- */
 .page-index .message.user .message__body a {
   color: #bfdbfe;
   text-decoration: underline;
@@ -1534,20 +1010,12 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.user .message__body code`.
- * JP: `.page-index .message.user .message__body code` のスタイルを定義する。
- */
 .page-index .message.user .message__body code {
   color: #e2e8f0;
   background: rgba(255, 255, 255, 0.15);
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble :where(h1, h2, h3, h4, h5, h6)`.
- * JP: `.page-index .message .bubble :where(h1, h2, h3, h4, h5, h6)` のスタイルを定義する。
- */
 .page-index .message .bubble :where(h1, h2, h3, h4, h5, h6) {
   margin: 0.8em 0 0.5em;
   font-weight: 600;
@@ -1556,30 +1024,18 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message .bubble :where(h1, h2, h3)`.
- * JP: `.page-index .message .bubble :where(h1, h2, h3)` のスタイルを定義する。
- */
 .page-index .message .bubble :where(h1, h2, h3) {
   border-bottom: 1px solid rgba(148, 163, 184, 0.4);
   padding-bottom: 0.2em;
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.user .bubble :where(h1, h2, h3, h4, h5, h6)`.
- * JP: `.page-index .message.user .bubble :where(h1, h2, h3, h4, h5, h6)` のスタイルを定義する。
- */
 .page-index .message.user .bubble :where(h1, h2, h3, h4, h5, h6) {
   color: #ffffff;
   border-bottom-color: rgba(255, 255, 255, 0.35);
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.user .bubble blockquote`.
- * JP: `.page-index .message.user .bubble blockquote` のスタイルを定義する。
- */
 .page-index .message.user .bubble blockquote {
   color: rgba(255, 255, 255, 0.85);
   border-left-color: rgba(255, 255, 255, 0.6);
@@ -1587,38 +1043,22 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.user .bubble table`.
- * JP: `.page-index .message.user .bubble table` のスタイルを定義する。
- */
 .page-index .message.user .bubble table {
   color: #e2e8f0;
 }
 
 
 .page-index .message.user .bubble th,
-/*
- * EN: Define styles for `.page-index .message.user .bubble td`.
- * JP: `.page-index .message.user .bubble td` のスタイルを定義する。
- */
 .page-index .message.user .bubble td {
   border-color: rgba(255, 255, 255, 0.25);
 }
 
 
-/*
- * EN: Define styles for `.page-index .message.user .bubble th`.
- * JP: `.page-index .message.user .bubble th` のスタイルを定義する。
- */
 .page-index .message.user .bubble th {
   background: rgba(255, 255, 255, 0.15);
 }
 
 
-/*
- * EN: Define styles for `.page-index .prompt-form`.
- * JP: `.page-index .prompt-form` のスタイルを定義する。
- */
 .page-index .prompt-form {
   margin-top: auto;
   display: flex;
@@ -1627,19 +1067,11 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .prompt-form::after`.
- * JP: `.page-index .prompt-form::after` のスタイルを定義する。
- */
 .page-index .prompt-form::after {
   content: none;
 }
 
 
-/*
- * EN: Define styles for `.page-index .prompt-form__field`.
- * JP: `.page-index .prompt-form__field` のスタイルを定義する。
- */
 .page-index .prompt-form__field {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -1654,20 +1086,12 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .prompt-form__field:focus-within`.
- * JP: `.page-index .prompt-form__field:focus-within` のスタイルを定義する。
- */
 .page-index .prompt-form__field:focus-within {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 
-/*
- * EN: Define styles for `.page-index .prompt-form textarea`.
- * JP: `.page-index .prompt-form textarea` のスタイルを定義する。
- */
 .page-index .prompt-form textarea {
   width: 100%;
   min-height: 72px;
@@ -1683,29 +1107,17 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .prompt-form textarea:focus-visible`.
- * JP: `.page-index .prompt-form textarea:focus-visible` のスタイルを定義する。
- */
 .page-index .prompt-form textarea:focus-visible {
   outline: none;
   background: #ffffff;
 }
 
 
-/*
- * EN: Define styles for `.page-index .prompt-form textarea::placeholder`.
- * JP: `.page-index .prompt-form textarea::placeholder` のスタイルを定義する。
- */
 .page-index .prompt-form textarea::placeholder {
   color: #94a3b8;
 }
 
 
-/*
- * EN: Define styles for `.page-index .prompt-footer`.
- * JP: `.page-index .prompt-footer` のスタイルを定義する。
- */
 .page-index .prompt-footer {
   display: flex;
   justify-content: space-between;
@@ -1716,19 +1128,11 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .hint`.
- * JP: `.page-index .hint` のスタイルを定義する。
- */
 .page-index .hint {
   font-size: inherit;
 }
 
 
-/*
- * EN: Define styles for `.page-index .submit-button`.
- * JP: `.page-index .submit-button` のスタイルを定義する。
- */
 .page-index .submit-button {
   display: inline-flex;
   align-items: center;
@@ -1744,68 +1148,36 @@
 }
 
 
-/*
- * EN: Define styles for `.page-index .submit-button:hover`.
- * JP: `.page-index .submit-button:hover` のスタイルを定義する。
- */
 .page-index .submit-button:hover {
   background: #1d4ed8;
 }
 
 
-/*
- * EN: Define styles for `.page-index .submit-button:focus-visible`.
- * JP: `.page-index .submit-button:focus-visible` のスタイルを定義する。
- */
 .page-index .submit-button:focus-visible {
   outline: 2px solid rgba(37, 99, 235, 0.8);
   outline-offset: 2px;
 }
 
 
-/*
- * EN: Define styles for `.page-index .submit-button .button-icon`.
- * JP: `.page-index .submit-button .button-icon` のスタイルを定義する。
- */
 .page-index .submit-button .button-icon {
   line-height: 1;
 }
 
 
-/*
- * EN: Define styles for `.page-index .prompt-form.is-sending .submit-button`.
- * JP: `.page-index .prompt-form.is-sending .submit-button` のスタイルを定義する。
- */
 .page-index .prompt-form.is-sending .submit-button {
   transform: none;
   background: #1d4ed8;
 }
 
-/*
- * EN: Declare an at-rule style block.
- * JP: at-rule のスタイルブロックを定義する。
- */
 @media (max-width: 1280px) {
-  /*
-   * EN: Define styles for `.page-index .layout`.
-   * JP: `.page-index .layout` のスタイルを定義する。
-   */
   .page-index .layout {
     grid-template-columns: minmax(340px, 38vw) minmax(0, 1fr);
   }
 }
 
 
-/*
- * EN: Declare an at-rule style block.
- * JP: at-rule のスタイルブロックを定義する。
- */
 @media (max-width: 960px) {
 
-  /*
-   * EN: Define styles for `.page-index .layout`.
-   * JP: `.page-index .layout` のスタイルを定義する。
-   */
   .page-index .layout {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(320px, 60vh);
@@ -1813,77 +1185,41 @@
     min-height: auto;
   }
 
-  /*
-   * EN: Define styles for `.page-index .chat-pane`.
-   * JP: `.page-index .chat-pane` のスタイルを定義する。
-   */
   .page-index .chat-pane {
     order: 1;
     border-radius: 24px;
   }
 
-  /*
-   * EN: Define styles for `.page-index .browser-pane`.
-   * JP: `.page-index .browser-pane` のスタイルを定義する。
-   */
   .page-index .browser-pane {
     order: 2;
   }
 }
 
 
-/*
- * EN: Declare an at-rule style block.
- * JP: at-rule のスタイルブロックを定義する。
- */
 @media (max-width: 720px) {
-  /*
-   * EN: Define styles for `.page-index .layout`.
-   * JP: `.page-index .layout` のスタイルを定義する。
-   */
   .page-index .layout {
     gap: 16px;
   }
 
-  /*
-   * EN: Define styles for `.page-index .chat-controls`.
-   * JP: `.page-index .chat-controls` のスタイルを定義する。
-   */
   .page-index .chat-controls {
     width: 100%;
     justify-content: stretch;
   }
 
-  /*
-   * EN: Define styles for `.page-index .control-button`.
-   * JP: `.page-index .control-button` のスタイルを定義する。
-   */
   .page-index .control-button {
     flex: 1 1 auto;
   }
 
-  /*
-   * EN: Define styles for `.page-index .prompt-footer`.
-   * JP: `.page-index .prompt-footer` のスタイルを定義する。
-   */
   .page-index .prompt-footer {
     flex-direction: column;
     align-items: stretch;
   }
 
-  /*
-   * EN: Define styles for `.page-index .submit-button`.
-   * JP: `.page-index .submit-button` のスタイルを定義する。
-   */
   .page-index .submit-button {
     width: 100%;
     justify-content: center;
   }
 
-  /*
-   * EN: Define styles for `.page-index .hint`.
-   * JP: `.page-index .hint` のスタイルを定義する。
-   */
   .page-index .hint {
     text-align: center;
   }

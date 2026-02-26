@@ -31,10 +31,6 @@ const resolveErrorMessage = (
   if (preferErrorBody && isErrorResponse(data)) {
     return data.error;
   }
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return fallback;
 };
 
@@ -47,17 +43,9 @@ const readJson = async <T>(
   try {
     return (await response.json()) as T;
   } catch (error) {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (throwOnParseError) {
       throw error;
     }
-    /**
-     * EN: Return a value from this scope.
-     * JP: このスコープから値を返す。
-     */
     return fallback ?? ({} as T);
   }
 };
@@ -78,28 +66,12 @@ export const requestJson = async <T>(
     parseJson = true,
   } = options;
 
-  /**
-   * EN: Declare variable `response`.
-   * JP: 変数 `response` を宣言する。
-   */
   const response = await fetch(input, init);
-  /**
-   * EN: Declare variable `data`.
-   * JP: 変数 `data` を宣言する。
-   */
   const data = parseJson
     ? await readJson<T>(response, { fallback, throwOnParseError })
     : (fallback ?? ({} as T));
 
-  /**
-   * EN: Branch logic based on a condition.
-   * JP: 条件に応じて処理を分岐する。
-   */
   if (!response.ok && throwOnNonOk) {
-    /**
-     * EN: Declare variable `message`.
-     * JP: 変数 `message` を宣言する。
-     */
     const message = resolveErrorMessage(
       data,
       errorMessage || `Request failed (${response.status})`,
@@ -108,10 +80,6 @@ export const requestJson = async <T>(
     throw new Error(message);
   }
 
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return { data, response };
 };
 

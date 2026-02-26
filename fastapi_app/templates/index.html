@@ -1,8 +1,6 @@
 {% extends "base.html" %}
 
 {% block theme_color %}
-    <!-- EN: Render the `meta` element. -->
-    <!-- JP: `meta` 要素を描画する。 -->
     <meta name="theme-color" content="#eef3fb" />
 {% endblock %}
 
@@ -11,18 +9,12 @@
 {% block body_class %}page-index{% endblock %}
 
 {% block page_styles %}
-    <!-- EN: Render the `link` element. -->
-    <!-- JP: `link` 要素を描画する。 -->
     <link rel="stylesheet" href="{{ request.url_for('static', path='css/index.css') }}" />
 {% endblock %}
 
 {% block body_scripts %}
-    <!-- EN: Render the `script` element. -->
-    <!-- JP: `script` 要素を描画する。 -->
     <script>
       window.__INDEX_APP_PROPS__ = {{ {'browserUrl': browser_url}|tojson }};
     </script>
-    <!-- EN: Render the `script` element. -->
-    <!-- JP: `script` 要素を描画する。 -->
     <script type="module" src="{{ request.url_for('static', path='dist_vite/index.js') }}"></script>
 {% endblock %}

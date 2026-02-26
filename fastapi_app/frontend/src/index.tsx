@@ -9,25 +9,9 @@ import React, {
   useCallback,
   useReducer,
 } from 'react';
-/**
- * EN: Import required modules.
- * JP: 必要なモジュールをインポートする。
- */
 import { createRoot } from 'react-dom/client';
-/**
- * EN: Import required modules.
- * JP: 必要なモジュールをインポートする。
- */
 import { marked } from 'marked';
-/**
- * EN: Import required modules.
- * JP: 必要なモジュールをインポートする。
- */
 import DOMPurify from 'dompurify';
-/**
- * EN: Import required modules.
- * JP: 必要なモジュールをインポートする。
- */
 import type {
   ChatMessage,
   ChatResponse,
@@ -40,15 +24,7 @@ import type {
   UserProfileResponse,
   VisionState,
 } from './types/api';
-/**
- * EN: Import required modules.
- * JP: 必要なモジュールをインポートする。
- */
 import type { IndexAppProps } from './types/app';
-/**
- * EN: Import required modules.
- * JP: 必要なモジュールをインポートする。
- */
 import { getJson, post, postJson } from './lib/api';
 
 // JP: UIの表示タイミングや文言の定数
@@ -60,10 +36,6 @@ const FALLBACK_STEP_DETAIL = '次の操作を進行中です';
 const USER_PROFILE_MAX_LENGTH = 2000;
 
 const initialData: Partial<IndexAppProps> = window.__INDEX_APP_PROPS__ || {};
-/**
- * EN: Declare variable `browserUrl`.
- * JP: 変数 `browserUrl` を宣言する。
- */
 const browserUrl = initialData.browserUrl || '';
 
 // JP: 接続状態と表示種別の型定義
@@ -165,67 +137,19 @@ const extractStepInfo = (content: string | null | undefined): StepInfo | null =>
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
-  /**
-   * EN: Branch logic based on a condition.
-   * JP: 条件に応じて処理を分岐する。
-   */
   if (!lines.length) {
-    /**
-     * EN: Return a value from this scope.
-     * JP: このスコープから値を返す。
-     */
     return null;
   }
-  /**
-   * EN: Declare variable `match`.
-   * JP: 変数 `match` を宣言する。
-   */
   const match = lines[0].match(/^ステップ(\d+)/);
-  /**
-   * EN: Branch logic based on a condition.
-   * JP: 条件に応じて処理を分岐する。
-   */
   if (!match) {
-    /**
-     * EN: Return a value from this scope.
-     * JP: このスコープから値を返す。
-     */
     return null;
   }
-  /**
-   * EN: Declare variable `stepNumber`.
-   * JP: 変数 `stepNumber` を宣言する。
-   */
   const stepNumber = Number(match[1]);
-  /**
-   * EN: Declare variable `currentStatus`.
-   * JP: 変数 `currentStatus` を宣言する。
-   */
   const currentStatus = lines.find((line) => line.startsWith('現在の状況:'));
-  /**
-   * EN: Declare variable `nextGoal`.
-   * JP: 変数 `nextGoal` を宣言する。
-   */
   const nextGoal = lines.find((line) => line.startsWith('次の目標:'));
-  /**
-   * EN: Declare variable `actionLine`.
-   * JP: 変数 `actionLine` を宣言する。
-   */
   const actionLine = lines.find((line) => line.startsWith('アクション:'));
-  /**
-   * EN: Declare variable `evaluationLine`.
-   * JP: 変数 `evaluationLine` を宣言する。
-   */
   const evaluationLine = lines.find((line) => line.startsWith('評価:'));
-  /**
-   * EN: Declare variable `detail`.
-   * JP: 変数 `detail` を宣言する。
-   */
   let detail = '';
-  /**
-   * EN: Branch logic based on a condition.
-   * JP: 条件に応じて処理を分岐する。
-   */
   if (currentStatus) {
     detail = currentStatus.replace('現在の状況:', '').trim();
   } else if (nextGoal) {
@@ -235,10 +159,6 @@ const extractStepInfo = (content: string | null | undefined): StepInfo | null =>
   } else if (evaluationLine) {
     detail = `評価: ${evaluationLine.replace('評価:', '').trim()}`;
   }
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return { stepNumber, detail };
 };
 
@@ -251,119 +171,51 @@ const isRunSummaryMessage = (content: string | null | undefined) => {
   if (!/^[✅⚠️ℹ️]/.test(content)) {
     return false;
   }
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return content.includes('ステップでエージェントが実行されました');
 };
 
 /**
- * EN: Declare callable constant `findLastStepInfo`.
- * JP: 呼び出し可能な定数 `findLastStepInfo` を宣言する。
+ * EN: Define function `findLastStepInfo`.
+ * JP: 関数 `findLastStepInfo` を定義する。
  */
 const findLastStepInfo = (messages: ChatMessage[]) => {
-  /**
-   * EN: Iterate with a loop.
-   * JP: ループで処理を繰り返す。
-   */
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    /**
-     * EN: Declare variable `message`.
-     * JP: 変数 `message` を宣言する。
-     */
     const message = messages[index];
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (!message || message.role !== 'assistant') {
       continue;
     }
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (isRunSummaryMessage(message.content)) {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return null;
     }
-    /**
-     * EN: Declare variable `stepInfo`.
-     * JP: 変数 `stepInfo` を宣言する。
-     */
     const stepInfo = extractStepInfo(message.content);
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (stepInfo) {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return stepInfo;
     }
   }
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return null;
 };
 
 /**
- * EN: Declare callable constant `countAssistantMessages`.
- * JP: 呼び出し可能な定数 `countAssistantMessages` を宣言する。
+ * EN: Define function `countAssistantMessages`.
+ * JP: 関数 `countAssistantMessages` を定義する。
  */
 const countAssistantMessages = (messages: ChatMessage[]) => {
-  /**
-   * EN: Declare variable `count`.
-   * JP: 変数 `count` を宣言する。
-   */
   let count = 0;
   messages.forEach((message) => {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (message && message.role === 'assistant') {
       count += 1;
     }
   });
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return count;
 };
 
-/**
- * EN: Declare callable constant `buildConversationState`.
- * JP: 呼び出し可能な定数 `buildConversationState` を宣言する。
- */
 const buildConversationState = (
   messages: ChatMessage[],
   prevState: ConversationState
 ): ConversationState => {
-  /**
-   * EN: Declare variable `count`.
-   * JP: 変数 `count` を宣言する。
-   */
   const count = countAssistantMessages(messages);
-  /**
-   * EN: Declare variable `pendingCleared`.
-   * JP: 変数 `pendingCleared` を宣言する。
-   */
   const pendingCleared =
     prevState.pendingAssistantResponse && count > prevState.assistantMessageCountAtSubmit;
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return {
     ...prevState,
     messages,
@@ -382,55 +234,27 @@ const conversationReducer = (
     case 'set_messages':
       return buildConversationState(action.messages, state);
     case 'upsert_message': {
-      /**
-       * EN: Declare variable `nextMessages`.
-       * JP: 変数 `nextMessages` を宣言する。
-       */
       const nextMessages = [...state.messages];
-      /**
-       * EN: Declare variable `existingIndex`.
-       * JP: 変数 `existingIndex` を宣言する。
-       */
       const existingIndex = nextMessages.findIndex((item) => item.id === action.message.id);
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (existingIndex >= 0) {
         nextMessages[existingIndex] = action.message;
       } else {
         nextMessages.push(action.message);
       }
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return buildConversationState(nextMessages, state);
     }
     case 'mark_pending':
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return {
         ...state,
         pendingAssistantResponse: true,
         assistantMessageCountAtSubmit: state.assistantMessageCount,
       };
     case 'clear_pending':
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return {
         ...state,
         pendingAssistantResponse: false,
       };
     case 'reset':
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return {
         messages: [],
         assistantMessageCount: 0,
@@ -438,34 +262,18 @@ const conversationReducer = (
         pendingAssistantResponse: false,
       };
     default:
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return state;
   }
 };
 
 /**
- * EN: Declare callable constant `encodeModelSelection`.
- * JP: 呼び出し可能な定数 `encodeModelSelection` を宣言する。
+ * EN: Define function `encodeModelSelection`.
+ * JP: 関数 `encodeModelSelection` を定義する。
  */
 const encodeModelSelection = (selection: ModelSelection | ModelOption | null | undefined) => {
-  /**
-   * EN: Branch logic based on a condition.
-   * JP: 条件に応じて処理を分岐する。
-   */
   if (!selection || !selection.provider || !selection.model) {
-    /**
-     * EN: Return a value from this scope.
-     * JP: このスコープから値を返す。
-     */
     return null;
   }
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return JSON.stringify({ provider: selection.provider, model: selection.model });
 };
 
@@ -486,17 +294,9 @@ const MessageBubble = ({ content }: MessageBubbleProps) => {
       breaks: true,
       gfm: true,
     });
-    /**
-     * EN: Return a value from this scope.
-     * JP: このスコープから値を返す。
-     */
     return DOMPurify.sanitize(parsed, { USE_PROFILES: { html: true } });
   }, [text]);
 
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return <div className="bubble" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
 };
 
@@ -585,10 +385,6 @@ const ConnectionIndicator = ({ state }: ConnectionIndicatorProps) => {
     message = '再接続を試行中';
   }
 
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return (
     <div
       id="connection-indicator"
@@ -638,115 +434,39 @@ const App = () => {
   const [thinkingVisible, setThinkingVisible] = useState(false);
   const [busyMessageTitle, setBusyMessageTitle] = useState(DEFAULT_BUSY_TITLE);
   const [busyMessageSub, setBusyMessageSub] = useState(DEFAULT_BUSY_SUB);
-  /**
-   * EN: Declare variable `latestRunStateRef`.
-   * JP: 変数 `latestRunStateRef` を宣言する。
-   */
   const latestRunStateRef = useLatest({
     isRunning,
     isPaused,
     pendingAssistantResponse,
   });
-  /**
-   * EN: Declare variable `latestConversationRef`.
-   * JP: 変数 `latestConversationRef` を宣言する。
-   */
   const latestConversationRef = useLatest(conversation);
 
-  /**
-   * EN: Declare variable `messagesRef`.
-   * JP: 変数 `messagesRef` を宣言する。
-   */
   const messagesRef = useRef<HTMLDivElement | null>(null);
-  /**
-   * EN: Declare variable `formRef`.
-   * JP: 変数 `formRef` を宣言する。
-   */
   const formRef = useRef<HTMLFormElement | null>(null);
-  /**
-   * EN: Declare variable `promptInputRef`.
-   * JP: 変数 `promptInputRef` を宣言する。
-   */
   const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
-  /**
-   * EN: Declare variable `eventSourceRef`.
-   * JP: 変数 `eventSourceRef` を宣言する。
-   */
   const eventSourceRef = useRef<EventSource | null>(null);
-  /**
-   * EN: Declare variable `reconnectTimerRef`.
-   * JP: 変数 `reconnectTimerRef` を宣言する。
-   */
   const reconnectTimerRef = useRef<number | null>(null);
-  /**
-   * EN: Declare variable `thinkingHideTimerRef`.
-   * JP: 変数 `thinkingHideTimerRef` を宣言する。
-   */
   const thinkingHideTimerRef = useRef<number | null>(null);
-  /**
-   * EN: Declare variable `thinkingShownAtRef`.
-   * JP: 変数 `thinkingShownAtRef` を宣言する。
-   */
   const thinkingShownAtRef = useRef(0);
-  /**
-   * EN: Declare variable `thinkingTimestampRef`.
-   * JP: 変数 `thinkingTimestampRef` を宣言する。
-   */
   const thinkingTimestampRef = useRef<number | null>(null);
-  /**
-   * EN: Declare variable `shouldBusyRef`.
-   * JP: 変数 `shouldBusyRef` を宣言する。
-   */
   const shouldBusyRef = useRef(false);
-  /**
-   * EN: Declare variable `prevBusyRef`.
-   * JP: 変数 `prevBusyRef` を宣言する。
-   */
   const prevBusyRef = useRef(false);
-  /**
-   * EN: Declare variable `scrollPendingRef`.
-   * JP: 変数 `scrollPendingRef` を宣言する。
-   */
   const scrollPendingRef = useRef(false);
-  /**
-   * EN: Declare variable `statusClearTimerRef`.
-   * JP: 変数 `statusClearTimerRef` を宣言する。
-   */
   const statusClearTimerRef = useRef<number | null>(null);
-  /**
-   * EN: Declare variable `userProfileTouchedRef`.
-   * JP: 変数 `userProfileTouchedRef` を宣言する。
-   */
   const userProfileTouchedRef = useRef(false);
   const [status, setStatusState] = useState<{ message: string; variant: StatusVariant }>({
     message: '',
     variant: 'muted',
   });
 
-  /**
-   * EN: Declare variable `clearStepActivity`.
-   * JP: 変数 `clearStepActivity` を宣言する。
-   */
   const clearStepActivity = useCallback(() => {
     setStepInProgress(false);
     setCurrentStepNumber(null);
     setCurrentStepDetail('');
   }, []);
 
-  /**
-   * EN: Declare variable `updateStepActivity`.
-   * JP: 変数 `updateStepActivity` を宣言する。
-   */
   const updateStepActivity = useCallback((stepInfo: StepInfo | null) => {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (!stepInfo) {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return;
     }
     setStepInProgress(true);
@@ -755,29 +475,13 @@ const App = () => {
     requestScrollToBottom();
   }, []);
 
-  /**
-   * EN: Declare variable `setStatus`.
-   * JP: 変数 `setStatus` を宣言する。
-   */
   const setStatus = useCallback((message?: string, variant: StatusVariant = 'info') => {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (statusClearTimerRef.current) {
       clearTimeout(statusClearTimerRef.current);
       statusClearTimerRef.current = null;
     }
-    /**
-     * EN: Declare variable `nextMessage`.
-     * JP: 変数 `nextMessage` を宣言する。
-     */
     const nextMessage = message || '';
     setStatusState({ message: nextMessage, variant });
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (nextMessage && (variant === 'info' || variant === 'success')) {
       statusClearTimerRef.current = window.setTimeout(() => {
         setStatusState({ message: '', variant: 'muted' });
@@ -786,40 +490,16 @@ const App = () => {
     }
   }, []);
 
-  /**
-   * EN: Declare variable `requestScrollToBottom`.
-   * JP: 変数 `requestScrollToBottom` を宣言する。
-   */
   const requestScrollToBottom = useCallback(() => {
     scrollPendingRef.current = true;
   }, []);
 
-  /**
-   * EN: Declare variable `updateConversationState`.
-   * JP: 変数 `updateConversationState` を宣言する。
-   */
   const updateConversationState = useCallback(
     (nextMessages: ChatMessage[], { syncStep }: { syncStep?: boolean } = { syncStep: false }) => {
       dispatchConversation({ type: 'set_messages', messages: nextMessages });
-      /**
-       * EN: Declare variable `runtime`.
-       * JP: 変数 `runtime` を宣言する。
-       */
       const runtime = latestRunStateRef.current;
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (syncStep) {
-        /**
-         * EN: Declare variable `lastStepInfo`.
-         * JP: 変数 `lastStepInfo` を宣言する。
-         */
         const lastStepInfo = findLastStepInfo(nextMessages);
-        /**
-         * EN: Branch logic based on a condition.
-         * JP: 条件に応じて処理を分岐する。
-         */
         if (lastStepInfo && (runtime.isRunning || runtime.pendingAssistantResponse)) {
           updateStepActivity(lastStepInfo);
         } else if (!runtime.isRunning && !runtime.pendingAssistantResponse) {
@@ -830,53 +510,21 @@ const App = () => {
     [clearStepActivity, dispatchConversation, latestRunStateRef, updateStepActivity]
   );
 
-  /**
-   * EN: Declare variable `appendOrUpdateMessage`.
-   * JP: 変数 `appendOrUpdateMessage` を宣言する。
-   */
   const appendOrUpdateMessage = useCallback(
     (message: ChatMessage) => {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (!message || typeof message.id === 'undefined') {
-        /**
-         * EN: Return a value from this scope.
-         * JP: このスコープから値を返す。
-         */
         return;
       }
-      /**
-       * EN: Declare variable `existingIndex`.
-       * JP: 変数 `existingIndex` を宣言する。
-       */
       const existingIndex = latestConversationRef.current.findIndex(
         (item) => item.id === message.id
       );
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (existingIndex < 0) {
         requestScrollToBottom();
       }
       dispatchConversation({ type: 'upsert_message', message });
 
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (message.role === 'assistant') {
-        /**
-         * EN: Declare variable `stepInfo`.
-         * JP: 変数 `stepInfo` を宣言する。
-         */
         const stepInfo = extractStepInfo(message.content);
-        /**
-         * EN: Branch logic based on a condition.
-         * JP: 条件に応じて処理を分岐する。
-         */
         if (stepInfo) {
           updateStepActivity(stepInfo);
         } else if (isRunSummaryMessage(message.content)) {
@@ -887,15 +535,7 @@ const App = () => {
     [clearStepActivity, dispatchConversation, latestConversationRef, requestScrollToBottom, updateStepActivity]
   );
 
-  /**
-   * EN: Declare variable `loadHistory`.
-   * JP: 変数 `loadHistory` を宣言する。
-   */
   const loadHistory = useCallback(async () => {
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
       const { data } = await getJson<{ messages?: ChatMessage[] }>('/api/history', {
         errorMessage: '履歴の取得に失敗しました。',
@@ -905,19 +545,11 @@ const App = () => {
       requestScrollToBottom();
       setStatus('', 'muted');
     } catch (error) {
-      /**
-       * EN: Declare variable `err`.
-       * JP: 変数 `err` を宣言する。
-       */
       const err = error as { message?: string };
       setStatus(err.message, 'error');
     }
   }, [requestScrollToBottom, setStatus, updateConversationState]);
 
-  /**
-   * EN: Declare variable `handleResetEvent`.
-   * JP: 変数 `handleResetEvent` を宣言する。
-   */
   const handleResetEvent = useCallback(() => {
     dispatchConversation({ type: 'reset' });
     setStatus('履歴をリセットしました。', 'success');
@@ -928,16 +560,8 @@ const App = () => {
     loadHistory();
   }, [clearStepActivity, dispatchConversation, loadHistory, setStatus]);
 
-  /**
-   * EN: Declare variable `loadModels`.
-   * JP: 変数 `loadModels` を宣言する。
-   */
   const loadModels = useCallback(
     async (preferredSelection?: ModelSelection | null) => {
-      /**
-       * EN: Wrap logic with exception handling.
-       * JP: 例外処理のためにブロックを囲む。
-       */
       try {
         const { data } = await getJson<
           ModelsResponse | ModelOption[] | { models?: ModelOption[]; current?: ModelSelection }
@@ -945,69 +569,33 @@ const App = () => {
           errorMessage: 'モデルの取得に失敗しました。',
           preferErrorBody: false,
         });
-        /**
-         * EN: Declare variable `dataPayload`.
-         * JP: 変数 `dataPayload` を宣言する。
-         */
         const dataPayload = data as
           | ModelsResponse
           | ModelOption[]
           | { models?: ModelOption[]; current?: ModelSelection };
-        /**
-         * EN: Declare variable `models`.
-         * JP: 変数 `models` を宣言する。
-         */
         const models = Array.isArray(dataPayload)
           ? dataPayload
           : Array.isArray((dataPayload as { models?: ModelOption[] }).models)
             ? ((dataPayload as { models?: ModelOption[] }).models ?? [])
             : [];
-        /**
-         * EN: Declare variable `currentCandidate`.
-         * JP: 変数 `currentCandidate` を宣言する。
-         */
         const currentCandidate =
           !Array.isArray(dataPayload) &&
           typeof (dataPayload as { current?: unknown }).current === 'object'
             ? ((dataPayload as { current?: ModelSelection }).current ?? null)
             : null;
-        /**
-         * EN: Declare variable `current`.
-         * JP: 変数 `current` を宣言する。
-         */
         const current = currentCandidate || null;
-        /**
-         * EN: Declare variable `preferred`.
-         * JP: 変数 `preferred` を宣言する。
-         */
         const preferred = encodeModelSelection(preferredSelection);
 
         setModelOptions(models);
-        /**
-         * EN: Declare variable `desired`.
-         * JP: 変数 `desired` を宣言する。
-         */
         const desired = preferred || encodeModelSelection(current);
-        /**
-         * EN: Declare variable `hasDesired`.
-         * JP: 変数 `hasDesired` を宣言する。
-         */
         const hasDesired = desired && models.some((model) => encodeModelSelection(model) === desired);
 
-        /**
-         * EN: Branch logic based on a condition.
-         * JP: 条件に応じて処理を分岐する。
-         */
         if (hasDesired) {
           setSelectedModelValue(desired);
         } else if (models.length) {
           setSelectedModelValue(encodeModelSelection(models[0]) || '');
         }
       } catch (error) {
-        /**
-         * EN: Declare variable `err`.
-         * JP: 変数 `err` を宣言する。
-         */
         const err = error as { message?: string };
         setStatus(err.message, 'error');
       }
@@ -1015,48 +603,24 @@ const App = () => {
     [setStatus]
   );
 
-  /**
-   * EN: Declare variable `loadUserProfile`.
-   * JP: 変数 `loadUserProfile` を宣言する。
-   */
   const loadUserProfile = useCallback(async () => {
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
       const { data } = await getJson<UserProfileResponse>('/api/user_profile', {
         throwOnNonOk: false,
         preferErrorBody: false,
       });
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (!userProfileTouchedRef.current) {
         setUserProfile(data?.text || '');
         setUserProfileDirty(false);
       }
     } catch (error) {
-      /**
-       * EN: Declare variable `err`.
-       * JP: 変数 `err` を宣言する。
-       */
       const err = error as { message?: string };
       setStatus(err.message || 'ユーザー個人データの取得に失敗しました。', 'error');
     }
   }, [setStatus]);
 
-  /**
-   * EN: Declare variable `handleUserProfileSave`.
-   * JP: 変数 `handleUserProfileSave` を宣言する。
-   */
   const handleUserProfileSave = useCallback(async () => {
     setUserProfileSaving(true);
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
       const { data } = await postJson<UserProfileResponse, { text: string }>('/api/user_profile', {
         text: userProfile,
@@ -1065,10 +629,6 @@ const App = () => {
       setUserProfileDirty(false);
       setStatus('ユーザー個人データを保存しました。次のタスクから反映されます。', 'success');
     } catch (error) {
-      /**
-       * EN: Declare variable `err`.
-       * JP: 変数 `err` を宣言する。
-       */
       const err = error as { message?: string };
       setStatus(err.message || 'ユーザー個人データの保存に失敗しました。', 'error');
     } finally {
@@ -1076,15 +636,7 @@ const App = () => {
     }
   }, [setStatus, userProfile]);
 
-  /**
-   * EN: Declare variable `refreshVisionState`.
-   * JP: 変数 `refreshVisionState` を宣言する。
-   */
   const refreshVisionState = useCallback(async () => {
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
       const { data } = await getJson<VisionState>('/api/vision', {
         throwOnNonOk: false,
@@ -1106,26 +658,14 @@ const App = () => {
     }
   }, []);
 
-  /**
-   * EN: Declare variable `applyModelSelection`.
-   * JP: 変数 `applyModelSelection` を宣言する。
-   */
   const applyModelSelection = useCallback(
     async (selection: ModelSelection) => {
-      /**
-       * EN: Wrap logic with exception handling.
-       * JP: 例外処理のためにブロックを囲む。
-       */
       try {
         await postJson<{ error?: string }, ModelSelection>('/model_settings', selection, {
           errorMessage: 'モデル設定の適用に失敗しました。',
         });
         setStatus(`モデルを ${selection.label || selection.model} に変更しました。`, 'success');
       } catch (error) {
-        /**
-         * EN: Declare variable `err`.
-         * JP: 変数 `err` を宣言する。
-         */
         const err = error as { message?: string };
         setStatus(err.message, 'error');
       } finally {
@@ -1148,10 +688,6 @@ const App = () => {
     setConnectionState('connecting');
     setStatus('リアルタイムストリームに接続しています…', 'progress');
 
-    /**
-     * EN: Declare variable `eventSource`.
-     * JP: 変数 `eventSource` を宣言する。
-     */
     const eventSource = new EventSource('/api/stream');
     eventSourceRef.current = eventSource;
 
@@ -1161,20 +697,8 @@ const App = () => {
     };
 
     eventSource.onmessage = (event) => {
-      /**
-       * EN: Wrap logic with exception handling.
-       * JP: 例外処理のためにブロックを囲む。
-       */
       try {
-        /**
-         * EN: Declare variable `payload`.
-         * JP: 変数 `payload` を宣言する。
-         */
         const payload = JSON.parse(event.data) as SSEEvent;
-        /**
-         * EN: Branch logic based on a condition.
-         * JP: 条件に応じて処理を分岐する。
-         */
         if (payload.type === 'message' && payload.payload) {
           appendOrUpdateMessage(payload.payload);
         } else if (payload.type === 'update' && payload.payload) {
@@ -1183,15 +707,7 @@ const App = () => {
           handleResetEvent();
         } else if (payload.type === 'model' && payload.payload) {
           loadModels(payload.payload);
-          /**
-           * EN: Declare variable `updatedLabel`.
-           * JP: 変数 `updatedLabel` を宣言する。
-           */
           const updatedLabel = payload.payload.label || payload.payload.model;
-          /**
-           * EN: Branch logic based on a condition.
-           * JP: 条件に応じて処理を分岐する。
-           */
           if (updatedLabel) {
             setStatus(`モデル設定が更新されました: ${updatedLabel}`, 'info');
           } else {
@@ -1199,17 +715,9 @@ const App = () => {
           }
           refreshVisionState();
         } else if (payload.type === 'status' && payload.payload) {
-          /**
-           * EN: Declare variable `statusPayload`.
-           * JP: 変数 `statusPayload` を宣言する。
-           */
           const statusPayload = payload.payload || {};
           setIsRunning(false);
           setIsPaused(false);
-          /**
-           * EN: Branch logic based on a condition.
-           * JP: 条件に応じて処理を分岐する。
-           */
           if (statusPayload.run_summary) {
             // Suppress the top completion banner for finished tasks.
           }
@@ -1238,39 +746,19 @@ const App = () => {
     loadUserProfile();
     refreshVisionState();
 
-    /**
-     * EN: Return a value from this scope.
-     * JP: このスコープから値を返す。
-     */
     return () => {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = null;
       }
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (thinkingHideTimerRef.current) {
         clearTimeout(thinkingHideTimerRef.current);
         thinkingHideTimerRef.current = null;
       }
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (statusClearTimerRef.current) {
         clearTimeout(statusClearTimerRef.current);
         statusClearTimerRef.current = null;
@@ -1278,32 +766,16 @@ const App = () => {
     };
   }, [loadHistory, loadModels, loadUserProfile, refreshVisionState, setupEventStream]);
 
-  /**
-   * EN: Declare variable `shouldBusy`.
-   * JP: 変数 `shouldBusy` を宣言する。
-   */
   const shouldBusy = pendingAssistantResponse || stepInProgress;
 
   useEffect(() => {
     shouldBusyRef.current = shouldBusy;
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (thinkingHideTimerRef.current) {
       clearTimeout(thinkingHideTimerRef.current);
       thinkingHideTimerRef.current = null;
     }
 
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (shouldBusy) {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (!prevBusyRef.current) {
         thinkingShownAtRef.current = Date.now();
         thinkingTimestampRef.current = Date.now();
@@ -1311,27 +783,15 @@ const App = () => {
       setThinkingVisible(true);
       requestScrollToBottom();
       prevBusyRef.current = true;
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return;
     }
 
-    /**
-     * EN: Declare variable `elapsed`.
-     * JP: 変数 `elapsed` を宣言する。
-     */
     const elapsed = Date.now() - (thinkingShownAtRef.current || Date.now());
-    /**
-     * EN: Declare variable `remaining`.
-     * JP: 変数 `remaining` を宣言する。
-     */
     const remaining = Math.max(0, MIN_THINKING_MS - elapsed);
 
     /**
-     * EN: Declare callable constant `finalize`.
-     * JP: 呼び出し可能な定数 `finalize` を宣言する。
+     * EN: Define function `finalize`.
+     * JP: 関数 `finalize` を定義する。
      */
     const finalize = () => {
       setThinkingVisible(false);
@@ -1339,17 +799,9 @@ const App = () => {
       thinkingTimestampRef.current = null;
     };
 
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (remaining > 0) {
       thinkingHideTimerRef.current = window.setTimeout(() => {
         thinkingHideTimerRef.current = null;
-        /**
-         * EN: Branch logic based on a condition.
-         * JP: 条件に応じて処理を分岐する。
-         */
         if (!shouldBusyRef.current) {
           finalize();
         }
@@ -1361,26 +813,10 @@ const App = () => {
   }, [requestScrollToBottom, shouldBusy]);
 
   useEffect(() => {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (!shouldBusy) {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return;
     }
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (stepInProgress && currentStepNumber) {
-      /**
-       * EN: Declare variable `detail`.
-       * JP: 変数 `detail` を宣言する。
-       */
       const detail = currentStepDetail || FALLBACK_STEP_DETAIL;
       setBusyMessageTitle(`ステップ${currentStepNumber}を実行しています`);
       setBusyMessageSub(detail);
@@ -1391,27 +827,11 @@ const App = () => {
   }, [currentStepDetail, currentStepNumber, shouldBusy, stepInProgress]);
 
   useLayoutEffect(() => {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (!scrollPendingRef.current) {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return;
     }
     scrollPendingRef.current = false;
-    /**
-     * EN: Declare variable `element`.
-     * JP: 変数 `element` を宣言する。
-     */
     const element = messagesRef.current;
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (element) {
       element.scrollTop = element.scrollHeight;
     }
@@ -1428,10 +848,6 @@ const App = () => {
       return;
     }
 
-    /**
-     * EN: Declare variable `submittedPromptValue`.
-     * JP: 変数 `submittedPromptValue` を宣言する。
-     */
     const submittedPromptValue = rawPrompt;
     setIsSending(true);
     setStatus('新しいタスクとしてエージェントに指示を送信しています…', 'progress');
@@ -1440,25 +856,13 @@ const App = () => {
     clearStepActivity();
     dispatchConversation({ type: 'mark_pending' });
 
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (promptInputRef.current) {
       promptInputRef.current.value = '';
       promptInputRef.current.focus();
     }
 
-    /**
-     * EN: Declare variable `shouldContinueRunning`.
-     * JP: 変数 `shouldContinueRunning` を宣言する。
-     */
     let shouldContinueRunning = false;
 
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
       const { data, response } = await postJson<ChatResponse, { prompt: string; new_task: true }>(
         '/api/chat',
@@ -1470,60 +874,28 @@ const App = () => {
         }
       );
 
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (Array.isArray(data.messages)) {
         updateConversationState(data.messages, { syncStep: true });
         requestScrollToBottom();
       }
 
-      /**
-       * EN: Declare variable `agentStillRunning`.
-       * JP: 変数 `agentStillRunning` を宣言する。
-       */
       const agentStillRunning = response.status === 202 || data.agent_running === true;
       shouldContinueRunning = Boolean(agentStillRunning);
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (agentStillRunning) {
-        /**
-         * EN: Declare variable `runSummary`.
-         * JP: 変数 `runSummary` を宣言する。
-         */
         const runSummary = data.run_summary || 'エージェントが実行を継続しています。';
         setStatus(runSummary, 'progress');
       } else {
         setStatus('', 'muted');
       }
     } catch (error) {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (promptInputRef.current && !promptInputRef.current.value.trim()) {
         promptInputRef.current.value = submittedPromptValue;
-        /**
-         * EN: Branch logic based on a condition.
-         * JP: 条件に応じて処理を分岐する。
-         */
         if (typeof promptInputRef.current.setSelectionRange === 'function') {
-          /**
-           * EN: Declare variable `length`.
-           * JP: 変数 `length` を宣言する。
-           */
           const length = promptInputRef.current.value.length;
           promptInputRef.current.setSelectionRange(length, length);
         }
         promptInputRef.current.focus();
       }
-      /**
-       * EN: Declare variable `err`.
-       * JP: 変数 `err` を宣言する。
-       */
       const err = error as { message?: string };
       setStatus(err.message || 'エージェントへの送信に失敗しました。', 'error');
       dispatchConversation({ type: 'clear_pending' });
@@ -1532,10 +904,6 @@ const App = () => {
     } finally {
       setIsSending(false);
       setIsRunning(shouldContinueRunning);
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (!shouldContinueRunning) {
         setIsPaused(false);
       }
@@ -1556,10 +924,6 @@ const App = () => {
         errorMessage: isPaused ? '再開に失敗しました。' : '一時停止に失敗しました。',
         throwOnParseError: false,
       });
-      /**
-       * EN: Declare variable `nextPaused`.
-       * JP: 変数 `nextPaused` を宣言する。
-       */
       const nextPaused = !latestRunStateRef.current.isPaused;
       setIsPaused(nextPaused);
       setStatus(
@@ -1567,10 +931,6 @@ const App = () => {
         'info'
       );
     } catch (error) {
-      /**
-       * EN: Declare variable `err`.
-       * JP: 変数 `err` を宣言する。
-       */
       const err = error as { message?: string };
       setStatus(err.message || '操作に失敗しました。', 'error');
     } finally {
@@ -1589,10 +949,6 @@ const App = () => {
       return;
     }
     setIsResetting(true);
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
       const { data } = await post<ResetResponse>('/api/reset', {
         fallback: {},
@@ -1605,10 +961,6 @@ const App = () => {
       setIsRunning(false);
       setIsPaused(false);
     } catch (error) {
-      /**
-       * EN: Declare variable `err`.
-       * JP: 変数 `err` を宣言する。
-       */
       const err = error as { message?: string };
       setStatus(err.message || '履歴のリセットに失敗しました。', 'error');
     } finally {
@@ -1617,25 +969,13 @@ const App = () => {
   };
 
   /**
-   * EN: Declare callable constant `handlePromptKeyDown`.
-   * JP: 呼び出し可能な定数 `handlePromptKeyDown` を宣言する。
+   * EN: Define function `handlePromptKeyDown`.
+   * JP: 関数 `handlePromptKeyDown` を定義する。
    */
   const handlePromptKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault();
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (formRef.current) {
-        /**
-         * EN: Branch logic based on a condition.
-         * JP: 条件に応じて処理を分岐する。
-         */
         if (typeof formRef.current.requestSubmit === 'function') {
           formRef.current.requestSubmit();
         } else {
@@ -1646,30 +986,14 @@ const App = () => {
   };
 
   /**
-   * EN: Declare callable constant `handleModelChange`.
-   * JP: 呼び出し可能な定数 `handleModelChange` を宣言する。
+   * EN: Define function `handleModelChange`.
+   * JP: 関数 `handleModelChange` を定義する。
    */
   const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    /**
-     * EN: Declare variable `value`.
-     * JP: 変数 `value` を宣言する。
-     */
     const value = event.target.value;
     setSelectedModelValue(value);
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
-      /**
-       * EN: Declare variable `selection`.
-       * JP: 変数 `selection` を宣言する。
-       */
       const selection = JSON.parse(value) as ModelSelection;
-      /**
-       * EN: Declare variable `selected`.
-       * JP: 変数 `selected` を宣言する。
-       */
       const selected = modelOptions.find((model) => encodeModelSelection(model) === value);
       selection.label = selected ? selected.label : undefined;
       applyModelSelection(selection);
@@ -1698,82 +1022,30 @@ const App = () => {
     }
   };
 
-  /**
-   * EN: Declare variable `selectedModelProvider`.
-   * JP: 変数 `selectedModelProvider` を宣言する。
-   */
   const selectedModelProvider = useMemo(() => {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (!selectedModelValue) {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return '';
     }
-    /**
-     * EN: Wrap logic with exception handling.
-     * JP: 例外処理のためにブロックを囲む。
-     */
     try {
-      /**
-       * EN: Declare variable `parsed`.
-       * JP: 変数 `parsed` を宣言する。
-       */
       const parsed = JSON.parse(selectedModelValue) as ModelSelection;
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return (parsed.provider || '').toLowerCase();
     } catch (error) {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return '';
     }
   }, [selectedModelValue]);
-  /**
-   * EN: Declare variable `showVisionToggle`.
-   * JP: 変数 `showVisionToggle` を宣言する。
-   */
   const showVisionToggle = ['openai', 'claude', 'gemini'].includes(selectedModelProvider);
-  /**
-   * EN: Declare variable `visionBadgeText`.
-   * JP: 変数 `visionBadgeText` を宣言する。
-   */
   const visionBadgeText = visionState.loading
     ? 'CHECKING'
     : visionState.supported
       ? 'SUPPORTED'
       : 'UNSUPPORTED';
-  /**
-   * EN: Declare variable `visionBadgeClass`.
-   * JP: 変数 `visionBadgeClass` を宣言する。
-   */
   const visionBadgeClass = `vision-badge${
     visionState.loading ? ' is-pending' : visionState.supported ? ' is-ok' : ' is-off'
   }`;
-  /**
-   * EN: Declare variable `visionHint`.
-   * JP: 変数 `visionHint` を宣言する。
-   */
   let visionHint = 'モデルがサポートしていればスクリーンショットを送信します。';
-  /**
-   * EN: Branch logic based on a condition.
-   * JP: 条件に応じて処理を分岐する。
-   */
   if (visionState.error) {
     visionHint = visionState.error;
   } else if (!visionState.loading) {
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (!visionState.supported) {
       visionHint = '選択中のモデルはスクリーンショット非対応です。';
     } else if (visionState.effective) {
@@ -1783,105 +1055,37 @@ const App = () => {
     }
   }
 
-  /**
-   * EN: Declare variable `shouldDisablePause`.
-   * JP: 変数 `shouldDisablePause` を宣言する。
-   */
   const shouldDisablePause = !isRunning || isPausing;
-  /**
-   * EN: Declare variable `shouldDisableUserProfileSave`.
-   * JP: 変数 `shouldDisableUserProfileSave` を宣言する。
-   */
   const shouldDisableUserProfileSave = userProfileSaving || !userProfileDirty;
-  /**
-   * EN: Declare variable `pauseLabel`.
-   * JP: 変数 `pauseLabel` を宣言する。
-   */
   const pauseLabel = !isRunning ? '一時停止' : isPaused ? '再開' : '一時停止';
-  /**
-   * EN: Declare variable `messagesEmpty`.
-   * JP: 変数 `messagesEmpty` を宣言する。
-   */
   const messagesEmpty = conversation.length === 0 && !thinkingVisible;
 
-  /**
-   * EN: Declare variable `messagesClassName`.
-   * JP: 変数 `messagesClassName` を宣言する。
-   */
   const messagesClassName = `messages${messagesEmpty ? ' is-empty' : ''}`;
-  /**
-   * EN: Declare variable `statusClassName`.
-   * JP: 変数 `statusClassName` を宣言する。
-   */
   const statusClassName = `status-banner${status.message ? '' : ' is-empty'}`;
 
   useEffect(() => {
-    /**
-     * EN: Declare variable `browserIframe`.
-     * JP: 変数 `browserIframe` を宣言する。
-     */
     const browserIframe = document.querySelector<HTMLIFrameElement>('.browser-pane iframe');
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (!browserIframe) {
-      /**
-       * EN: Return a value from this scope.
-       * JP: このスコープから値を返す。
-       */
       return undefined;
     }
-    /**
-     * EN: Declare variable `shell`.
-     * JP: 変数 `shell` を宣言する。
-     */
     const shell = document.querySelector<HTMLDivElement>('.browser-shell');
-    /**
-     * EN: Declare variable `toolbar`.
-     * JP: 変数 `toolbar` を宣言する。
-     */
     const toolbar = shell ? shell.querySelector<HTMLDivElement>('.browser-toolbar') : null;
 
     /**
-     * EN: Declare callable constant `syncIframeHeight`.
-     * JP: 呼び出し可能な定数 `syncIframeHeight` を宣言する。
+     * EN: Define function `syncIframeHeight`.
+     * JP: 関数 `syncIframeHeight` を定義する。
      */
     const syncIframeHeight = () => {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (!shell) {
-        /**
-         * EN: Return a value from this scope.
-         * JP: このスコープから値を返す。
-         */
         return;
       }
-      /**
-       * EN: Declare variable `toolbarHeight`.
-       * JP: 変数 `toolbarHeight` を宣言する。
-       */
       const toolbarHeight = toolbar ? toolbar.offsetHeight : 0;
-      /**
-       * EN: Declare variable `nextHeight`.
-       * JP: 変数 `nextHeight` を宣言する。
-       */
       const nextHeight = Math.max(shell.clientHeight - toolbarHeight, 0);
       browserIframe.style.height = `${nextHeight}px`;
     };
 
     let resizeObserver: ResizeObserver | null = null;
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (shell) {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (typeof ResizeObserver !== 'undefined') {
         resizeObserver = new ResizeObserver(syncIframeHeight);
         resizeObserver.observe(shell);
@@ -1892,15 +1096,7 @@ const App = () => {
 
     syncIframeHeight();
 
-    /**
-     * EN: Return a value from this scope.
-     * JP: このスコープから値を返す。
-     */
     return () => {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (resizeObserver) {
         resizeObserver.disconnect();
       } else {
@@ -1909,10 +1105,6 @@ const App = () => {
     };
   }, []);
 
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return (
     <main className="layout">
       <section className="chat-pane" aria-label="チャット領域" aria-busy={shouldBusy}>
@@ -2138,15 +1330,7 @@ const App = () => {
   );
 };
 
-/**
- * EN: Declare variable `root`.
- * JP: 変数 `root` を宣言する。
- */
 const root = document.getElementById('root');
-/**
- * EN: Branch logic based on a condition.
- * JP: 条件に応じて処理を分岐する。
- */
 if (root) {
   createRoot(root).render(<App />);
 }

@@ -1,26 +1,12 @@
-# EN: Describe this block with a docstring.
-# JP: このブロックの説明をドキュメント文字列で記述する。
 """About:blank watchdog for managing about:blank tabs with DVD screensaver."""
 
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from typing import TYPE_CHECKING, ClassVar
 
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from bubus import BaseEvent
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from cdp_use.cdp.target import TargetID
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from pydantic import PrivateAttr
 
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from browser_use.browser.constants import DEFAULT_NEW_TAB_URL
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from browser_use.browser.events import (
 	AboutBlankDVDScreensaverShownEvent,
 	BrowserStopEvent,
@@ -30,240 +16,142 @@ from browser_use.browser.events import (
 	TabClosedEvent,
 	TabCreatedEvent,
 )
-# EN: Import required modules.
-# JP: 必要なモジュールをインポートする。
 from browser_use.browser.watchdog_base import BaseWatchdog
 
-# EN: Branch logic based on a condition.
-# JP: 条件に応じて処理を分岐する。
 if TYPE_CHECKING:
-	# EN: Keep a placeholder statement.
-	# JP: プレースホルダー文を維持する。
 	pass
 
 
 # EN: Define class `AboutBlankWatchdog`.
 # JP: クラス `AboutBlankWatchdog` を定義する。
 class AboutBlankWatchdog(BaseWatchdog):
-	# EN: Describe this block with a docstring.
-	# JP: このブロックの説明をドキュメント文字列で記述する。
 	"""Ensures there's always exactly one about:blank tab with DVD screensaver."""
 
 	# Event contracts
-	# EN: Assign annotated value to LISTENS_TO.
-	# JP: LISTENS_TO に型付きの値を代入する。
 	LISTENS_TO: ClassVar[list[type[BaseEvent]]] = [
 		BrowserStopEvent,
 		BrowserStoppedEvent,
 		TabCreatedEvent,
 		TabClosedEvent,
 	]
-	# EN: Assign annotated value to EMITS.
-	# JP: EMITS に型付きの値を代入する。
 	EMITS: ClassVar[list[type[BaseEvent]]] = [
 		NavigateToUrlEvent,
 		CloseTabEvent,
 		AboutBlankDVDScreensaverShownEvent,
 	]
 
-	# EN: Assign annotated value to _stopping.
-	# JP: _stopping に型付きの値を代入する。
 	_stopping: bool = PrivateAttr(default=False)
 
 	# EN: Define async function `on_BrowserStopEvent`.
 	# JP: 非同期関数 `on_BrowserStopEvent` を定義する。
 	async def on_BrowserStopEvent(self, event: BrowserStopEvent) -> None:
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""Handle browser stop request - stop creating new tabs."""
 		# logger.info('[AboutBlankWatchdog] Browser stop requested, stopping tab creation')
-		# EN: Assign value to target variable.
-		# JP: target variable に値を代入する。
 		self._stopping = True
 
 	# EN: Define async function `on_BrowserStoppedEvent`.
 	# JP: 非同期関数 `on_BrowserStoppedEvent` を定義する。
 	async def on_BrowserStoppedEvent(self, event: BrowserStoppedEvent) -> None:
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""Handle browser stopped event."""
 		# logger.info('[AboutBlankWatchdog] Browser stopped')
-		# EN: Assign value to target variable.
-		# JP: target variable に値を代入する。
 		self._stopping = True
 
 	# EN: Define async function `on_TabCreatedEvent`.
 	# JP: 非同期関数 `on_TabCreatedEvent` を定義する。
 	async def on_TabCreatedEvent(self, event: TabCreatedEvent) -> None:
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""Check tabs when a new tab is created."""
 		# logger.debug(f'[AboutBlankWatchdog] ➕ New tab created: {event.url}')
 
 		# If an about:blank tab was created, show DVD screensaver on all about:blank tabs
-		# EN: Branch logic based on a condition.
-		# JP: 条件に応じて処理を分岐する。
 		if event.url == 'about:blank':
-			# EN: Evaluate an expression.
-			# JP: 式を評価する。
 			await self._show_dvd_screensaver_on_about_blank_tabs()
 
 	# EN: Define async function `on_TabClosedEvent`.
 	# JP: 非同期関数 `on_TabClosedEvent` を定義する。
 	async def on_TabClosedEvent(self, event: TabClosedEvent) -> None:
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""Check tabs when a tab is closed and proactively create about:blank if needed."""
 		# logger.debug('[AboutBlankWatchdog] Tab closing, checking if we need to create about:blank tab')
 
 		# Don't create new tabs if browser is shutting down
-		# EN: Branch logic based on a condition.
-		# JP: 条件に応じて処理を分岐する。
 		if self._stopping:
 			# logger.debug('[AboutBlankWatchdog] Browser is stopping, not creating new tabs')
-			# EN: Return a value from the function.
-			# JP: 関数から値を返す。
 			return
 
 		# Check if we're about to close the last tab (event happens BEFORE tab closes)
 		# Use _cdp_get_all_pages for quick check without fetching titles
-		# EN: Assign value to page_targets.
-		# JP: page_targets に値を代入する。
 		page_targets = await self.browser_session._cdp_get_all_pages()
-		# EN: Branch logic based on a condition.
-		# JP: 条件に応じて処理を分岐する。
 		if len(page_targets) <= 1:
-			# EN: Evaluate an expression.
-			# JP: 式を評価する。
 			self.logger.debug(
 				'[AboutBlankWatchdog] Last tab closing, creating new about:blank tab to avoid closing entire browser'
 			)
 			# Create the animation tab since no tabs should remain
-			# EN: Assign value to navigate_event.
-			# JP: navigate_event に値を代入する。
 			navigate_event = self.event_bus.dispatch(NavigateToUrlEvent(url=DEFAULT_NEW_TAB_URL, new_tab=True))
-			# EN: Evaluate an expression.
-			# JP: 式を評価する。
 			await navigate_event
 			# Show DVD screensaver on the new tab
-			# EN: Evaluate an expression.
-			# JP: 式を評価する。
 			await self._show_dvd_screensaver_on_about_blank_tabs()
 		else:
 			# Multiple tabs exist, check after close
-			# EN: Evaluate an expression.
-			# JP: 式を評価する。
 			await self._check_and_ensure_about_blank_tab()
 
 	# EN: Define async function `attach_to_target`.
 	# JP: 非同期関数 `attach_to_target` を定義する。
 	async def attach_to_target(self, target_id: TargetID) -> None:
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""AboutBlankWatchdog doesn't monitor individual targets."""
-		# EN: Keep a placeholder statement.
-		# JP: プレースホルダー文を維持する。
 		pass
 
 	# EN: Define async function `_check_and_ensure_about_blank_tab`.
 	# JP: 非同期関数 `_check_and_ensure_about_blank_tab` を定義する。
 	async def _check_and_ensure_about_blank_tab(self) -> None:
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""Check current tabs and ensure exactly one about:blank tab with animation exists."""
-		# EN: Handle exceptions around this block.
-		# JP: このブロックで例外処理を行う。
 		try:
 			# For quick checks, just get page targets without titles to reduce noise
-			# EN: Assign value to page_targets.
-			# JP: page_targets に値を代入する。
 			page_targets = await self.browser_session._cdp_get_all_pages()
 
 			# If no tabs exist at all, create one to keep browser alive
-			# EN: Branch logic based on a condition.
-			# JP: 条件に応じて処理を分岐する。
 			if len(page_targets) == 0:
 				# Only create a new tab if there are no tabs at all
-				# EN: Evaluate an expression.
-				# JP: 式を評価する。
 				self.logger.debug('[AboutBlankWatchdog] No tabs exist, creating new start page tab')
-				# EN: Assign value to navigate_event.
-				# JP: navigate_event に値を代入する。
 				navigate_event = self.event_bus.dispatch(NavigateToUrlEvent(url=DEFAULT_NEW_TAB_URL, new_tab=True))
-				# EN: Evaluate an expression.
-				# JP: 式を評価する。
 				await navigate_event
 				# Show DVD screensaver on the new tab
-				# EN: Evaluate an expression.
-				# JP: 式を評価する。
 				await self._show_dvd_screensaver_on_about_blank_tabs()
 			# Otherwise there are tabs, don't create new ones to avoid interfering
 
 		except Exception as e:
-			# EN: Evaluate an expression.
-			# JP: 式を評価する。
 			self.logger.error(f'[AboutBlankWatchdog] Error ensuring about:blank tab: {e}')
 
 	# EN: Define async function `_show_dvd_screensaver_on_about_blank_tabs`.
 	# JP: 非同期関数 `_show_dvd_screensaver_on_about_blank_tabs` を定義する。
 	async def _show_dvd_screensaver_on_about_blank_tabs(self) -> None:
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""Show DVD screensaver on all about:blank pages only."""
-		# EN: Handle exceptions around this block.
-		# JP: このブロックで例外処理を行う。
 		try:
 			# Get just the page targets without expensive title fetching
-			# EN: Assign value to page_targets.
-			# JP: page_targets に値を代入する。
 			page_targets = await self.browser_session._cdp_get_all_pages()
-			# EN: Assign value to browser_session_label.
-			# JP: browser_session_label に値を代入する。
 			browser_session_label = str(self.browser_session.id)[-4:]
 
-			# EN: Iterate over items in a loop.
-			# JP: ループで要素を順に処理する。
 			for page_target in page_targets:
-				# EN: Assign value to target_id.
-				# JP: target_id に値を代入する。
 				target_id = page_target['targetId']
-				# EN: Assign value to url.
-				# JP: url に値を代入する。
 				url = page_target['url']
 
 				# Only target about:blank pages specifically
-				# EN: Branch logic based on a condition.
-				# JP: 条件に応じて処理を分岐する。
 				if url == 'about:blank':
-					# EN: Evaluate an expression.
-					# JP: 式を評価する。
 					await self._show_dvd_screensaver_loading_animation_cdp(target_id, browser_session_label)
 
 		except Exception as e:
-			# EN: Evaluate an expression.
-			# JP: 式を評価する。
 			self.logger.error(f'[AboutBlankWatchdog] Error showing DVD screensaver: {e}')
 
 	# EN: Define async function `_show_dvd_screensaver_loading_animation_cdp`.
 	# JP: 非同期関数 `_show_dvd_screensaver_loading_animation_cdp` を定義する。
 	async def _show_dvd_screensaver_loading_animation_cdp(self, target_id: TargetID, browser_session_label: str) -> None:
-		# EN: Describe this block with a docstring.
-		# JP: このブロックの説明をドキュメント文字列で記述する。
 		"""
 		Injects a DVD screensaver-style bouncing logo loading animation overlay into the target using CDP.
 		This is used to visually indicate that the browser is setting up or waiting.
 		"""
-		# EN: Handle exceptions around this block.
-		# JP: このブロックで例外処理を行う。
 		try:
 			# Create temporary session for this target without switching focus
-			# EN: Assign value to temp_session.
-			# JP: temp_session に値を代入する。
 			temp_session = await self.browser_session.get_or_create_cdp_session(target_id, focus=False)
 
 			# Inject the DVD screensaver script (from main branch with idempotency added)
-			# EN: Assign value to script.
-			# JP: script に値を代入する。
 			script = f"""
 				(function(browser_session_label) {{
 					// Idempotency check
@@ -373,18 +261,12 @@ class AboutBlankWatchdog(BaseWatchdog):
 				}})('{browser_session_label}');
 			"""
 
-			# EN: Evaluate an expression.
-			# JP: 式を評価する。
 			await temp_session.cdp_client.send.Runtime.evaluate(params={'expression': script}, session_id=temp_session.session_id)
 
 			# No need to detach - session is cached
 
 			# Dispatch event
-			# EN: Evaluate an expression.
-			# JP: 式を評価する。
 			self.event_bus.dispatch(AboutBlankDVDScreensaverShownEvent(target_id=target_id))
 
 		except Exception as e:
-			# EN: Evaluate an expression.
-			# JP: 式を評価する。
 			self.logger.error(f'[AboutBlankWatchdog] Error injecting DVD screensaver: {e}')

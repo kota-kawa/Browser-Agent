@@ -16,51 +16,23 @@ const App = () => {
       return undefined;
     }
     const shell = document.querySelector<HTMLDivElement>('.browser-shell');
-    /**
-     * EN: Declare variable `toolbar`.
-     * JP: 変数 `toolbar` を宣言する。
-     */
     const toolbar = shell ? shell.querySelector<HTMLDivElement>('.browser-toolbar') : null;
 
     /**
-     * EN: Declare callable constant `syncIframeHeight`.
-     * JP: 呼び出し可能な定数 `syncIframeHeight` を宣言する。
+     * EN: Define function `syncIframeHeight`.
+     * JP: 関数 `syncIframeHeight` を定義する。
      */
     const syncIframeHeight = () => {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (!shell) {
-        /**
-         * EN: Return a value from this scope.
-         * JP: このスコープから値を返す。
-         */
         return;
       }
-      /**
-       * EN: Declare variable `toolbarHeight`.
-       * JP: 変数 `toolbarHeight` を宣言する。
-       */
       const toolbarHeight = toolbar ? toolbar.offsetHeight : 0;
-      /**
-       * EN: Declare variable `nextHeight`.
-       * JP: 変数 `nextHeight` を宣言する。
-       */
       const nextHeight = Math.max(shell.clientHeight - toolbarHeight, 0);
       browserIframe.style.height = `${nextHeight}px`;
     };
 
     let resizeObserver: ResizeObserver | null = null;
-    /**
-     * EN: Branch logic based on a condition.
-     * JP: 条件に応じて処理を分岐する。
-     */
     if (shell) {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (typeof ResizeObserver !== 'undefined') {
         resizeObserver = new ResizeObserver(syncIframeHeight);
         resizeObserver.observe(shell);
@@ -71,15 +43,7 @@ const App = () => {
 
     syncIframeHeight();
 
-    /**
-     * EN: Return a value from this scope.
-     * JP: このスコープから値を返す。
-     */
     return () => {
-      /**
-       * EN: Branch logic based on a condition.
-       * JP: 条件に応じて処理を分岐する。
-       */
       if (resizeObserver) {
         resizeObserver.disconnect();
       } else {
@@ -88,10 +52,6 @@ const App = () => {
     };
   }, []);
 
-  /**
-   * EN: Return a value from this scope.
-   * JP: このスコープから値を返す。
-   */
   return (
     <main className="full-screen-layout">
       <section className="browser-pane" aria-label="ブラウザ画面">
@@ -114,15 +74,7 @@ const App = () => {
   );
 };
 
-/**
- * EN: Declare variable `root`.
- * JP: 変数 `root` を宣言する。
- */
 const root = document.getElementById('root');
-/**
- * EN: Branch logic based on a condition.
- * JP: 条件に応じて処理を分岐する。
- */
 if (root) {
   createRoot(root).render(<App />);
 }
