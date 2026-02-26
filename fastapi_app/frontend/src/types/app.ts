@@ -10,6 +10,10 @@ export interface AgentResultAppProps {
   browserUrl: string;
 }
 
+/**
+ * EN: Define interface `WebArenaAppProps`.
+ * JP: インターフェース `WebArenaAppProps` を定義する。
+ */
 export interface WebArenaAppProps {
   browserUrl: string;
   envUrls: EnvUrls;
