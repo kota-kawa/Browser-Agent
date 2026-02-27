@@ -9,7 +9,6 @@ SUPPORTED_MODELS = [
 	# OpenAI
 	{'provider': 'openai', 'model': 'gpt-5.1', 'label': 'GPT-5.1'},
 	# Gemini (Google)
-	{'provider': 'gemini', 'model': 'gemini-2.5-flash-lite', 'label': 'Gemini 2.5 Flash Lite'},
 	{'provider': 'gemini', 'model': 'gemini-3-pro-preview', 'label': 'Gemini 3 Pro Preview'},
 	# Claude (Anthropic)
 	{'provider': 'claude', 'model': 'claude-haiku-4-5', 'label': 'Claude Haiku 4.5'},

@@ -25,6 +25,8 @@
 
 ## 🎬 Demo Videos
 
+Click a thumbnail to open the video on YouTube.
+
 <table>
 <tr>
 <td align="center">
@@ -161,6 +163,8 @@ See [LICENSE.md](LICENSE.md) for details.
 </p>
 
 ## 🎬 デモ動画
+
+サムネイルをクリックすると、YouTubeで動画を開けます。
 
 <table>
 <tr>
