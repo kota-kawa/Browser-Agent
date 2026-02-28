@@ -70,6 +70,14 @@ flowchart TB
     controller -->|"SSE /api/stream"| ui
 ```
 
+## 🧠 Design Decisions
+
+- **FastAPI over Flask**: Chosen for async-first request handling, native type-hint validation, and clean SSE endpoint implementation.
+- **SSE over WebSockets**: Status updates are primarily server-to-client one-way streams; SSE reduced complexity while keeping real-time UX.
+- **Long-lived controller/session**: `BrowserAgentController` keeps a warm browser session (`keep_alive`) to reduce repeated startup cost between tasks.
+- **CDP-native browser control**: Direct CDP integration provides predictable browser introspection/control for `browser_use` workflows.
+- **In-memory state over Redis (current scope)**: History/event broadcasting is intentionally in-process for low operational overhead in single-node deployments; Redis is a scale-out option when multi-instance coordination becomes necessary.
+
 ## 🛠️ Quick Start (Docker Compose only)
 
 ### Prerequisites
@@ -111,6 +119,26 @@ Use the **WebArena** tab in the UI or call the API endpoints below.
 - `POST /api/chat`: Send a task to the agent.
 - `GET /api/stream`: Subscribe to the event stream.
 - `POST /webarena/run`: Run a specific WebArena task.
+
+## ✅ Testing
+
+### Backend (Python / FastAPI)
+Run all backend unit tests with `pytest`:
+
+```bash
+pytest
+```
+
+### Frontend (React / TypeScript)
+Run frontend unit tests with Vitest:
+
+```bash
+cd fastapi_app/frontend
+npm install
+npm run test
+```
+
+CI note: these backend/frontend tests are also executed automatically on every push and pull request via GitHub Actions (`.github/workflows/ci-tests.yml`).
 
 ## 📊 WebArena Browser Agent Evaluation
 
@@ -209,6 +237,14 @@ flowchart TB
     controller_ja -->|"SSE /api/stream"| ui_ja
 ```
 
+## 🧠 技術的な意思決定 (Design Decisions)
+
+- **FastAPIをFlaskより優先**: 非同期処理を前提にしやすく、型ヒントによる検証とSSE実装がシンプルになるため。
+- **WebSocketではなくSSE**: 本プロジェクトの進捗配信は主にサーバー→クライアントの一方向ストリームで十分で、構成の複雑さを抑えられるため。
+- **長寿命のコントローラー/セッション**: `BrowserAgentController` でブラウザセッションをウォーム状態 (`keep_alive`) に保ち、タスク間の起動コストを下げるため。
+- **CDPネイティブ制御**: `browser_use` のワークフローで必要なブラウザ状態取得・操作を安定して行えるため。
+- **Redisではなくインメモリ状態管理（現スコープ）**: 単一ノード運用では依存を減らして運用コストを下げることを優先。将来のマルチインスタンス化ではRedis連携を拡張候補として想定。
+
 ## 🛠️ クイックスタート（Docker Composeのみ）
 
 ### 前提条件
@@ -250,6 +286,26 @@ UIの **WebArena** タブ、またはAPIから実行できます。
 - `POST /api/chat`: エージェントにタスクを送信します。
 - `GET /api/stream`: イベントストリームを購読します。
 - `POST /webarena/run`: WebArenaの特定タスクを実行します。
+
+## ✅ テスト実行
+
+### バックエンド（Python / FastAPI）
+`pytest` でバックエンドのユニットテストを実行します。
+
+```bash
+pytest
+```
+
+### フロントエンド（React / TypeScript）
+Vitest でフロントエンドのユニットテストを実行します。
+
+```bash
+cd fastapi_app/frontend
+npm install
+npm run test
+```
+
+補足: これらのバックエンド/フロントエンドテストは、GitHub Actions（`.github/workflows/ci-tests.yml`）により push / pull request ごとに自動実行されます。
 
 ## 📊 WebArenaでのBrowserエージェント評価
 

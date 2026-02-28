@@ -378,6 +378,8 @@ class BrowserAgentController:
 
 		attach_watchdogs = getattr(session, 'attach_all_watchdogs', None)
 		if attach_watchdogs is not None:
+			# JP: 事前に watchdog を接続して、実行中の監視イベントを取りこぼしにくくする
+			# EN: Attach watchdogs up front to reduce missed runtime monitoring events
 			try:
 				await attach_watchdogs()
 			except Exception:
@@ -393,16 +395,22 @@ class BrowserAgentController:
 			history = await agent.run(max_steps=effective_max_steps)
 			self._update_resume_url_from_history(history)
 			new_entries = history.history[history_start_index:]
+			# JP: step_number=0 の内部ログを除外し、ユーザー向け履歴だけに絞る
+			# EN: Drop internal step_number=0 entries to keep user-facing history clean
 			filtered_entries = [
 				entry
 				for entry in new_entries
 				if not getattr(entry, 'metadata', None) or getattr(entry.metadata, 'step_number', None) != 0
 			]
+			# JP: 全件除外されるケースでは空になり過ぎないよう元配列を使う
+			# EN: Fall back to raw entries when filtering would remove everything
 			if filtered_entries or not new_entries:
 				relevant_entries = filtered_entries
 			else:
 				relevant_entries = new_entries
 			if isinstance(history, AgentHistoryList):
+				# JP: AgentHistoryList の型を維持しつつ差分履歴のみで再構築
+				# EN: Rebuild AgentHistoryList with only relevant delta entries
 				history_kwargs = {'history': relevant_entries}
 				if hasattr(history, 'usage'):
 					history_kwargs['usage'] = getattr(history, 'usage')
@@ -410,6 +418,8 @@ class BrowserAgentController:
 				if hasattr(history, '_output_model_schema'):
 					filtered_history._output_model_schema = history._output_model_schema
 			else:
+				# JP: 互換型では shallow copy して history 属性のみ差し替える
+				# EN: For compatible non-typed history objects, shallow-copy then swap only `history`
 				filtered_history = copy.copy(history)
 				setattr(filtered_history, 'history', relevant_entries)
 			return AgentRunResult(
@@ -949,7 +959,8 @@ class BrowserAgentController:
 		# EN: Close extra tabs before WebArena runs to keep the session stable
 		async def _close() -> None:
 			session = await self._ensure_browser_session()
-			# Enumerate tabs using the CDP helper for speed
+			# JP: タブ列挙は CDP ヘルパー経由で高速に行う
+			# EN: Enumerate tabs via CDP helper for speed
 			try:
 				tabs = await session.get_tabs()
 			except Exception:
@@ -969,7 +980,8 @@ class BrowserAgentController:
 					await session._cdp_close_page(target_id)
 					await session.event_bus.dispatch(TabClosedEvent(target_id=target_id))
 
-			# If requested, reload the retained tab to ensure a fresh state
+			# JP: 必要なら残したタブをリロードし、次タスク開始時の状態を揃える
+			# EN: Optionally refresh the retained tab to start the next task from a clean state
 			if refresh_url:
 				try:
 					await session.navigate_to(refresh_url, new_tab=False)
@@ -1134,7 +1146,8 @@ class BrowserAgentController:
 		async def _eval() -> Any:
 			try:
 				session = await self._ensure_browser_session()
-				# Ensure we have an active CDP session
+				# JP: Runtime.evaluate 実行前に有効な CDP セッションを確保
+				# EN: Ensure an active CDP session before calling Runtime.evaluate
 				cdp_session = await session.get_or_create_cdp_session()
 				result = await cdp_session.cdp_client.send.Runtime.evaluate(
 					params={'expression': script, 'returnByValue': True, 'awaitPromise': True}, session_id=cdp_session.session_id

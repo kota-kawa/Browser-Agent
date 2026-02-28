@@ -82,17 +82,22 @@ except ModuleNotFoundError:
 # JP: 関数 `_install_browser_use_stubs` を定義する。
 def _install_browser_use_stubs():
     browser_use_stub = types.ModuleType("browser_use")
+    browser_use_stub.__path__ = []  # Mark as package for dotted imports.
     agent_stub = types.ModuleType("browser_use.agent")
     agent_views_stub = types.ModuleType("browser_use.agent.views")
     browser_stub = types.ModuleType("browser_use.browser")
     browser_views_stub = types.ModuleType("browser_use.browser.views")
     browser_events_stub = types.ModuleType("browser_use.browser.events")
     browser_profile_stub = types.ModuleType("browser_use.browser.profile")
+    tools_stub = types.ModuleType("browser_use.tools")
+    tools_registry_stub = types.ModuleType("browser_use.tools.registry")
+    tools_registry_views_stub = types.ModuleType("browser_use.tools.registry.views")
     model_selection_stub = types.ModuleType("browser_use.model_selection")
     llm_stub = types.ModuleType("browser_use.llm")
     llm_base_stub = types.ModuleType("browser_use.llm.base")
     llm_exceptions_stub = types.ModuleType("browser_use.llm.exceptions")
     llm_messages_stub = types.ModuleType("browser_use.llm.messages")
+    llm_views_stub = types.ModuleType("browser_use.llm.views")
     llm_openai_stub = types.ModuleType("browser_use.llm.openai.chat")
     llm_google_stub = types.ModuleType("browser_use.llm.google.chat")
     llm_anthropic_stub = types.ModuleType("browser_use.llm.anthropic.chat")
@@ -138,6 +143,19 @@ def _install_browser_use_stubs():
         # JP: 関数 `__init__` を定義する。
         def __init__(self, *args, **kwargs):
             pass
+
+    # EN: Define class `_ActionModel`.
+    # JP: クラス `_ActionModel` を定義する。
+    class _ActionModel:
+        # EN: Define function `__init__`.
+        # JP: 関数 `__init__` を定義する。
+        def __init__(self, *args, **kwargs):
+            pass
+
+        # EN: Define function `model_dump`.
+        # JP: 関数 `model_dump` を定義する。
+        def model_dump(self, *args, **kwargs):
+            return {}
 
     # EN: Define class `_AgentHistoryList`.
     # JP: クラス `_AgentHistoryList` を定義する。
@@ -192,6 +210,25 @@ def _install_browser_use_stubs():
         # JP: 関数 `__init__` を定義する。
         def __init__(self, content=None):
             self.content = content
+
+    # EN: Define class `_BaseMessage`.
+    # JP: クラス `_BaseMessage` を定義する。
+    class _BaseMessage(_Message):
+        pass
+
+    # EN: Define class `_ChatInvokeCompletion`.
+    # JP: クラス `_ChatInvokeCompletion` を定義する。
+    class _ChatInvokeCompletion:
+        # EN: Define function `__init__`.
+        # JP: 関数 `__init__` を定義する。
+        def __init__(self, completion=None):
+            self.completion = completion
+
+        # EN: Define function `__class_getitem__`.
+        # JP: 関数 `__class_getitem__` を定義する。
+        @classmethod
+        def __class_getitem__(cls, _item):
+            return cls
 
     # EN: Define class `_BaseChatModel`.
     # JP: クラス `_BaseChatModel` を定義する。
@@ -288,13 +325,16 @@ def _install_browser_use_stubs():
 
     llm_exceptions_stub.ModelProviderError = _ModelProviderError
     llm_exceptions_stub.ModelRateLimitError = _ModelRateLimitError
+    llm_messages_stub.BaseMessage = _BaseMessage
     llm_messages_stub.SystemMessage = _Message
     llm_messages_stub.UserMessage = _Message
+    llm_views_stub.ChatInvokeCompletion = _ChatInvokeCompletion
     llm_openai_stub.ChatOpenAI = _ChatOpenAI
     llm_google_stub.ChatGoogle = _ChatGoogle
     llm_anthropic_stub.ChatAnthropic = _ChatAnthropic
     llm_groq_stub.ChatGroq = _ChatGroq
     env_loader_stub.load_secrets_env = _load_secrets_env
+    tools_registry_views_stub.ActionModel = _ActionModel
 
     sys.modules["browser_use"] = browser_use_stub
     sys.modules["browser_use.agent"] = agent_stub
@@ -303,11 +343,15 @@ def _install_browser_use_stubs():
     sys.modules["browser_use.browser.views"] = browser_views_stub
     sys.modules["browser_use.browser.events"] = browser_events_stub
     sys.modules["browser_use.browser.profile"] = browser_profile_stub
+    sys.modules["browser_use.tools"] = tools_stub
+    sys.modules["browser_use.tools.registry"] = tools_registry_stub
+    sys.modules["browser_use.tools.registry.views"] = tools_registry_views_stub
     sys.modules["browser_use.model_selection"] = model_selection_stub
     sys.modules["browser_use.llm"] = llm_stub
     sys.modules["browser_use.llm.base"] = llm_base_stub
     sys.modules["browser_use.llm.exceptions"] = llm_exceptions_stub
     sys.modules["browser_use.llm.messages"] = llm_messages_stub
+    sys.modules["browser_use.llm.views"] = llm_views_stub
     sys.modules["browser_use.llm.openai.chat"] = llm_openai_stub
     sys.modules["browser_use.llm.google.chat"] = llm_google_stub
     sys.modules["browser_use.llm.anthropic.chat"] = llm_anthropic_stub
