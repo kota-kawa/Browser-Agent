@@ -83,16 +83,19 @@ def _normalize_analysis_payload(payload: dict[str, Any] | None) -> dict[str, Any
 	if not normalized.get('reason'):
 		normalized['reason'] = 'LLM output did not include a reason.'
 
-	# Guard action_type against unexpected values
+	# JP: 想定外の action_type は無効値としてクリアする
+	# EN: Guard action_type against unexpected values
 	valid_action_types = {'search', 'navigate', 'form_fill', 'data_extract', None}
 	if normalized.get('action_type') not in valid_action_types:
 		normalized['action_type'] = None
 
-	# If a reply is present, ensure should_reply is true.
+	# JP: reply が入っている場合は should_reply を強制的に true に揃える
+	# EN: If a reply is present, ensure should_reply is true
 	if normalized.get('reply'):
 		normalized['should_reply'] = True
 
-	# Ensure reply is empty if should_reply is False
+	# JP: should_reply=false のときは reply を空文字へ正規化する
+	# EN: Ensure reply is normalized when should_reply is false
 	if not normalized.get('should_reply'):
 		normalized['reply'] = normalized.get('reply', '') or ''
 
@@ -105,9 +108,8 @@ def _sanitize_json_string(text: str) -> str:
 	"""Sanitize a string for JSON parsing by fixing common LLM output issues."""
 	# JP: LLM出力の改行/タブ等を簡易的にエスケープ補正
 	# EN: Lightly sanitize common newline/tab issues in LLM JSON output
-	# Fix unescaped newlines in string values
-	# This is a simplified approach - replace literal newlines with escaped ones
-	# within what appears to be JSON string content
+	# JP: 文字列値内の未エスケープ改行を簡易的に `\\n` へ置換する
+	# EN: Replace likely unescaped newlines in JSON string literals with `\\n`
 	try:
 		result = re.sub(
 			r'"((?:[^"\\]|\\.)*)(?:\n|\r|\t)((?:[^"\\]|\\.)*)"',
@@ -125,7 +127,8 @@ def _extract_json_from_text(text: str) -> dict | None:
 	"""Extracts JSON from text, tolerating markdown code blocks and sanitizing."""
 	# JP: ```json``` 形式と生の JSON の両方に対応
 	# EN: Handle both ```json``` blocks and raw JSON blobs
-	# Try to sanitize the text first
+	# JP: まず補正済みテキストも候補として評価する
+	# EN: Include a sanitized variant as an additional parse candidate
 	sanitized_text = _sanitize_json_string(text)
 
 	candidates = [text]
@@ -133,7 +136,8 @@ def _extract_json_from_text(text: str) -> dict | None:
 		candidates.append(sanitized_text)
 
 	for candidate in candidates:
-		# Look for a JSON block ```json ... ```
+		# JP: Markdown の ```json ... ``` ブロックを優先して抽出
+		# EN: First try parsing a Markdown ```json ... ``` block
 		json_match = re.search(r'```json\s*(\{[\s\S]*?\})\s*```', candidate)
 		if json_match:
 			try:
@@ -141,7 +145,8 @@ def _extract_json_from_text(text: str) -> dict | None:
 			except json.JSONDecodeError:
 				pass  # Fallback to the next method
 
-		# Look for any JSON-like structure
+		# JP: 失敗時はテキスト全体から JSON らしい塊を抽出して再試行
+		# EN: On failure, try any JSON-like object found in the text
 		json_match = re.search(r'\{[\s\S]*\}', candidate)
 		if json_match:
 			try:
@@ -244,7 +249,8 @@ async def _fallback_to_text_parsing(llm: Any, messages: list[Any]) -> dict[str, 
 			analysis_result = ConversationAnalysis.model_validate(normalized)
 			return analysis_result.model_dump()
 
-		# If JSON extraction failed, try retry with correction prompt
+		# JP: 抽出失敗時は補正用プロンプトを追加して再試行する
+		# EN: If extraction fails, retry once with a JSON-correction prompt
 		if isinstance(response_text, str):
 			retry_result = await _retry_with_json_correction(llm, messages, response_text, ValueError('JSON extraction failed'))
 			if retry_result:
@@ -506,7 +512,8 @@ JSONのみで出力:
 		]
 		response = await llm.ainvoke(messages, output_format=ConversationAnalysis)
 
-		# The response result should now be a Pydantic model instance
+		# JP: 新旧レスポンス形式を吸収して ConversationAnalysis へ正規化する
+		# EN: Normalize response payload into ConversationAnalysis across response shapes
 		analysis_result = _get_completion_payload(response)
 
 		if isinstance(analysis_result, ConversationAnalysis):
@@ -571,7 +578,8 @@ def _analyze_conversation_history(
 	try:
 		return asyncio.run(_analyze_conversation_history_async(conversation_history))
 	except RuntimeError as exc:
-		# Handle case where event loop is already running
+		# JP: 既存ループが占有されている場合は新規ループで実行する
+		# EN: If a loop is already running, execute on a dedicated new loop
 		logger.debug('Event loop already running, creating new loop: %s', exc)
 		loop = asyncio.new_event_loop()
 		try:

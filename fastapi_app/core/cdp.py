@@ -190,6 +190,8 @@ def _probe_webdriver_endpoint(base_endpoint: str) -> str | None:
 		# EN: Define function `cleanup_session`.
 		# JP: 関数 `cleanup_session` を定義する。
 		def cleanup_session() -> None:
+			# JP: DELETE が多重実行されないよう一度だけ実行する
+			# EN: Ensure session DELETE is executed at most once
 			nonlocal cleaned
 			if cleaned:
 				return
@@ -266,8 +268,12 @@ def _resolve_cdp_url() -> str | None:
 
 	candidate_env = os.environ.get('BROWSER_USE_CDP_CANDIDATES')
 	if candidate_env:
+		# JP: 逗号区切りの候補URLを優先的に利用する
+		# EN: Prefer explicitly supplied comma-separated candidate URLs
 		candidates = [entry.strip() for entry in candidate_env.split(',') if entry.strip()]
 	else:
+		# JP: 典型的な Docker/ローカル構成向けの既定候補
+		# EN: Default candidate endpoints for common Docker/local layouts
 		candidates = [
 			'http://browser:9222',
 			'http://browser:4444',
@@ -302,6 +308,8 @@ def _resolve_cdp_url() -> str | None:
 				retries,
 			)
 			if delay:
+				# JP: 起動直後の CDP 待ちに備えてリトライ間隔を空ける
+				# EN: Sleep between retries to allow CDP endpoint startup
 				time.sleep(delay)
 
 	logger.warning('Chrome DevToolsのCDP URLを自動検出できませんでした。環境変数BROWSER_USE_CDP_URLを設定してください。')

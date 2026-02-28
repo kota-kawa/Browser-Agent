@@ -92,7 +92,8 @@ def _load_tasks() -> tuple[list[WebArenaTask], list[WebArenaTask]]:
 	# JP: 関数 `_is_supported` を定義する。
 	def _is_supported(task: WebArenaTask) -> bool:
 		sites = task.get('sites', []) or []
-		# Keep tasks that only reference environments we actually have
+		# JP: 実際に用意されている環境だけを参照するタスクに限定する
+		# EN: Keep only tasks that reference environments available in this deployment
 		return bool(sites) and all(site in SUPPORTED_SITES for site in sites)
 
 	supported_tasks = [t for t in all_tasks if _is_supported(t)]
@@ -110,12 +111,14 @@ def _load_tasks() -> tuple[list[WebArenaTask], list[WebArenaTask]]:
 
 ALL_WEBARENA_TASKS, WEBARENA_TASKS = _load_tasks()
 
-# Optional external reset hooks
+# JP: 外部環境の状態を戻すための任意リセットフック
+# EN: Optional reset hooks for external environment state
 RESET_COMMAND = os.getenv(
 	'WEBARENA_RESET_COMMAND'
 )  # e.g., "docker compose -f bin/webarena/docker-compose.webarena.yml restart shopping shopping_admin gitlab forum"
 
-# Set a sensible default for RESET_COMMAND if not provided and file exists
+# JP: 明示設定が無い場合のみ、既知 compose ファイルから既定コマンドを補完
+# EN: Fill a sensible default RESET_COMMAND only when no explicit setting exists
 if not RESET_COMMAND and not os.getenv('WEBARENA_RESET_URL'):
 	_default_compose_path = os.path.join(os.getcwd(), 'bin/webarena/docker-compose.webarena.yml')
 	if os.path.exists(_default_compose_path):
@@ -200,8 +203,8 @@ def get_tasks(page: int = 1, per_page: int = 50, site: str | None = None) -> JSO
 
 	tasks = WEBARENA_TASKS
 	if site_filter and site_filter in SUPPORTED_SITES:
-		# User request: Only show tasks that are exclusively for this site.
-		# Multi-site tasks should only appear in "ALL".
+		# JP: 指定サイト専用タスクのみを表示し、複合サイトタスクは ALL 側に残す
+		# EN: Show only single-site tasks for the filter; keep multi-site tasks in ALL
 		tasks = [t for t in tasks if t.get('sites') and len(t['sites']) == 1 and site_filter in t['sites']]
 
 	start = (page - 1) * per_page
@@ -248,11 +251,12 @@ def _reset_state(
 	"""
 	# JP: タスク間の状態をできる限りリセットする
 	# EN: Best-effort reset between tasks
-	# 1) Reset browser session
+	# JP: 1) ブラウザセッションをリセット
+	# EN: 1) Reset browser session
 	try:
 		controller.reset()
-		# Apply the next start page (task-specific when provided) so warmup/cleanup
-		# happens on the correct environment.
+		# JP: 次に開く開始ページを設定し、ウォームアップ/タブ整理先を揃える
+		# EN: Set the next start page so warmup/tab cleanup targets the correct environment
 		if start_url:
 			controller.set_start_page(start_url)
 		else:
@@ -264,7 +268,8 @@ def _reset_state(
 	except Exception as e:
 		logger.warning('Browser reset failed: %s', e)
 
-	# 2) External reset hook (if configured)
+	# JP: 2) 外部リセットフック（設定されている場合）
+	# EN: 2) External reset hook (if configured)
 	sites_csv = ','.join(sites or [])
 
 	if RESET_URL:
@@ -373,7 +378,8 @@ def _compute_aggregate_metrics(
 	success_count = sum(success_flags)
 	sr = success_count / total if total else 0.0
 
-	# 95% CI for success rate (normal approximation, clamped to [0,1])
+	# JP: 成功率の 95% 信頼区間（正規近似、0-1 にクリップ）
+	# EN: 95% CI for success rate (normal approximation, clamped to [0,1])
 	if total:
 		se = math.sqrt(sr * (1 - sr) / total)
 		margin = 1.96 * se
@@ -382,7 +388,8 @@ def _compute_aggregate_metrics(
 	else:
 		ci_lower = ci_upper = 0.0
 
-	# Template-macro SR (average of per-template success rates)
+	# JP: テンプレート単位成功率のマクロ平均
+	# EN: Template-macro SR (average of per-template success rates)
 	template_results: dict[str | int, list[bool]] = {}
 	for task, result in zip(selected_tasks, results):
 		template_id = task.get('intent_template_id')
@@ -396,7 +403,8 @@ def _compute_aggregate_metrics(
 	else:
 		template_macro_sr = 0.0
 
-	# Step statistics
+	# JP: ステップ数の統計値
+	# EN: Step-count statistics
 	step_counts_success = [len(r.get('steps') or []) for r in results if r.get('success')]
 	step_counts_overall = [len(r.get('steps') or []) if r.get('success') else max_steps for r in results]
 
@@ -520,7 +528,8 @@ def _evaluate_result(
 			return (ref.scheme, ref.netloc, ref.path.rstrip('/')) == (cur.scheme, cur.netloc, cur.path.rstrip('/'))
 		return (ref.scheme, ref.netloc, ref.path, ref.query) == (cur.scheme, cur.netloc, cur.path, cur.query)
 
-	# 1. String Match
+	# JP: 1) 文字列一致評価
+	# EN: 1) String-match evaluation
 	if 'string_match' in eval_types:
 		exact_match = reference_answers.get('exact_match')
 		must_include = reference_answers.get('must_include')
@@ -546,7 +555,8 @@ def _evaluate_result(
 				results.append(f'Failure: Missing phrases: {", ".join(missing)}')
 
 		if fuzzy_match:
-			# Basic implementation: check if any fuzzy match string is present
+			# JP: 基本実装として、類似度閾値で一致判定する
+			# EN: Basic implementation: use similarity threshold matching
 			if isinstance(fuzzy_match, list):
 				similarities = []
 				for phrase in fuzzy_match:
@@ -566,14 +576,16 @@ def _evaluate_result(
 			else:
 				results.append(f'Failure: No fuzzy match found for {match_str}')
 
-	# 2. URL Match
+	# JP: 2) URL 一致評価
+	# EN: 2) URL-match evaluation
 	if 'url_match' in eval_types:
 		reference_url = eval_config.get('reference_url')
 		if reference_url:
 			url_found = False
 			current_url = None
 
-			# Try to get the actual current URL from the browser
+			# JP: まずブラウザ上の実URLを直接確認する
+			# EN: First, try to verify the actual current URL in the browser
 			try:
 				_ensure_page_ready()
 				current_url = controller.evaluate_in_browser('window.location.href')
@@ -581,11 +593,13 @@ def _evaluate_result(
 					results.append(f"Success: Current URL matches reference '{reference_url}'")
 					url_found = True
 			except Exception as e:
-				# Log but don't fail yet - try text fallback
+				# JP: URL直接確認が失敗しても即失敗にはせず、テキスト判定へフォールバック
+				# EN: If direct URL check fails, do not fail immediately; fall back to text check
 				logger.warning(f'Could not verify browser URL directly: {e}')
 
 			if not url_found:
-				# Fallback to checking text output if browser check fails or doesn't match
+				# JP: ブラウザ検証が不一致なら最終出力テキスト中のURL記載を確認
+				# EN: If browser verification misses, check whether output text contains the URL
 				if reference_url in final_result:
 					results.append('Success: Reference URL found in output text.')
 				else:
@@ -595,28 +609,31 @@ def _evaluate_result(
 					msg += ' or output.'
 					results.append(msg)
 
-	# 3. Program HTML (DOM Check)
+	# JP: 3) Program HTML（DOM）評価
+	# EN: 3) Program HTML (DOM) evaluation
 	if 'program_html' in eval_types:
 		program_html = eval_config.get('program_html', [])
 		for check in program_html:
-			# We assume 'url' key might specify a page, but usually it checks the current page 'last'
-			locator_js = check.get('locator')  # This is JS code to execute
+			# JP: `url` 指定があっても通常は現在ページのDOMを検査する
+			# EN: Even when `url` exists, checks usually target the current page DOM
+			locator_js = check.get('locator')  # JP: 実行する JS ロケータ / EN: JS locator to execute
 			required_contents = check.get('required_contents', {})
 
 			if locator_js:
 				try:
 					_ensure_page_ready()
-					# WebArena locators often use document.querySelector... which returns an element or string.
-					# We need to execute this JS in the browser.
-					# The locator string might be like "document.querySelector(...).outerText"
+					# JP: locator は document.querySelector(...) 形式が多く、ブラウザ側で評価する必要がある
+					# EN: Locators are often document.querySelector(...) expressions and must run in-browser
 
-					# We wrap it to ensure it returns a value we can capture
+					# JP: 値を確実に回収するため即時関数でラップする
+					# EN: Wrap in an IIFE so the evaluator always returns a capturable value
 					js_code = f'(() => {{ return {locator_js}; }})()'
 
 					execution_result = controller.evaluate_in_browser(js_code)
 					execution_result_str = str(execution_result) if execution_result is not None else ''
 
-					# Check against required contents
+					# JP: required_contents の条件と照合する
+					# EN: Validate against required_contents constraints
 					exact_match = required_contents.get('exact_match')
 					must_include = required_contents.get('must_include')
 
@@ -657,7 +674,8 @@ async def run_task(request: Request) -> JSONResponse:
 	selected_site = data.get('selected_site')
 
 	try:
-		# Import here to avoid circular dependency
+		# JP: 循環 import を避けるため関数内で読み込む
+		# EN: Import inside function to avoid circular dependency
 		from fastapi_app.services.agent_runtime import get_agent_controller
 		controller = get_agent_controller()
 
@@ -684,7 +702,8 @@ async def run_task(request: Request) -> JSONResponse:
 		start_override = _apply_start_page_override(selected_site, env_urls_override)
 
 		if custom_task:
-			# Execute ad-hoc task without filtering
+			# JP: custom_task はフィルタせずそのまま単発実行
+			# EN: Execute custom ad-hoc task directly without task-list filtering
 			temp_task = {
 				'task_id': 'custom',
 				'intent': custom_task.get('intent'),
@@ -718,13 +737,15 @@ async def run_batch(request: Request) -> JSONResponse:
 	selected_site = data.get('selected_site')
 	task_ids = data.get('task_ids')
 
-	# If caller didn't provide explicit IDs, run all supported tasks
+	# JP: task_ids 未指定時は、フィルタ後の全対応タスクを実行
+	# EN: If task_ids are omitted, run all filtered supported tasks
 	selected_tasks: list[WebArenaTask] = WEBARENA_TASKS
 	if task_ids:
 		allowed = {int(t) for t in task_ids if str(t).isdigit()}
 		selected_tasks = [t for t in WEBARENA_TASKS if t.get('task_id') in allowed]
 	elif selected_site and selected_site in SUPPORTED_SITES:
-		# Apply strict filtering: only tasks exclusive to this site
+		# JP: 厳密フィルタとして、指定サイト専用タスクのみ対象にする
+		# EN: Apply strict filtering: only tasks exclusive to this site
 		selected_tasks = [t for t in WEBARENA_TASKS if t.get('sites') and len(t['sites']) == 1 and selected_site in t['sites']]
 
 	if not selected_tasks:
@@ -773,7 +794,6 @@ async def run_batch(request: Request) -> JSONResponse:
 		'results': results,
 	}
 
-	# Save results to disk
 	# JP: 集計結果をローカルに保存
 	# EN: Persist batch results to disk
 	try:
@@ -803,14 +823,14 @@ async def save_results(request: Request) -> JSONResponse:
 	if not results:
 		return JSONResponse({'error': 'No results provided'}, status_code=400)
 
-	# Reconstruct selected_tasks from result IDs for metric calculation
 	# JP: task_id から元タスクを復元して集計に利用
 	# EN: Rebuild task list from task_id for aggregation
 	task_map = {t['task_id']: t for t in WEBARENA_TASKS}
 	ordered_tasks = []
 	for r in results:
 		tid = r.get('task_id')
-		# If custom task or unknown, might be None, handle gracefully
+		# JP: custom/未知 task_id は空 dict として扱い、集計だけ継続する
+		# EN: For custom/unknown task_id, use empty task placeholder and continue aggregation
 		ordered_tasks.append(task_map.get(tid, {}))
 
 	metrics = _compute_aggregate_metrics(results, ordered_tasks, _WEBARENA_MAX_STEPS)

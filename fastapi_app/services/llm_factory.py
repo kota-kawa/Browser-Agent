@@ -32,7 +32,8 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 
 	# JP: 選択済みのプロバイダ/モデルを反映して設定を確定
 	# EN: Resolve provider/model configuration using selection overrides
-	# Apply model selection to get the correct provider, model, and configuration
+	# JP: override 指定があれば優先し、無ければ browser スロットの選択設定を使う
+	# EN: Prefer explicit override; otherwise use the persisted browser selection
 	applied = update_override(selection_override) if selection_override else apply_model_selection('browser')
 	provider = applied.get('provider', 'openai')
 	model = applied.get('model')
@@ -43,7 +44,8 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 
 	# JP: プロバイダごとの API キーを取得
 	# EN: Resolve provider-specific API key
-	# Get provider-specific settings from the defaults map
+	# JP: 既定マップから必要な環境変数名を引く
+	# EN: Read provider defaults to find the required API key env var
 	provider_config = PROVIDER_DEFAULTS.get(provider, PROVIDER_DEFAULTS['openai'])
 	api_key_env = provider_config.get('api_key_env', 'OPENAI_API_KEY')
 	api_key = _get_env_trimmed(api_key_env)
@@ -57,7 +59,6 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 	if base_url:
 		llm_kwargs['base_url'] = base_url
 
-	# Instantiate the correct client based on the provider
 	# JP: プロバイダ別にクライアントを生成して日次制限を適用
 	# EN: Instantiate provider client and apply daily limit wrapper
 	if provider == 'gemini':
@@ -82,7 +83,8 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 			raise AgentControllerError('Groq 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
 		return apply_daily_llm_limit(ChatGroq(**llm_kwargs))
 
-	# Default to OpenAI for any other case, including 'openai' provider
+	# JP: 未知プロバイダ時も OpenAI 実装へフォールバックして互換性を保つ
+	# EN: Fall back to OpenAI implementation for unknown/default provider cases
 	logger.info(f'Using OpenAI model: {model} with base_url: {base_url}')
 	try:
 		from browser_use.llm.openai.chat import ChatOpenAI
