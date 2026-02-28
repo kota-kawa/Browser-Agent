@@ -1,0 +1,13 @@
+repository:
+  description: "FastAPI + browser-use based browser automation agent with real-time UI and WebArena support / FastAPI + browser-use ベースのブラウザ自動化エージェント（リアルタイムUI・WebArena対応）"
+  topics:
+    - browser-automation
+    - llm-agent
+    - fastapi
+    - react
+    - browser-use
+    - cdp
+    - webarena
+    - sse
+    - novnc
+    - docker
