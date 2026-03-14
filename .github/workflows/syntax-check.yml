@@ -3,11 +3,20 @@ name: Syntax Check
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: syntax-check-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   python-syntax:
     name: Python Syntax Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -52,9 +61,49 @@ jobs:
           print(f'Python syntax OK ({len(files)} files).')
           PY
 
-  typescript-syntax:
-    name: TypeScript Syntax Check
+  backend-runtime-smoke:
+    name: Backend Runtime Smoke Check
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            pyproject.toml
+            fastapi_app/requirements.txt
+
+      - name: Install backend runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip check
+
+      - name: Import critical backend modules
+        run: |
+          python - <<'PY'
+          import browser_use.agent.service
+          import browser_use.browser.session
+          import browser_use.llm.google.chat
+          import fastapi_app.app
+          import fastapi_app.services.agent_controller
+          import fastapi_app.services.agent_runtime
+          import fastapi_app.webarena.routes
+
+          print('Critical runtime imports OK')
+          PY
+
+  frontend-build:
+    name: Frontend Production Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -75,6 +124,6 @@ jobs:
         working-directory: fastapi_app/frontend
         run: npm ci --include=dev
 
-      - name: Check TypeScript syntax
+      - name: Build frontend bundle
         working-directory: fastapi_app/frontend
-        run: npx tsc --project tsconfig.json --noEmit --noCheck
+        run: npm run build
