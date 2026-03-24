@@ -20,3 +20,13 @@ async def read_json_payload(request: Request) -> dict[str, Any]:
 		return {}
 
 	return payload if isinstance(payload, dict) else {}
+
+
+# EN: Define function `is_prompt_too_long`.
+# JP: 関数 `is_prompt_too_long` を定義する。
+def is_prompt_too_long(prompt: str, limit: int) -> bool:
+	"""Return True when the prompt exceeds the configured character limit."""
+
+	if limit <= 0:
+		return False
+	return len(prompt) > limit

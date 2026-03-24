@@ -220,3 +220,25 @@ def test_conversation_review_endpoint_removed(controller):
     # Route is removed from the router; FastAPI would return 404 when mounted.
     # Here we simply assert the helper exists in api_chat only.
     assert hasattr(api_chat, "agent_relay")
+
+
+# EN: Define function `test_api_chat_rejects_too_long_prompt`.
+# JP: 関数 `test_api_chat_rejects_too_long_prompt` を定義する。
+def test_api_chat_rejects_too_long_prompt(controller, monkeypatch):
+    monkeypatch.setattr(api_chat, "_LLM_INPUT_MAX_CHARS", 5)
+    request = _FakeRequest({"prompt": "abcdef"})
+    res = asyncio.run(api_chat.chat(request))
+    assert res.status_code == 400
+    body = json.loads(res.body.decode("utf-8"))
+    assert "5" in body.get("error", "")
+
+
+# EN: Define function `test_api_agent_relay_rejects_too_long_prompt`.
+# JP: 関数 `test_api_agent_relay_rejects_too_long_prompt` を定義する。
+def test_api_agent_relay_rejects_too_long_prompt(controller, monkeypatch):
+    monkeypatch.setattr(api_chat, "_LLM_INPUT_MAX_CHARS", 5)
+    request = _FakeRequest({"prompt": "abcdef"})
+    res = asyncio.run(api_chat.agent_relay(request))
+    assert res.status_code == 400
+    body = json.loads(res.body.decode("utf-8"))
+    assert "5" in body.get("error", "")

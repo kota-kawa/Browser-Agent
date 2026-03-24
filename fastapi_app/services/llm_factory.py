@@ -6,9 +6,9 @@ from typing import Any
 # JP: モデル選択に基づいて LLM クライアントを生成
 # EN: Build LLM clients based on selected provider/model
 from ..core.config import logger
-from ..core.env import _get_env_trimmed
+from ..core.env import _LLM_MAX_OUTPUT_TOKENS, _get_env_trimmed
 from ..core.exceptions import AgentControllerError
-from .llm_daily_limit import apply_daily_llm_limit
+from .llm_daily_limit import apply_monthly_llm_limit
 
 # JP: 開発環境でも browser_use を読み込めるようにパス調整
 # EN: Handle imports and adjust sys.path when necessary
@@ -59,29 +59,40 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 	if base_url:
 		llm_kwargs['base_url'] = base_url
 
-	# JP: プロバイダ別にクライアントを生成して日次制限を適用
-	# EN: Instantiate provider client and apply daily limit wrapper
+	# JP: 出力トークン上限をプロバイダ別に渡す
+	# EN: Pass output token cap using provider-specific parameter names
+	if provider == 'gemini':
+		llm_kwargs['max_output_tokens'] = _LLM_MAX_OUTPUT_TOKENS
+	elif provider == 'claude':
+		llm_kwargs['max_tokens'] = _LLM_MAX_OUTPUT_TOKENS
+	elif provider == 'groq':
+		llm_kwargs['max_tokens'] = _LLM_MAX_OUTPUT_TOKENS
+	else:
+		llm_kwargs['max_completion_tokens'] = _LLM_MAX_OUTPUT_TOKENS
+
+	# JP: プロバイダ別にクライアントを生成して月次制限を適用
+	# EN: Instantiate provider client and apply monthly limit wrapper
 	if provider == 'gemini':
 		logger.info(f'Using Google (Gemini) model: {model}')
 		try:
 			from browser_use.llm.google.chat import ChatGoogle
 		except ModuleNotFoundError as exc:
 			raise AgentControllerError('Gemini 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
-		return apply_daily_llm_limit(ChatGoogle(**llm_kwargs))
+		return apply_monthly_llm_limit(ChatGoogle(**llm_kwargs))
 	if provider == 'claude':
 		logger.info(f'Using Anthropic (Claude) model: {model}')
 		try:
 			from browser_use.llm.anthropic.chat import ChatAnthropic
 		except ModuleNotFoundError as exc:
 			raise AgentControllerError('Claude 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
-		return apply_daily_llm_limit(ChatAnthropic(**llm_kwargs))
+		return apply_monthly_llm_limit(ChatAnthropic(**llm_kwargs))
 	if provider == 'groq':
 		logger.info(f'Using Groq model: {model}')
 		try:
 			from browser_use.llm.groq.chat import ChatGroq
 		except ModuleNotFoundError as exc:
 			raise AgentControllerError('Groq 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
-		return apply_daily_llm_limit(ChatGroq(**llm_kwargs))
+		return apply_monthly_llm_limit(ChatGroq(**llm_kwargs))
 
 	# JP: 未知プロバイダ時も OpenAI 実装へフォールバックして互換性を保つ
 	# EN: Fall back to OpenAI implementation for unknown/default provider cases
@@ -90,4 +101,4 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 		from browser_use.llm.openai.chat import ChatOpenAI
 	except ModuleNotFoundError as exc:
 		raise AgentControllerError('OpenAI 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
-	return apply_daily_llm_limit(ChatOpenAI(**llm_kwargs))
+	return apply_monthly_llm_limit(ChatOpenAI(**llm_kwargs))

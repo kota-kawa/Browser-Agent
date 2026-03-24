@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 _ENV_CANDIDATES = [
 	Path(__file__).resolve().parents[1] / 'secrets.env',
 	Path(__file__).resolve().parent / 'secrets.env',
+	Path(__file__).resolve().parents[1] / '.env',
+	Path(__file__).resolve().parent / '.env',
 ]
 
 

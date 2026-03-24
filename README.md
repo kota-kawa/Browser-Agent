@@ -95,6 +95,8 @@ Copy the example secrets file and add your LLM API keys.
 cp secrets.env.example secrets.env
 ```
 Edit `secrets.env` and set keys such as `GOOGLE_API_KEY` or `OPENAI_API_KEY`.
+You can also set `LLM_MONTHLY_API_LIMIT` (default: `1000`) in either `secrets.env` or `.env` to cap LLM API requests per month.
+Input/output caps are configurable with `LLM_INPUT_MAX_CHARS` (default: `10000`) and `LLM_MAX_OUTPUT_TOKENS` (default: `5000`).
 
 ### 3. Start the stack
 ```bash
@@ -262,6 +264,8 @@ cd browser-agent
 cp secrets.env.example secrets.env
 ```
 `secrets.env` を編集し、`GOOGLE_API_KEY` や `OPENAI_API_KEY` を設定してください。
+`LLM_MONTHLY_API_LIMIT`（デフォルト: `1000`）を `secrets.env` または `.env` に設定すると、LLM API呼び出しを月次で制限できます。
+`LLM_INPUT_MAX_CHARS`（デフォルト: `10000`）と `LLM_MAX_OUTPUT_TOKENS`（デフォルト: `5000`）で入力/出力上限も調整できます。
 
 ### 3. 起動
 ```bash

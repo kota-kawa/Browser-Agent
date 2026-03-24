@@ -1,6 +1,6 @@
 import asyncio
 
-from fastapi_app.routes.utils import read_json_payload
+from fastapi_app.routes.utils import is_prompt_too_long, read_json_payload
 
 
 # EN: Define class `_FakeRequest`.
@@ -40,3 +40,10 @@ def test_read_json_payload_returns_empty_on_error():
     req = _FakeRequest(raises=True)
     assert asyncio.run(read_json_payload(req)) == {}
 
+
+# EN: Define function `test_is_prompt_too_long_respects_limit`.
+# JP: 関数 `test_is_prompt_too_long_respects_limit` を定義する。
+def test_is_prompt_too_long_respects_limit():
+    assert is_prompt_too_long("abc", 2) is True
+    assert is_prompt_too_long("ab", 2) is False
+    assert is_prompt_too_long("abc", 0) is False

@@ -61,6 +61,7 @@ class ChatGroq(BaseChatModel):
 	service_tier: Literal['auto', 'on_demand', 'flex'] | None = None
 	top_p: float | None = None
 	seed: int | None = None
+	max_tokens: int | None = None
 
 	# Client initialization parameters
 	api_key: str | None = None
@@ -221,6 +222,7 @@ class ChatGroq(BaseChatModel):
 			temperature=self.temperature,
 			top_p=self.top_p,
 			seed=self.seed,
+			max_tokens=self.max_tokens,
 		)
 		usage = self._get_usage(chat_completion)
 		return ChatInvokeCompletion(
@@ -244,6 +246,7 @@ class ChatGroq(BaseChatModel):
 					temperature=self.temperature,
 					top_p=self.top_p,
 					seed=self.seed,
+					max_tokens=self.max_tokens,
 					response_format={'type': 'json_object'},
 					service_tier=self.service_tier,
 				)
@@ -295,6 +298,7 @@ class ChatGroq(BaseChatModel):
 			temperature=self.temperature,
 			top_p=self.top_p,
 			seed=self.seed,
+			max_tokens=self.max_tokens,
 			tools=[tool],
 			tool_choice=tool_choice,
 			service_tier=self.service_tier,

@@ -23,9 +23,9 @@ from fastapi.templating import Jinja2Templates
 from starlette.responses import Response
 
 from fastapi_app.core.config import APP_TEMPLATE_DIR
-from fastapi_app.core.env import _BROWSER_URL, _WEBARENA_MAX_STEPS, _normalize_start_url
+from fastapi_app.core.env import _BROWSER_URL, _LLM_INPUT_MAX_CHARS, _WEBARENA_MAX_STEPS, _normalize_start_url
 from fastapi_app.services.formatting import _format_history_messages
-from fastapi_app.routes.utils import read_json_payload
+from fastapi_app.routes.utils import is_prompt_too_long, read_json_payload
 
 from . import router
 
@@ -695,6 +695,11 @@ async def run_task(request: Request) -> JSONResponse:
 
 		if not intent:
 			return JSONResponse({'error': '有効なタスクではありません。'}, status_code=400)
+		if is_prompt_too_long(intent, _LLM_INPUT_MAX_CHARS):
+			return JSONResponse(
+				{'error': f'タスク内容は{_LLM_INPUT_MAX_CHARS:,}文字以内で入力してください。'},
+				status_code=400,
+			)
 
 		if controller.is_running():
 			return JSONResponse({'error': 'エージェントは既に実行中です。'}, status_code=409)

@@ -102,6 +102,7 @@ def _install_browser_use_stubs():
     llm_google_stub = types.ModuleType("browser_use.llm.google.chat")
     llm_anthropic_stub = types.ModuleType("browser_use.llm.anthropic.chat")
     llm_groq_stub = types.ModuleType("browser_use.llm.groq.chat")
+    llm_openrouter_stub = types.ModuleType("browser_use.llm.openrouter.chat")
     env_loader_stub = types.ModuleType("browser_use.env_loader")
 
     # EN: Define class `_Agent`.
@@ -258,6 +259,11 @@ def _install_browser_use_stubs():
     class _ChatGroq(_BaseChatModel):
         pass
 
+    # EN: Define class `_ChatOpenRouter`.
+    # JP: クラス `_ChatOpenRouter` を定義する。
+    class _ChatOpenRouter(_BaseChatModel):
+        pass
+
     # EN: Define function `_apply_model_selection`.
     # JP: 関数 `_apply_model_selection` を定義する。
     def _apply_model_selection(*_args, **_kwargs):
@@ -333,6 +339,7 @@ def _install_browser_use_stubs():
     llm_google_stub.ChatGoogle = _ChatGoogle
     llm_anthropic_stub.ChatAnthropic = _ChatAnthropic
     llm_groq_stub.ChatGroq = _ChatGroq
+    llm_openrouter_stub.ChatOpenRouter = _ChatOpenRouter
     env_loader_stub.load_secrets_env = _load_secrets_env
     tools_registry_views_stub.ActionModel = _ActionModel
 
@@ -356,6 +363,7 @@ def _install_browser_use_stubs():
     sys.modules["browser_use.llm.google.chat"] = llm_google_stub
     sys.modules["browser_use.llm.anthropic.chat"] = llm_anthropic_stub
     sys.modules["browser_use.llm.groq.chat"] = llm_groq_stub
+    sys.modules["browser_use.llm.openrouter.chat"] = llm_openrouter_stub
     sys.modules["browser_use.env_loader"] = env_loader_stub
 
 

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from ..core.config import logger
-from ..core.env import _CONVERSATION_CONTEXT_WINDOW
+from ..core.env import _CONVERSATION_CONTEXT_WINDOW, _LLM_INPUT_MAX_CHARS
 from ..core.exceptions import AgentControllerError
 from ..services.agent_runtime import finalize_summary, get_agent_controller
 from ..services.conversation_review import _analyze_conversation_history
@@ -21,7 +21,7 @@ from ..services.history_store import (
 	_update_history_message,
 )
 from ..services.input_guard import InputGuardError, check_prompt_safety
-from .utils import read_json_payload
+from .utils import is_prompt_too_long, read_json_payload
 
 router = APIRouter()
 
@@ -80,6 +80,11 @@ async def chat(request: Request) -> JSONResponse:
 
 	if not prompt:
 		return JSONResponse({'error': 'プロンプトを入力してください。'}, status_code=400)
+	if is_prompt_too_long(prompt, _LLM_INPUT_MAX_CHARS):
+		return JSONResponse(
+			{'error': f'プロンプトは{_LLM_INPUT_MAX_CHARS:,}文字以内で入力してください。'},
+			status_code=400,
+		)
 
 	try:
 		# JP: 入力の安全性を事前にチェックしてブロックを防ぐ
@@ -356,6 +361,11 @@ async def agent_relay(request: Request) -> JSONResponse:
 
 	if not prompt:
 		return JSONResponse({'error': 'プロンプトを入力してください。'}, status_code=400)
+	if is_prompt_too_long(prompt, _LLM_INPUT_MAX_CHARS):
+		return JSONResponse(
+			{'error': f'プロンプトは{_LLM_INPUT_MAX_CHARS:,}文字以内で入力してください。'},
+			status_code=400,
+		)
 
 	try:
 		# JP: メインチャット履歴に影響せず、コントローラーのみ利用する
