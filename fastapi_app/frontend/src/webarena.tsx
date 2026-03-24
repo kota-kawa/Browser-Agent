@@ -86,6 +86,7 @@ const formatSiteLabel = (site: string) => {
 const App = () => {
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [selectedModelValue, setSelectedModelValue] = useState('');
+  const [adminToken, setAdminToken] = useState(localStorage.getItem('admin-token') || '');
   const [modelBusy, setModelBusy] = useState(false);
 
   const [visionState, setVisionState] = useState<VisionStateView>({
@@ -957,6 +958,21 @@ const App = () => {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="wa-section">
+          <h4 className="wa-section-title">管理者パスワード</h4>
+          <input
+            type="password"
+            className="wa-input"
+            placeholder="操作用トークンを入力してください"
+            value={adminToken}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setAdminToken(nextValue);
+              localStorage.setItem('admin-token', nextValue);
+            }}
+          />
         </div>
 
         <div

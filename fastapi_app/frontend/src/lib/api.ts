@@ -66,7 +66,13 @@ export const requestJson = async <T>(
     parseJson = true,
   } = options;
 
-  const response = await fetch(input, init);
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      ...(init?.headers || {}),
+      ...(localStorage.getItem('admin-token') ? { 'X-Admin-Token': localStorage.getItem('admin-token')! } : {}),
+    },
+  });
   const data = parseJson
     ? await readJson<T>(response, { fallback, throwOnParseError })
     : (fallback ?? ({} as T));

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from .core.config import APP_STATIC_DIR
 from .routes import register_routes
@@ -19,6 +20,11 @@ if TYPE_CHECKING:
 # JP: API サーバー本体
 # EN: FastAPI application instance
 app = FastAPI()
+
+# JP: プロキシヘッダー（X-Forwarded-For, X-Forwarded-Proto）を処理
+# EN: Handle proxy headers (X-Forwarded-For, X-Forwarded-Proto)
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts='*')
+
 app.add_middleware(
 	CORSMiddleware,
 	allow_origins=['*'],

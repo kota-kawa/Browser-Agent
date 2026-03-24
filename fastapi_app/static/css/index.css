@@ -1224,3 +1224,26 @@
     text-align: center;
   }
 }
+
+.page-index .chat-header-controls .admin-token-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.page-index .chat-header-controls .admin-token-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.page-index .chat-header-controls .admin-token-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: #ffffff;
+  font-size: 0.85rem;
+  color: var(--text-base);
+}

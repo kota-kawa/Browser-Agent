@@ -434,6 +434,7 @@ const App = () => {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [selectedModelValue, setSelectedModelValue] = useState('');
+  const [adminToken, setAdminToken] = useState(localStorage.getItem('admin-token') || '');
   const [userProfile, setUserProfile] = useState('');
   const [userProfileDirty, setUserProfileDirty] = useState(false);
   const [userProfileSaving, setUserProfileSaving] = useState(false);
@@ -1277,6 +1278,23 @@ const App = () => {
                     <p className="user-profile-hint">
                       ここに入力した内容はシステムプロンプトに挿入され、次のタスクから検索に反映されます。
                     </p>
+                  </div>
+                  <div className="admin-token-group">
+                    <label htmlFor="admin-token-input" className="admin-token-label">
+                      管理者パスワード
+                    </label>
+                    <input
+                      id="admin-token-input"
+                      type="password"
+                      className="admin-token-input"
+                      placeholder="操作用トークンを入力してください"
+                      value={adminToken}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        setAdminToken(nextValue);
+                        localStorage.setItem('admin-token', nextValue);
+                      }}
+                    />
                   </div>
                   <ConnectionIndicator state={connectionState} />
                   <div className="chat-controls" role="group" aria-label="チャット操作">

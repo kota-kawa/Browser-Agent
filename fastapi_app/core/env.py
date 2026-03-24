@@ -66,7 +66,7 @@ def _env_bool(name: str, default: bool) -> bool:
 	return default
 
 
-_DEFAULT_EMBED_BROWSER_URL = 'http://127.0.0.1:7900/vnc_lite.html?autoconnect=1&resize=scale&scale=auto&view_clip=false'
+_DEFAULT_EMBED_BROWSER_URL = '/vnc/vnc_lite.html?autoconnect=1&resize=scale&scale=auto&view_clip=false'
 _ALLOWED_RESIZE_VALUES = {'scale', 'remote', 'off'}
 
 
@@ -176,4 +176,4 @@ _AGENT_STEP_TIMEOUT_SECONDS = _env_int('AGENT_STEP_TIMEOUT_SECONDS', 90)
 _AGENT_RUN_TIMEOUT_SECONDS = _env_int('AGENT_RUN_TIMEOUT_SECONDS', 900)
 _IP_RATE_LIMIT_REQUESTS = _env_int('IP_RATE_LIMIT_REQUESTS', 120)
 _IP_RATE_LIMIT_WINDOW_SECONDS = _env_int('IP_RATE_LIMIT_WINDOW_SECONDS', 60)
-_IP_RATE_LIMIT_TRUST_PROXY_HEADERS = _env_bool('IP_RATE_LIMIT_TRUST_PROXY_HEADERS', False)
+_IP_RATE_LIMIT_TRUST_PROXY_HEADERS = _env_bool('IP_RATE_LIMIT_TRUST_PROXY_HEADERS', True)

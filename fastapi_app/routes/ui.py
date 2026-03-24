@@ -57,7 +57,11 @@ def index(request: Request) -> Response:
 		except Exception:
 			logger.debug('Failed to warm up browser start page on index load', exc_info=True)
 
-	return templates.TemplateResponse('index.html', {'request': request, 'browser_url': _BROWSER_URL})
+	return templates.TemplateResponse(
+		request=request,
+		name='index.html',
+		context={'browser_url': _BROWSER_URL}
+	)
 
 
 # EN: Define function `agent_result`.
@@ -80,4 +84,8 @@ def agent_result(request: Request) -> Response:
 		except Exception:
 			logger.debug('Failed to warm up browser start page on agent_result load', exc_info=True)
 
-	return templates.TemplateResponse('agent_result.html', {'request': request, 'browser_url': _BROWSER_URL})
+	return templates.TemplateResponse(
+		request=request,
+		name='agent_result.html',
+		context={'browser_url': _BROWSER_URL}
+	)
