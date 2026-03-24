@@ -203,9 +203,10 @@ def test_api_chat_accepts_basic_request(controller):
 
 # EN: Define function `test_api_agent_relay_returns_summary`.
 # JP: 関数 `test_api_agent_relay_returns_summary` を定義する。
-def test_api_agent_relay_returns_summary(controller):
+def test_api_agent_relay_returns_summary(controller, monkeypatch):
+    monkeypatch.setattr(api_chat, "require_admin_api_token", lambda **_kwargs: None)
     request = _FakeRequest({"prompt": "ping"})
-    res = asyncio.run(api_chat.agent_relay(request))
+    res = asyncio.run(api_chat.agent_relay(request, _admin=None))
     if isinstance(res, tuple):
         res = res[0]
     assert res.status_code == 200
@@ -237,8 +238,9 @@ def test_api_chat_rejects_too_long_prompt(controller, monkeypatch):
 # JP: 関数 `test_api_agent_relay_rejects_too_long_prompt` を定義する。
 def test_api_agent_relay_rejects_too_long_prompt(controller, monkeypatch):
     monkeypatch.setattr(api_chat, "_LLM_INPUT_MAX_CHARS", 5)
+    monkeypatch.setattr(api_chat, "require_admin_api_token", lambda **_kwargs: None)
     request = _FakeRequest({"prompt": "abcdef"})
-    res = asyncio.run(api_chat.agent_relay(request))
+    res = asyncio.run(api_chat.agent_relay(request, _admin=None))
     assert res.status_code == 400
     body = json.loads(res.body.decode("utf-8"))
     assert "5" in body.get("error", "")

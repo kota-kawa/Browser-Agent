@@ -37,6 +37,8 @@ class _FakeController:
 def test_webarena_run_rejects_too_long_custom_intent(monkeypatch):
     monkeypatch.setattr(webarena_routes, "_LLM_INPUT_MAX_CHARS", 5)
 
+    monkeypatch.setenv("ADMIN_API_TOKEN", "admin-secret")
+
     # Patch runtime import used inside run_task
     import sys
     import types as _types

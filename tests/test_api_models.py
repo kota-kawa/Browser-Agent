@@ -1,6 +1,9 @@
 import asyncio
 import json
 
+import pytest
+from fastapi import HTTPException
+
 from fastapi_app.routes import api_models
 
 
@@ -126,6 +129,7 @@ def test_update_model_settings_success_updates_controller_and_notifies(monkeypat
     notify_calls = []
 
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv('ADMIN_API_TOKEN', 'admin-secret')
     monkeypatch.setattr(api_models, 'read_json_payload', _fake_read_payload)
     monkeypatch.setattr(
         api_models,
@@ -141,7 +145,7 @@ def test_update_model_settings_success_updates_controller_and_notifies(monkeypat
     monkeypatch.setattr(api_models, 'find_model_label', lambda provider, model: f'{provider}:{model}')
     monkeypatch.setattr(api_models, 'notify_platform', lambda payload: notify_calls.append(payload))
 
-    response = asyncio.run(api_models.update_model_settings(_FakeRequest(headers={})))
+    response = asyncio.run(api_models.update_model_settings(_FakeRequest(headers={'X-Admin-Token': 'admin-secret'})))
 
     assert response.status_code == 200
     payload = _body(response)
@@ -167,6 +171,7 @@ def test_update_model_settings_skips_notify_when_propagation_header_is_set(monke
         return {'provider': 'openai', 'model': 'gpt-5.1'}
 
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv('ADMIN_API_TOKEN', 'admin-secret')
     monkeypatch.setattr(api_models, 'read_json_payload', _fake_read_payload)
     monkeypatch.setattr(api_models, 'update_override', lambda selection: dict(selection))
     monkeypatch.setattr(api_models, 'get_controller_if_initialized', lambda: None)
@@ -177,7 +182,7 @@ def test_update_model_settings_skips_notify_when_propagation_header_is_set(monke
     monkeypatch.setattr(api_models, 'notify_platform', lambda payload: notify_calls.append(payload))
 
     response = asyncio.run(
-        api_models.update_model_settings(_FakeRequest(headers={'X-Platform-Propagation': '1'}))
+        api_models.update_model_settings(_FakeRequest(headers={'X-Platform-Propagation': '1', 'X-Admin-Token': 'admin-secret'}))
     )
 
     assert response.status_code == 200
@@ -193,12 +198,33 @@ def test_update_model_settings_returns_500_on_error(monkeypatch, tmp_path):
         return {'provider': 'openai', 'model': 'gpt-5.1'}
 
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv('ADMIN_API_TOKEN', 'admin-secret')
     monkeypatch.setattr(api_models, 'read_json_payload', _fake_read_payload)
 
     # Simulate a failure during apply/update.
     monkeypatch.setattr(api_models, 'update_override', lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError('boom')))
 
-    response = asyncio.run(api_models.update_model_settings(_FakeRequest(headers={})))
+    response = asyncio.run(api_models.update_model_settings(_FakeRequest(headers={'X-Admin-Token': 'admin-secret'})))
 
     assert response.status_code == 500
     assert '失敗' in _body(response)['error']
+
+
+# EN: Define function `test_update_model_settings_rejects_invalid_admin_token`.
+# JP: 関数 `test_update_model_settings_rejects_invalid_admin_token` を定義する。
+def test_update_model_settings_rejects_invalid_admin_token(monkeypatch, tmp_path):
+    # EN: Define async function `_fake_read_payload`.
+    # JP: 非同期関数 `_fake_read_payload` を定義する。
+    async def _fake_read_payload(_request):
+        return {'provider': 'openai', 'model': 'gpt-5.1'}
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv('ADMIN_API_TOKEN', 'admin-secret')
+    monkeypatch.setattr(api_models, 'read_json_payload', _fake_read_payload)
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(api_models.update_model_settings(_FakeRequest(headers={'X-Admin-Token': 'wrong'})))
+
+    assert exc_info.value.status_code == 403
+    detail = exc_info.value.detail
+    assert '不正' in detail

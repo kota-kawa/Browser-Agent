@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from typing import Annotated
+
 # JP: エージェントの制御系 API
 # EN: Control endpoints for the agent
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from ..core.config import logger
 from ..core.exceptions import AgentControllerError
 from ..services.agent_runtime import get_controller_if_initialized, get_existing_controller
 from ..services.history_store import _reset_history
+from .admin_auth import require_admin_api_token
 
 router = APIRouter()
 
@@ -16,7 +19,7 @@ router = APIRouter()
 # EN: Define function `reset_conversation`.
 # JP: 関数 `reset_conversation` を定義する。
 @router.post('/api/reset')
-def reset_conversation() -> JSONResponse:
+def reset_conversation(_admin: Annotated[None, Depends(require_admin_api_token)] = None) -> JSONResponse:
 	# JP: 既存セッションをリセットし、履歴も初期化
 	# EN: Reset controller (if any) and clear history
 	controller = get_controller_if_initialized()
@@ -51,7 +54,7 @@ def reset_conversation() -> JSONResponse:
 # EN: Define function `pause_agent`.
 # JP: 関数 `pause_agent` を定義する。
 @router.post('/api/pause')
-def pause_agent() -> JSONResponse:
+def pause_agent(_admin: Annotated[None, Depends(require_admin_api_token)] = None) -> JSONResponse:
 	# JP: 実行中のエージェントを一時停止
 	# EN: Pause a running agent
 	try:
@@ -68,7 +71,7 @@ def pause_agent() -> JSONResponse:
 # EN: Define function `resume_agent`.
 # JP: 関数 `resume_agent` を定義する。
 @router.post('/api/resume')
-def resume_agent() -> JSONResponse:
+def resume_agent(_admin: Annotated[None, Depends(require_admin_api_token)] = None) -> JSONResponse:
 	# JP: 一時停止中のエージェントを再開
 	# EN: Resume a paused agent
 	try:

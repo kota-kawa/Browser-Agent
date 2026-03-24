@@ -97,12 +97,15 @@ cp secrets.env.example secrets.env
 Edit `secrets.env` and set keys such as `GOOGLE_API_KEY` or `OPENAI_API_KEY`.
 You can also set `LLM_MONTHLY_API_LIMIT` (default: `1000`) in either `secrets.env` or `.env` to cap LLM API requests per month.
 Input/output caps are configurable with `LLM_INPUT_MAX_CHARS` (default: `10000`) and `LLM_MAX_OUTPUT_TOKENS` (default: `5000`).
+Set `ADMIN_API_TOKEN` to protect admin endpoints (`/api/agent-relay`, `/api/reset`, `/api/pause`, `/api/resume`, `/webarena/*`, `/model_settings`).
+For custom WebArena tasks, configure `WEBARENA_ALLOWED_CUSTOM_TASK_DOMAINS` to the domains you explicitly allow.
 
 ### 3. Start the stack
 ```bash
 docker network create multi_agent_platform_net
 docker compose up --build
 ```
+Note: browser debug ports are bound to localhost only (`127.0.0.1:4444`, `127.0.0.1:7900`) to prevent external CDP/VNC takeover.
 
 ### 4. Open the UI
 Visit **http://localhost:5005** in your browser.
@@ -121,6 +124,7 @@ Use the **WebArena** tab in the UI or call the API endpoints below.
 - `POST /api/chat`: Send a task to the agent.
 - `GET /api/stream`: Subscribe to the event stream.
 - `POST /webarena/run`: Run a specific WebArena task.
+- Admin-only endpoints require `X-Admin-Token: <ADMIN_API_TOKEN>` (or `Authorization: Bearer <ADMIN_API_TOKEN>`).
 
 ## ✅ Testing
 
@@ -266,12 +270,15 @@ cp secrets.env.example secrets.env
 `secrets.env` を編集し、`GOOGLE_API_KEY` や `OPENAI_API_KEY` を設定してください。
 `LLM_MONTHLY_API_LIMIT`（デフォルト: `1000`）を `secrets.env` または `.env` に設定すると、LLM API呼び出しを月次で制限できます。
 `LLM_INPUT_MAX_CHARS`（デフォルト: `10000`）と `LLM_MAX_OUTPUT_TOKENS`（デフォルト: `5000`）で入力/出力上限も調整できます。
+`ADMIN_API_TOKEN` を設定すると、管理者向けエンドポイント（`/api/agent-relay`, `/api/reset`, `/api/pause`, `/api/resume`, `/webarena/*`, `/model_settings`）を保護できます。
+WebArena の custom task では、`WEBARENA_ALLOWED_CUSTOM_TASK_DOMAINS` に許可ドメインのみを設定してください。
 
 ### 3. 起動
 ```bash
 docker network create multi_agent_platform_net
 docker compose up --build
 ```
+補足: ブラウザのデバッグ用ポートは外部公開せず、localhost のみにバインドされています（`127.0.0.1:4444`, `127.0.0.1:7900`）。
 
 ### 4. UIを開く
 **http://localhost:5005** にアクセスします。
@@ -290,6 +297,7 @@ UIの **WebArena** タブ、またはAPIから実行できます。
 - `POST /api/chat`: エージェントにタスクを送信します。
 - `GET /api/stream`: イベントストリームを購読します。
 - `POST /webarena/run`: WebArenaの特定タスクを実行します。
+- 管理者向けエンドポイントは `X-Admin-Token: <ADMIN_API_TOKEN>`（または `Authorization: Bearer <ADMIN_API_TOKEN>`）が必要です。
 
 ## ✅ テスト実行
 

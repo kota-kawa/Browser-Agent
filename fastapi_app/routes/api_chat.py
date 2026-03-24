@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Annotated, Any
 
 # JP: チャット/フォローアップの API
 # EN: Chat and follow-up API endpoints
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
 from ..core.config import logger
@@ -21,6 +21,7 @@ from ..services.history_store import (
 	_update_history_message,
 )
 from ..services.input_guard import InputGuardError, check_prompt_safety
+from .admin_auth import require_admin_api_token
 from .utils import is_prompt_too_long, read_json_payload
 
 router = APIRouter()
@@ -350,7 +351,10 @@ async def chat(request: Request) -> JSONResponse:
 # EN: Define async function `agent_relay`.
 # JP: 非同期関数 `agent_relay` を定義する。
 @router.post('/api/agent-relay')
-async def agent_relay(request: Request) -> JSONResponse:
+async def agent_relay(
+	request: Request,
+	_admin: Annotated[None, Depends(require_admin_api_token)] = None,
+) -> JSONResponse:
 	"""
 	Endpoint for receiving requests from external agents without updating the main chat history.
 	Expected JSON payload:

@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
+
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 
 # JP: モデル選択/ビジョン設定の API
 # EN: Endpoints for model selection and vision settings
 from browser_use.model_selection import apply_model_selection, update_override
-from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
 
 from ..core.config import logger
 from ..core.models import SUPPORTED_MODELS
@@ -20,6 +22,7 @@ from ..services.agent_runtime import (
 	vision_state,
 )
 from ..services.history_store import _broadcaster
+from .admin_auth import require_admin_api_token
 from .utils import read_json_payload
 
 router = APIRouter()
@@ -74,13 +77,18 @@ async def update_model_settings(request: Request) -> JSONResponse:
 
 	# JP: モデル設定を保存し、必要ならコントローラーを更新
 	# EN: Persist model settings and refresh controller if needed
+	require_admin_api_token(
+		x_admin_token=request.headers.get('X-Admin-Token'),
+		authorization=request.headers.get('Authorization'),
+	)
+
 	payload = await read_json_payload(request)
 	selection = payload if isinstance(payload, dict) else {}
 	applied: dict[str, Any] | None = None
 	try:
 		# Save selection to local_model_settings.json for persistence
 		local_path = Path('local_model_settings.json')
-		with open(local_path, 'w', encoding='utf-8') as f:
+		with os.fdopen(os.open(local_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w', encoding='utf-8') as f:
 			json.dump(selection, f, ensure_ascii=False, indent=2)
 
 		applied = update_override(selection if selection else None)

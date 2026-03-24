@@ -5,6 +5,7 @@ import json
 import logging
 import math
 import os
+import shlex
 import statistics
 import string
 import subprocess
@@ -12,6 +13,7 @@ import urllib.error
 import urllib.request
 from contextlib import suppress
 from difflib import SequenceMatcher
+from ipaddress import ip_address
 from typing import TYPE_CHECKING, Any, Mapping, Sequence, TypedDict, cast
 from urllib.parse import urlparse
 
@@ -24,8 +26,8 @@ from starlette.responses import Response
 
 from fastapi_app.core.config import APP_TEMPLATE_DIR
 from fastapi_app.core.env import _BROWSER_URL, _LLM_INPUT_MAX_CHARS, _WEBARENA_MAX_STEPS, _normalize_start_url
-from fastapi_app.services.formatting import _format_history_messages
 from fastapi_app.routes.utils import is_prompt_too_long, read_json_payload
+from fastapi_app.services.formatting import _format_history_messages
 
 from . import router
 
@@ -35,7 +37,6 @@ templates = Jinja2Templates(directory=str(APP_TEMPLATE_DIR))
 
 if TYPE_CHECKING:
 	from browser_use.agent.views import AgentHistoryList
-
 	from fastapi_app.services.agent_controller import BrowserAgentController
 
 
@@ -111,6 +112,14 @@ def _load_tasks() -> tuple[list[WebArenaTask], list[WebArenaTask]]:
 
 ALL_WEBARENA_TASKS, WEBARENA_TASKS = _load_tasks()
 
+_DEFAULT_ALLOWED_CUSTOM_TASK_DOMAINS = {'shopping', 'shopping_admin', 'gitlab', 'forum', 'wikipedia'}
+_METADATA_IPS = {'169.254.169.254', '169.254.170.2', '100.100.100.200'}
+_METADATA_HOSTNAMES = {
+	'metadata',
+	'metadata.google.internal',
+	'instance-data',
+}
+
 # JP: 外部環境の状態を戻すための任意リセットフック
 # EN: Optional reset hooks for external environment state
 RESET_COMMAND = os.getenv(
@@ -126,6 +135,94 @@ if not RESET_COMMAND and not os.getenv('WEBARENA_RESET_URL'):
 		logger.info(f'Configured default WebArena reset command: {RESET_COMMAND}')
 
 RESET_URL = os.getenv('WEBARENA_RESET_URL')  # e.g., "http://localhost:7000/reset"
+
+
+# EN: Define function `_parse_allowed_custom_task_domains`.
+# JP: 関数 `_parse_allowed_custom_task_domains` を定義する。
+def _parse_allowed_custom_task_domains() -> set[str]:
+	# JP: 環境変数から許可ドメイン一覧を作成（未設定時は安全な既定値）
+	# EN: Parse allowed domains from env (fallback to safe defaults)
+	raw = os.getenv('WEBARENA_ALLOWED_CUSTOM_TASK_DOMAINS', '')
+	entries = {entry.strip().lower().rstrip('.') for entry in raw.split(',') if entry.strip()}
+	if entries:
+		return entries
+	return set(_DEFAULT_ALLOWED_CUSTOM_TASK_DOMAINS)
+
+
+# EN: Define function `_is_blocked_hostname`.
+# JP: 関数 `_is_blocked_hostname` を定義する。
+def _is_blocked_hostname(hostname: str) -> bool:
+	# JP: localhost/内部IP/metadata等の危険宛先を拒否
+	# EN: Block localhost/private/metadata destinations
+	host = hostname.lower().rstrip('.')
+
+	if host in {'localhost', 'localhost.localdomain'}:
+		return True
+
+	if host in _METADATA_IPS:
+		return True
+	if host in _METADATA_HOSTNAMES:
+		return True
+
+	try:
+		addr = ip_address(host)
+	except ValueError:
+		addr = None
+
+	if addr is not None:
+		if (
+			addr.is_loopback
+			or addr.is_private
+			or addr.is_link_local
+			or addr.is_multicast
+			or addr.is_reserved
+			or addr.is_unspecified
+		):
+			return True
+		return str(addr) in _METADATA_IPS
+
+	if host.endswith('.local'):
+		return True
+
+	return False
+
+
+# EN: Define function `_is_hostname_allowed`.
+# JP: 関数 `_is_hostname_allowed` を定義する。
+def _is_hostname_allowed(hostname: str, allowed_domains: set[str]) -> bool:
+	host = hostname.lower().rstrip('.')
+	return any(host == domain or host.endswith(f'.{domain}') for domain in allowed_domains)
+
+
+# EN: Define function `_validate_custom_start_url`.
+# JP: 関数 `_validate_custom_start_url` を定義する。
+def _validate_custom_start_url(value: Any) -> str:
+	# JP: custom_task.start_url の安全性を検証して正規化URLを返す
+	# EN: Validate custom_task.start_url and return a normalized URL
+	if not isinstance(value, str) or not value.strip():
+		raise ValueError('custom_task.start_url を指定してください。')
+
+	normalized = _normalize_start_url(value)
+	if not normalized:
+		raise ValueError('custom_task.start_url が不正です。')
+
+	parsed = urlparse(normalized)
+	scheme = parsed.scheme.lower()
+	if scheme not in {'http', 'https'}:
+		raise ValueError('custom_task.start_url は http/https のみ許可されています。')
+
+	hostname = (parsed.hostname or '').strip()
+	if not hostname:
+		raise ValueError('custom_task.start_url のホスト名が不正です。')
+
+	if _is_blocked_hostname(hostname):
+		raise ValueError('custom_task.start_url に内部ネットワーク宛先は指定できません。')
+
+	allowed_domains = _parse_allowed_custom_task_domains()
+	if not _is_hostname_allowed(hostname, allowed_domains):
+		raise ValueError('custom_task.start_url のドメインが許可リストにありません。')
+
+	return normalized
 
 
 # EN: Define function `_build_default_env_urls`.
@@ -281,10 +378,14 @@ def _reset_state(
 		except Exception as e:
 			logger.warning('External reset via URL failed: %s', e)
 	elif RESET_COMMAND:
-		cmd = RESET_COMMAND.format(sites=sites_csv)
+		formatted = RESET_COMMAND.format(sites=sites_csv)
+		cmd_parts = shlex.split(formatted)
+		if not cmd_parts:
+			logger.warning('External reset command is empty after parsing.')
+			return
 		try:
-			subprocess.run(cmd, shell=True, check=True, timeout=300)
-			logger.info('Executed reset command: %s', cmd)
+			subprocess.run(cmd_parts, check=True, timeout=300)
+			logger.info('Executed reset command: %s', ' '.join(cmd_parts))
 		except Exception as e:
 			logger.warning('External reset command failed: %s', e)
 	else:
@@ -709,10 +810,15 @@ async def run_task(request: Request) -> JSONResponse:
 		if custom_task:
 			# JP: custom_task はフィルタせずそのまま単発実行
 			# EN: Execute custom ad-hoc task directly without task-list filtering
+			try:
+				safe_start_url = _validate_custom_start_url(custom_task.get('start_url'))
+			except ValueError as exc:
+				return JSONResponse({'error': str(exc)}, status_code=400)
+
 			temp_task = {
 				'task_id': 'custom',
 				'intent': custom_task.get('intent'),
-				'start_url': custom_task.get('start_url'),
+				'start_url': safe_start_url,
 				'require_login': False,
 			}
 			payload = _run_single_task(temp_task, controller, env_urls_override, start_override)
@@ -803,11 +909,13 @@ async def run_batch(request: Request) -> JSONResponse:
 	# EN: Persist batch results to disk
 	try:
 		output_dir = 'webarena_data'
-		if not os.path.exists(output_dir):
-			os.makedirs(output_dir)
+		try:
+			os.mkdir(output_dir)
+		except FileExistsError:
+			pass
 
 		output_file = os.path.join(output_dir, 'results.json')
-		with open(output_file, 'w', encoding='utf-8') as f:
+		with os.fdopen(os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w', encoding='utf-8') as f:
 			json.dump({**response_data, 'timestamp': datetime.datetime.now().isoformat()}, f, ensure_ascii=False, indent=2)
 		logger.info('Saved batch results to %s', output_file)
 	except Exception as e:
@@ -854,11 +962,13 @@ async def save_results(request: Request) -> JSONResponse:
 
 	try:
 		output_dir = 'webarena_data'
-		if not os.path.exists(output_dir):
-			os.makedirs(output_dir)
+		try:
+			os.mkdir(output_dir)
+		except FileExistsError:
+			pass
 
 		output_file = os.path.join(output_dir, 'results.json')
-		with open(output_file, 'w', encoding='utf-8') as f:
+		with os.fdopen(os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w', encoding='utf-8') as f:
 			json.dump({**response_data, 'timestamp': datetime.datetime.now().isoformat()}, f, ensure_ascii=False, indent=2)
 		logger.info('Saved batch results to %s', output_file)
 		return JSONResponse({'success': True, 'path': output_file})
