@@ -47,4 +47,4 @@ if __name__ == '__main__':
 
 	# JP: 直接起動時のデフォルト設定
 	# EN: Default settings for direct execution
-	uvicorn.run('fastapi_app.app:app', host='0.0.0.0', port=5005, reload=False)
+	uvicorn.run('fastapi_app.app:app', host='0.0.0.0', port=5007, reload=False)
