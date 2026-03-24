@@ -5,9 +5,10 @@ from typing import Any
 
 # JP: 履歴取得と SSE ストリーミング API
 # EN: History retrieval and SSE streaming endpoints
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 
+from ..services.endpoint_guards import ip_rate_limit_guard
 from ..services.history_store import _broadcaster, _copy_history
 
 router = APIRouter()
@@ -16,18 +17,26 @@ router = APIRouter()
 # EN: Define function `history`.
 # JP: 関数 `history` を定義する。
 @router.get('/api/history')
-def history() -> JSONResponse:
+def history(request: Request) -> JSONResponse:
 	# JP: 現在の履歴スナップショットを返す
 	# EN: Return a snapshot of current history
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	return JSONResponse({'messages': _copy_history()})
 
 
 # EN: Define function `stream`.
 # JP: 関数 `stream` を定義する。
 @router.get('/api/stream')
-def stream() -> StreamingResponse:
+def stream(request: Request) -> Response:
 	# JP: SSE でイベントを配信（UI へ進捗通知）
 	# EN: Stream events via SSE for UI updates
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	listener = _broadcaster.subscribe()
 
 	# EN: Define function `event_stream`.

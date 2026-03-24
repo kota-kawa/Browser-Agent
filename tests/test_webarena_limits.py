@@ -11,6 +11,7 @@ class _FakeRequest:
     # JP: 関数 `__init__` を定義する。
     def __init__(self, payload):
         self._payload = payload
+        self.client = type("C", (), {"host": "127.0.0.1"})()
 
     # EN: Define async function `json`.
     # JP: 非同期関数 `json` を定義する。
@@ -46,9 +47,30 @@ def test_webarena_run_rejects_too_long_custom_intent(monkeypatch):
     fake_runtime = _types.ModuleType("fastapi_app.services.agent_runtime")
     fake_runtime.get_agent_controller = lambda: _FakeController()
     monkeypatch.setitem(sys.modules, "fastapi_app.services.agent_runtime", fake_runtime)
+    monkeypatch.setattr(webarena_routes, "_RUNTIME_SLOT_GUARD", type("G", (), {"acquire": lambda self: True, "release": lambda self: None})())
+    monkeypatch.setattr(webarena_routes, "ip_rate_limit_guard", lambda _request: None)
 
     req = _FakeRequest({"custom_task": {"intent": "abcdef"}})
     res = asyncio.run(webarena_routes.run_task(req))
     assert res.status_code == 400
     payload = json.loads(res.body.decode("utf-8"))
     assert "5" in payload.get("error", "")
+
+
+# EN: Define function `test_webarena_run_rejects_when_runtime_slot_unavailable`.
+# JP: 関数 `test_webarena_run_rejects_when_runtime_slot_unavailable` を定義する。
+def test_webarena_run_rejects_when_runtime_slot_unavailable(monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "admin-secret")
+    monkeypatch.setattr(webarena_routes, "_RUNTIME_SLOT_GUARD", type("G", (), {"acquire": lambda self: False, "release": lambda self: None})())
+
+    import sys
+    import types as _types
+
+    fake_runtime = _types.ModuleType("fastapi_app.services.agent_runtime")
+    fake_runtime.get_agent_controller = lambda: _FakeController()
+    monkeypatch.setitem(sys.modules, "fastapi_app.services.agent_runtime", fake_runtime)
+    monkeypatch.setattr(webarena_routes, "ip_rate_limit_guard", lambda _request: None)
+
+    req = _FakeRequest({"custom_task": {"intent": "valid", "start_url": "https://shopping"}})
+    res = asyncio.run(webarena_routes.run_task(req))
+    assert res.status_code == 429

@@ -11,6 +11,7 @@ class _FakeRequest:
     # JP: 関数 `__init__` を定義する。
     def __init__(self, payload):
         self._payload = payload
+        self.client = type("C", (), {"host": "127.0.0.1"})()
 
     # EN: Define async function `json`.
     # JP: 非同期関数 `json` を定義する。
@@ -28,7 +29,8 @@ def _body(response):
 # JP: 関数 `test_get_user_profile` を定義する。
 def test_get_user_profile(monkeypatch):
     monkeypatch.setattr(api_user_profile, "load_user_profile", lambda: "profile")
-    response = api_user_profile.get_user_profile()
+    monkeypatch.setattr(api_user_profile, "ip_rate_limit_guard", lambda _request: None)
+    response = api_user_profile.get_user_profile(_FakeRequest({}))
     assert response.status_code == 200
     assert _body(response) == {"text": "profile"}
 
@@ -42,6 +44,7 @@ def test_update_user_profile_requires_text(monkeypatch):
         return {}
 
     monkeypatch.setattr(api_user_profile, "read_json_payload", _fake_read_payload)
+    monkeypatch.setattr(api_user_profile, "ip_rate_limit_guard", lambda _request: None)
     response = asyncio.run(api_user_profile.update_user_profile(_FakeRequest({})))
     assert response.status_code == 400
     assert "text" in _body(response)["error"]
@@ -57,8 +60,21 @@ def test_update_user_profile_success(monkeypatch):
 
     monkeypatch.setattr(api_user_profile, "read_json_payload", _fake_read_payload)
     monkeypatch.setattr(api_user_profile, "save_user_profile", lambda text: f"saved:{text}")
+    monkeypatch.setattr(api_user_profile, "ip_rate_limit_guard", lambda _request: None)
 
     response = asyncio.run(api_user_profile.update_user_profile(_FakeRequest({"text": "value"})))
     assert response.status_code == 200
     assert _body(response) == {"status": "ok", "text": "saved:value"}
 
+
+# EN: Define function `test_get_user_profile_returns_429_when_rate_limited`.
+# JP: 関数 `test_get_user_profile_returns_429_when_rate_limited` を定義する。
+def test_get_user_profile_returns_429_when_rate_limited(monkeypatch):
+    monkeypatch.setattr(
+        api_user_profile,
+        "ip_rate_limit_guard",
+        lambda _request: api_user_profile.JSONResponse({"error": "limited"}, status_code=429),
+    )
+    response = api_user_profile.get_user_profile(_FakeRequest({}))
+    assert response.status_code == 429
+    assert _body(response)["error"] == "limited"

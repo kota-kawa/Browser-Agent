@@ -142,6 +142,9 @@ class _FakeController:
         additional_system_message=None,
     ):
         if background:
+            self._running = True
+            if completion_callback is not None:
+                completion_callback(_FakeRunResult())
             return None
         return _FakeRunResult()
 
@@ -163,6 +166,7 @@ class _FakeRequest:
     # JP: 関数 `__init__` を定義する。
     def __init__(self, payload):
         self._payload = payload
+        self.client = type("C", (), {"host": "127.0.0.1"})()
 
     # EN: Define async function `json`.
     # JP: 非同期関数 `json` を定義する。
@@ -180,6 +184,8 @@ def controller(monkeypatch):
         return types.SimpleNamespace(is_safe=True, categories=())
 
     monkeypatch.setattr(api_chat, "get_agent_controller", lambda: _FakeController())
+    monkeypatch.setattr(api_chat, "_RUNTIME_SLOT_GUARD", type("G", (), {"acquire": lambda self: True, "release": lambda self: None})())
+    monkeypatch.setattr(api_chat, "ip_rate_limit_guard", lambda _request: None)
     monkeypatch.setattr(api_chat, "check_prompt_safety", _safe_prompt)
     monkeypatch.setattr(
         api_chat,
@@ -244,3 +250,28 @@ def test_api_agent_relay_rejects_too_long_prompt(controller, monkeypatch):
     assert res.status_code == 400
     body = json.loads(res.body.decode("utf-8"))
     assert "5" in body.get("error", "")
+
+
+# EN: Define function `test_api_chat_rejects_when_runtime_slot_unavailable`.
+# JP: 関数 `test_api_chat_rejects_when_runtime_slot_unavailable` を定義する。
+def test_api_chat_rejects_when_runtime_slot_unavailable(controller, monkeypatch):
+    class _BusyGuard:
+        def acquire(self):
+            return False
+
+        def release(self):
+            return None
+
+    monkeypatch.setattr(api_chat, "_RUNTIME_SLOT_GUARD", _BusyGuard())
+    request = _FakeRequest({"prompt": "hello", "new_task": True, "skip_conversation_review": True})
+    res = asyncio.run(api_chat.chat(request))
+    assert res.status_code == 429
+
+
+# EN: Define function `test_api_chat_rejects_when_rate_limited`.
+# JP: 関数 `test_api_chat_rejects_when_rate_limited` を定義する。
+def test_api_chat_rejects_when_rate_limited(controller, monkeypatch):
+    monkeypatch.setattr(api_chat, "ip_rate_limit_guard", lambda _request: api_chat.JSONResponse({"error": "limited"}, status_code=429))
+    request = _FakeRequest({"prompt": "hello"})
+    res = asyncio.run(api_chat.chat(request))
+    assert res.status_code == 429

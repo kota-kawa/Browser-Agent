@@ -3,6 +3,7 @@ import importlib
 import threading
 
 import pytest
+
 from browser_use.llm.exceptions import ModelRateLimitError
 
 
@@ -23,7 +24,16 @@ class _DummyLLM:
 
 	async def ainvoke(self, messages, output_format=None):
 		self.calls += 1
-		return _DummyCompletion("ok")
+		completion = _DummyCompletion('ok')
+		completion.usage = type(
+			'U',
+			(),
+			{
+				'total_tokens': 50,
+				'completion_tokens': 20,
+			},
+		)()
+		return completion
 
 
 # EN: Define function `test_monthly_limit_blocks_after_limit`.
@@ -145,3 +155,70 @@ def test_check_and_increment_is_thread_safe_shape():
 	)
 	limit_mod._check_and_increment(state, 'dummy')
 	assert state.count == 1
+
+
+# EN: Define function `test_daily_api_limit_blocks_after_limit`.
+# JP: 関数 `test_daily_api_limit_blocks_after_limit` を定義する。
+def test_daily_api_limit_blocks_after_limit(monkeypatch):
+	monkeypatch.setenv('LLM_MONTHLY_API_LIMIT', '9999')
+	monkeypatch.setenv('LLM_DAILY_API_LIMIT', '1')
+	monkeypatch.setenv('LLM_DAILY_TOKEN_LIMIT', '999999')
+	monkeypatch.setenv('LLM_DAILY_BUDGET_USD', '999')
+
+	import fastapi_app.core.env as env_mod
+	import fastapi_app.services.llm_daily_limit as limit_mod
+
+	env_mod = importlib.reload(env_mod)
+	limit_mod = importlib.reload(limit_mod)
+	limit_mod._STATE = None
+	limit_mod._DAILY_STATE = None
+
+	llm = limit_mod.apply_monthly_llm_limit(_DummyLLM())
+	asyncio.run(llm.ainvoke([]))
+	with pytest.raises(ModelRateLimitError):
+		asyncio.run(llm.ainvoke([]))
+
+
+# EN: Define function `test_daily_token_limit_blocks_after_limit`.
+# JP: 関数 `test_daily_token_limit_blocks_after_limit` を定義する。
+def test_daily_token_limit_blocks_after_limit(monkeypatch):
+	monkeypatch.setenv('LLM_MONTHLY_API_LIMIT', '9999')
+	monkeypatch.setenv('LLM_DAILY_API_LIMIT', '9999')
+	monkeypatch.setenv('LLM_DAILY_TOKEN_LIMIT', '80')
+	monkeypatch.setenv('LLM_DAILY_BUDGET_USD', '999')
+
+	import fastapi_app.core.env as env_mod
+	import fastapi_app.services.llm_daily_limit as limit_mod
+
+	env_mod = importlib.reload(env_mod)
+	limit_mod = importlib.reload(limit_mod)
+	limit_mod._STATE = None
+	limit_mod._DAILY_STATE = None
+
+	llm = limit_mod.apply_monthly_llm_limit(_DummyLLM())
+	asyncio.run(llm.ainvoke([]))
+	with pytest.raises(ModelRateLimitError):
+		asyncio.run(llm.ainvoke([]))
+
+
+# EN: Define function `test_daily_budget_limit_blocks_after_limit`.
+# JP: 関数 `test_daily_budget_limit_blocks_after_limit` を定義する。
+def test_daily_budget_limit_blocks_after_limit(monkeypatch):
+	monkeypatch.setenv('LLM_MONTHLY_API_LIMIT', '9999')
+	monkeypatch.setenv('LLM_DAILY_API_LIMIT', '9999')
+	monkeypatch.setenv('LLM_DAILY_TOKEN_LIMIT', '999999')
+	monkeypatch.setenv('LLM_DAILY_BUDGET_USD', '0.0001')
+	monkeypatch.setenv('LLM_ESTIMATED_INPUT_USD_PER_1K', '1')
+	monkeypatch.setenv('LLM_ESTIMATED_OUTPUT_USD_PER_1K', '1')
+
+	import fastapi_app.core.env as env_mod
+	import fastapi_app.services.llm_daily_limit as limit_mod
+
+	env_mod = importlib.reload(env_mod)
+	limit_mod = importlib.reload(limit_mod)
+	limit_mod._STATE = None
+	limit_mod._DAILY_STATE = None
+
+	llm = limit_mod.apply_monthly_llm_limit(_DummyLLM())
+	with pytest.raises(ModelRateLimitError):
+		asyncio.run(llm.ainvoke([]))

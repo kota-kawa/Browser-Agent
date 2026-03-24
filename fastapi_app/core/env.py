@@ -31,6 +31,41 @@ def _env_int(name: str, default: int) -> int:
 		return default
 
 
+# EN: Define function `_env_float`.
+# JP: 関数 `_env_float` を定義する。
+def _env_float(name: str, default: float) -> float:
+	"""Return a float environment variable with a fallback."""
+
+	raw_value = os.environ.get(name)
+	if raw_value is None:
+		return default
+	try:
+		parsed = float(raw_value)
+		return parsed if parsed > 0 else default
+	except ValueError:
+		logger.warning('環境変数%sの値が無効のため既定値を使用します: %s', name, raw_value)
+		return default
+
+
+# EN: Define function `_env_bool`.
+# JP: 関数 `_env_bool` を定義する。
+def _env_bool(name: str, default: bool) -> bool:
+	"""Return a boolean environment variable with a fallback."""
+
+	raw_value = os.environ.get(name)
+	if raw_value is None:
+		return default
+
+	normalized = raw_value.strip().lower()
+	if normalized in {'1', 'true', 't', 'yes', 'y', 'on'}:
+		return True
+	if normalized in {'0', 'false', 'f', 'no', 'n', 'off'}:
+		return False
+
+	logger.warning('環境変数%sの値が無効のため既定値を使用します: %s', name, raw_value)
+	return default
+
+
 _DEFAULT_EMBED_BROWSER_URL = 'http://127.0.0.1:7900/vnc_lite.html?autoconnect=1&resize=scale&scale=auto&view_clip=false'
 _ALLOWED_RESIZE_VALUES = {'scale', 'remote', 'off'}
 
@@ -129,5 +164,16 @@ _AGENT_MAX_STEPS = _env_int('AGENT_MAX_STEPS', 20)
 _WEBARENA_MAX_STEPS = _env_int('WEBARENA_AGENT_MAX_STEPS', 20)
 _CONVERSATION_CONTEXT_WINDOW = _env_int('CONVERSATION_CONTEXT_WINDOW', 10)
 _LLM_MONTHLY_API_LIMIT = _env_int('LLM_MONTHLY_API_LIMIT', 1000)
+_LLM_DAILY_API_LIMIT = _env_int('LLM_DAILY_API_LIMIT', 300)
+_LLM_DAILY_TOKEN_LIMIT = _env_int('LLM_DAILY_TOKEN_LIMIT', 300000)
+_LLM_DAILY_BUDGET_USD = _env_float('LLM_DAILY_BUDGET_USD', 10.0)
+_LLM_ESTIMATED_INPUT_USD_PER_1K = _env_float('LLM_ESTIMATED_INPUT_USD_PER_1K', 0.002)
+_LLM_ESTIMATED_OUTPUT_USD_PER_1K = _env_float('LLM_ESTIMATED_OUTPUT_USD_PER_1K', 0.006)
 _LLM_INPUT_MAX_CHARS = _env_int('LLM_INPUT_MAX_CHARS', 10000)
 _LLM_MAX_OUTPUT_TOKENS = _env_int('LLM_MAX_OUTPUT_TOKENS', 5000)
+_AGENT_MAX_CONCURRENT_RUNS = _env_int('AGENT_MAX_CONCURRENT_RUNS', 1)
+_AGENT_STEP_TIMEOUT_SECONDS = _env_int('AGENT_STEP_TIMEOUT_SECONDS', 90)
+_AGENT_RUN_TIMEOUT_SECONDS = _env_int('AGENT_RUN_TIMEOUT_SECONDS', 900)
+_IP_RATE_LIMIT_REQUESTS = _env_int('IP_RATE_LIMIT_REQUESTS', 120)
+_IP_RATE_LIMIT_WINDOW_SECONDS = _env_int('IP_RATE_LIMIT_WINDOW_SECONDS', 60)
+_IP_RATE_LIMIT_TRUST_PROXY_HEADERS = _env_bool('IP_RATE_LIMIT_TRUST_PROXY_HEADERS', False)

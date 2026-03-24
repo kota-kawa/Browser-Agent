@@ -1,6 +1,8 @@
 from urllib.parse import parse_qs, urlparse
 
 from fastapi_app.core.env import (
+    _env_bool,
+    _env_float,
     _env_int,
     _get_env_trimmed,
     _normalize_embed_browser_url,
@@ -25,6 +27,38 @@ def test_env_int_uses_default_for_missing_or_invalid(monkeypatch):
 
     monkeypatch.setenv("X_INT", "12")
     assert _env_int("X_INT", 7) == 12
+
+
+# EN: Define function `test_env_float_uses_default_for_missing_or_invalid`.
+# JP: 関数 `test_env_float_uses_default_for_missing_or_invalid` を定義する。
+def test_env_float_uses_default_for_missing_or_invalid(monkeypatch):
+    monkeypatch.delenv("X_FLOAT", raising=False)
+    assert _env_float("X_FLOAT", 1.5) == 1.5
+
+    monkeypatch.setenv("X_FLOAT", "abc")
+    assert _env_float("X_FLOAT", 1.5) == 1.5
+
+    monkeypatch.setenv("X_FLOAT", "0")
+    assert _env_float("X_FLOAT", 1.5) == 1.5
+
+    monkeypatch.setenv("X_FLOAT", "2.25")
+    assert _env_float("X_FLOAT", 1.5) == 2.25
+
+
+# EN: Define function `test_env_bool_uses_default_for_missing_or_invalid`.
+# JP: 関数 `test_env_bool_uses_default_for_missing_or_invalid` を定義する。
+def test_env_bool_uses_default_for_missing_or_invalid(monkeypatch):
+    monkeypatch.delenv("X_BOOL", raising=False)
+    assert _env_bool("X_BOOL", True) is True
+
+    monkeypatch.setenv("X_BOOL", "false")
+    assert _env_bool("X_BOOL", True) is False
+
+    monkeypatch.setenv("X_BOOL", "1")
+    assert _env_bool("X_BOOL", False) is True
+
+    monkeypatch.setenv("X_BOOL", "invalid")
+    assert _env_bool("X_BOOL", False) is False
 
 
 # EN: Define function `test_normalize_embed_browser_url_adds_scale_and_resize_when_missing`.

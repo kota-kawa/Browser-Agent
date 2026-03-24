@@ -4,6 +4,15 @@ from fastapi_app.core.exceptions import AgentControllerError
 from fastapi_app.routes import api_controls
 
 
+# EN: Define class `_FakeRequest`.
+# JP: クラス `_FakeRequest` を定義する。
+class _FakeRequest:
+    # EN: Define function `__init__`.
+    # JP: 関数 `__init__` を定義する。
+    def __init__(self):
+        self.client = type("C", (), {"host": "127.0.0.1"})()
+
+
 # EN: Define class `_FakeController`.
 # JP: クラス `_FakeController` を定義する。
 class _FakeController:
@@ -57,8 +66,9 @@ def test_reset_conversation_success_without_controller(monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "admin-secret")
     monkeypatch.setattr(api_controls, "get_controller_if_initialized", lambda: None)
     monkeypatch.setattr(api_controls, "_reset_history", lambda: [{"id": 1, "content": "x"}])
+    monkeypatch.setattr(api_controls, "ip_rate_limit_guard", lambda _request: None)
 
-    response = api_controls.reset_conversation(_admin=None)
+    response = api_controls.reset_conversation(_FakeRequest(), _admin=None)
     assert response.status_code == 200
     assert _body(response)["messages"] == [{"id": 1, "content": "x"}]
 
@@ -69,8 +79,9 @@ def test_reset_conversation_returns_400_on_controller_error(monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "admin-secret")
     controller = _FakeController(reset_error=AgentControllerError("bad reset"))
     monkeypatch.setattr(api_controls, "get_controller_if_initialized", lambda: controller)
+    monkeypatch.setattr(api_controls, "ip_rate_limit_guard", lambda _request: None)
 
-    response = api_controls.reset_conversation(_admin=None)
+    response = api_controls.reset_conversation(_FakeRequest(), _admin=None)
     assert response.status_code == 400
     assert "bad reset" in _body(response)["error"]
 
@@ -82,8 +93,9 @@ def test_reset_conversation_normalizes_browser_state(monkeypatch):
     controller = _FakeController()
     monkeypatch.setattr(api_controls, "get_controller_if_initialized", lambda: controller)
     monkeypatch.setattr(api_controls, "_reset_history", lambda: [])
+    monkeypatch.setattr(api_controls, "ip_rate_limit_guard", lambda _request: None)
 
-    response = api_controls.reset_conversation(_admin=None)
+    response = api_controls.reset_conversation(_FakeRequest(), _admin=None)
     assert response.status_code == 200
     assert controller.ensure_start_page_ready_calls == 1
     assert controller.close_additional_tabs_calls == 1
@@ -95,9 +107,10 @@ def test_pause_and_resume_success(monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "admin-secret")
     controller = _FakeController()
     monkeypatch.setattr(api_controls, "get_existing_controller", lambda: controller)
+    monkeypatch.setattr(api_controls, "ip_rate_limit_guard", lambda _request: None)
 
-    pause_res = api_controls.pause_agent(_admin=None)
-    resume_res = api_controls.resume_agent(_admin=None)
+    pause_res = api_controls.pause_agent(_FakeRequest(), _admin=None)
+    resume_res = api_controls.resume_agent(_FakeRequest(), _admin=None)
 
     assert pause_res.status_code == 200
     assert _body(pause_res)["status"] == "paused"
@@ -111,13 +124,24 @@ def test_pause_and_resume_return_400_for_agent_controller_error(monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "admin-secret")
     pause_controller = _FakeController(pause_error=AgentControllerError("cant pause"))
     resume_controller = _FakeController(resume_error=AgentControllerError("cant resume"))
+    monkeypatch.setattr(api_controls, "ip_rate_limit_guard", lambda _request: None)
 
     monkeypatch.setattr(api_controls, "get_existing_controller", lambda: pause_controller)
-    pause_res = api_controls.pause_agent(_admin=None)
+    pause_res = api_controls.pause_agent(_FakeRequest(), _admin=None)
     assert pause_res.status_code == 400
     assert "cant pause" in _body(pause_res)["error"]
 
     monkeypatch.setattr(api_controls, "get_existing_controller", lambda: resume_controller)
-    resume_res = api_controls.resume_agent(_admin=None)
+    resume_res = api_controls.resume_agent(_FakeRequest(), _admin=None)
     assert resume_res.status_code == 400
     assert "cant resume" in _body(resume_res)["error"]
+
+
+# EN: Define function `test_pause_returns_429_when_rate_limited`.
+# JP: 関数 `test_pause_returns_429_when_rate_limited` を定義する。
+def test_pause_returns_429_when_rate_limited(monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "admin-secret")
+    monkeypatch.setattr(api_controls, "ip_rate_limit_guard", lambda _request: api_controls.JSONResponse({"error": "limited"}, status_code=429))
+    response = api_controls.pause_agent(_FakeRequest(), _admin=None)
+    assert response.status_code == 429
+    assert _body(response)["error"] == "limited"

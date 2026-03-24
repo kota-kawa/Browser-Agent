@@ -42,6 +42,7 @@ class _FakeRequest:
     # JP: 関数 `__init__` を定義する。
     def __init__(self, headers=None):
         self.headers = headers or {}
+        self.client = type("C", (), {"host": "127.0.0.1"})()
 
 
 # EN: Define function `_body`.
@@ -63,7 +64,8 @@ def test_get_models_returns_available_models_and_current_selection(monkeypatch):
         },
     )
 
-    response = api_models.get_models()
+    monkeypatch.setattr(api_models, "ip_rate_limit_guard", lambda _request: None)
+    response = api_models.get_models(_FakeRequest())
 
     assert response.status_code == 200
     payload = _body(response)
@@ -84,6 +86,7 @@ def test_set_vision_requires_enabled_flag(monkeypatch):
         return {}
 
     monkeypatch.setattr(api_models, 'read_json_payload', _fake_read_payload)
+    monkeypatch.setattr(api_models, "ip_rate_limit_guard", lambda _request: None)
 
     response = asyncio.run(api_models.set_vision(_FakeRequest()))
 
@@ -109,6 +112,7 @@ def test_set_vision_success(monkeypatch):
 
     monkeypatch.setattr(api_models, 'read_json_payload', _fake_read_payload)
     monkeypatch.setattr(api_models, 'set_vision_pref', lambda enabled: {**state, 'user_enabled': bool(enabled)})
+    monkeypatch.setattr(api_models, "ip_rate_limit_guard", lambda _request: None)
 
     response = asyncio.run(api_models.set_vision(_FakeRequest()))
 
@@ -144,6 +148,7 @@ def test_update_model_settings_success_updates_controller_and_notifies(monkeypat
     monkeypatch.setattr(api_models, '_broadcaster', broadcaster)
     monkeypatch.setattr(api_models, 'find_model_label', lambda provider, model: f'{provider}:{model}')
     monkeypatch.setattr(api_models, 'notify_platform', lambda payload: notify_calls.append(payload))
+    monkeypatch.setattr(api_models, "ip_rate_limit_guard", lambda _request: None)
 
     response = asyncio.run(api_models.update_model_settings(_FakeRequest(headers={'X-Admin-Token': 'admin-secret'})))
 
@@ -177,6 +182,7 @@ def test_update_model_settings_skips_notify_when_propagation_header_is_set(monke
     monkeypatch.setattr(api_models, 'get_controller_if_initialized', lambda: None)
     monkeypatch.setattr(api_models, '_broadcaster', _FakeBroadcaster())
     monkeypatch.setattr(api_models, 'find_model_label', lambda *_args, **_kwargs: 'label')
+    monkeypatch.setattr(api_models, "ip_rate_limit_guard", lambda _request: None)
 
     notify_calls = []
     monkeypatch.setattr(api_models, 'notify_platform', lambda payload: notify_calls.append(payload))
@@ -200,6 +206,7 @@ def test_update_model_settings_returns_500_on_error(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv('ADMIN_API_TOKEN', 'admin-secret')
     monkeypatch.setattr(api_models, 'read_json_payload', _fake_read_payload)
+    monkeypatch.setattr(api_models, "ip_rate_limit_guard", lambda _request: None)
 
     # Simulate a failure during apply/update.
     monkeypatch.setattr(api_models, 'update_override', lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError('boom')))
@@ -221,6 +228,7 @@ def test_update_model_settings_rejects_invalid_admin_token(monkeypatch, tmp_path
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv('ADMIN_API_TOKEN', 'admin-secret')
     monkeypatch.setattr(api_models, 'read_json_payload', _fake_read_payload)
+    monkeypatch.setattr(api_models, "ip_rate_limit_guard", lambda _request: None)
 
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(api_models.update_model_settings(_FakeRequest(headers={'X-Admin-Token': 'wrong'})))
@@ -228,3 +236,12 @@ def test_update_model_settings_rejects_invalid_admin_token(monkeypatch, tmp_path
     assert exc_info.value.status_code == 403
     detail = exc_info.value.detail
     assert '不正' in detail
+
+
+# EN: Define function `test_get_models_returns_429_when_rate_limited`.
+# JP: 関数 `test_get_models_returns_429_when_rate_limited` を定義する。
+def test_get_models_returns_429_when_rate_limited(monkeypatch):
+    monkeypatch.setattr(api_models, "ip_rate_limit_guard", lambda _request: api_models.JSONResponse({"error": "limited"}, status_code=429))
+    response = api_models.get_models(_FakeRequest())
+    assert response.status_code == 429
+    assert _body(response)["error"] == "limited"

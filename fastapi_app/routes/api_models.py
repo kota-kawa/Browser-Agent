@@ -21,6 +21,7 @@ from ..services.agent_runtime import (
 	set_vision_pref,
 	vision_state,
 )
+from ..services.endpoint_guards import ip_rate_limit_guard
 from ..services.history_store import _broadcaster
 from .admin_auth import require_admin_api_token
 from .utils import read_json_payload
@@ -31,9 +32,13 @@ router = APIRouter()
 # EN: Define function `get_models`.
 # JP: 関数 `get_models` を定義する。
 @router.get('/api/models')
-def get_models() -> JSONResponse:
+def get_models(request: Request) -> JSONResponse:
 	# JP: 選択可能なモデルと現在の選択を返す
 	# EN: Return available models and current selection
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	current = apply_model_selection('browser')
 	return JSONResponse(
 		{
@@ -46,11 +51,15 @@ def get_models() -> JSONResponse:
 # EN: Define function `get_vision`.
 # JP: 関数 `get_vision` を定義する。
 @router.get('/api/vision')
-def get_vision() -> JSONResponse:
+def get_vision(request: Request) -> JSONResponse:
 	"""Return current vision (screenshot) preference and effective status."""
 
 	# JP: Vision の設定と有効状態を返す
 	# EN: Return vision preference and effective status
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	return JSONResponse(vision_state())
 
 
@@ -60,6 +69,10 @@ def get_vision() -> JSONResponse:
 async def set_vision(request: Request) -> JSONResponse:
 	# JP: Vision の有効/無効を更新
 	# EN: Update vision preference
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	payload = await read_json_payload(request)
 	if not isinstance(payload, dict) or 'enabled' not in payload:
 		return JSONResponse({'error': 'enabled フラグを指定してください。'}, status_code=400)
@@ -77,6 +90,10 @@ async def update_model_settings(request: Request) -> JSONResponse:
 
 	# JP: モデル設定を保存し、必要ならコントローラーを更新
 	# EN: Persist model settings and refresh controller if needed
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	require_admin_api_token(
 		x_admin_token=request.headers.get('X-Admin-Token'),
 		authorization=request.headers.get('Authorization'),

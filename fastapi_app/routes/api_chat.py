@@ -13,6 +13,7 @@ from ..core.env import _CONVERSATION_CONTEXT_WINDOW, _LLM_INPUT_MAX_CHARS
 from ..core.exceptions import AgentControllerError
 from ..services.agent_runtime import finalize_summary, get_agent_controller
 from ..services.conversation_review import _analyze_conversation_history
+from ..services.endpoint_guards import ip_rate_limit_guard
 from ..services.formatting import _format_history_messages, _summarize_history
 from ..services.history_store import (
 	_append_history_message,
@@ -21,8 +22,9 @@ from ..services.history_store import (
 	_update_history_message,
 )
 from ..services.input_guard import InputGuardError, check_prompt_safety
+from ..services.runtime_limits import _RUNTIME_SLOT_GUARD
 from .admin_auth import require_admin_api_token
-from .utils import is_prompt_too_long, read_json_payload
+from .utils import is_prompt_too_long, read_json_payload, try_acquire_runtime_slot
 
 router = APIRouter()
 
@@ -72,6 +74,10 @@ def _build_recent_conversation_context(
 # JP: 非同期関数 `chat` を定義する。
 @router.post('/api/chat')
 async def chat(request: Request) -> JSONResponse:
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	payload = await read_json_payload(request)
 	prompt = (payload.get('prompt') or '').strip()
 	start_new_task = bool(payload.get('new_task'))
@@ -212,6 +218,16 @@ async def chat(request: Request) -> JSONResponse:
 
 	# EN: Define function `on_complete`.
 	# JP: 関数 `on_complete` を定義する。
+	slot_acquired = False
+
+	# EN: Define function `release_slot_once`.
+	# JP: 関数 `release_slot_once` を定義する。
+	def release_slot_once() -> None:
+		nonlocal slot_acquired
+		if slot_acquired:
+			slot_acquired = False
+			_RUNTIME_SLOT_GUARD.release()
+
 	def on_complete(result_or_error: Any) -> None:
 		try:
 			if isinstance(result_or_error, Exception):
@@ -300,6 +316,8 @@ async def chat(request: Request) -> JSONResponse:
 				)
 			except Exception:
 				logger.exception('Failed to report error in on_complete')
+		finally:
+			release_slot_once()
 
 	context_message = _build_recent_conversation_context(
 		_copy_history(),
@@ -307,6 +325,11 @@ async def chat(request: Request) -> JSONResponse:
 	)
 
 	try:
+		acquired, slot_error = try_acquire_runtime_slot(_RUNTIME_SLOT_GUARD)
+		if not acquired:
+			return slot_error
+		slot_acquired = True
+
 		# JP: 非同期で実行し、即座に 202 を返す
 		# EN: Run asynchronously and return 202 immediately
 		controller.run(
@@ -315,7 +338,10 @@ async def chat(request: Request) -> JSONResponse:
 			completion_callback=on_complete,
 			additional_system_message=context_message,
 		)
+		if not controller.is_running():
+			release_slot_once()
 	except AgentControllerError as exc:
+		release_slot_once()
 		message = finalize_summary(f'エージェントの実行に失敗しました: {exc}')
 		logger.warning(message)
 		_append_history_message('assistant', message)
@@ -330,6 +356,7 @@ async def chat(request: Request) -> JSONResponse:
 		)
 		return JSONResponse({'messages': _copy_history(), 'run_summary': message})
 	except Exception as exc:
+		release_slot_once()
 		logger.exception('Unexpected error while running browser agent')
 		error_message = finalize_summary(f'エージェントの実行中に予期しないエラーが発生しました: {exc}')
 		_append_history_message('assistant', error_message)
@@ -360,6 +387,10 @@ async def agent_relay(
 	Expected JSON payload:
 	- prompt: instruction for the browser agent
 	"""
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	payload = await read_json_payload(request)
 	prompt = (payload.get('prompt') or '').strip()
 
@@ -428,16 +459,26 @@ async def agent_relay(
 			status_code=202,
 		)
 
+	slot_acquired = False
 	try:
+		acquired, slot_error = try_acquire_runtime_slot(_RUNTIME_SLOT_GUARD)
+		if not acquired:
+			return slot_error
+		slot_acquired = True
+
 		# JP: 履歴に残さない同期実行（外部利用向け）
 		# EN: Run synchronously without recording history (external use)
 		run_result = controller.run(prompt, record_history=False)
+		slot_acquired = False
 	except AgentControllerError as exc:
 		logger.warning('Failed to execute agent relay request: %s', exc)
 		return JSONResponse({'error': f'エージェントの実行に失敗しました: {exc}'}, status_code=500)
 	except Exception as exc:
 		logger.exception('Unexpected error while executing agent relay request')
 		return JSONResponse({'error': f'予期しないエラーが発生しました: {exc}'}, status_code=500)
+	finally:
+		if slot_acquired:
+			_RUNTIME_SLOT_GUARD.release()
 
 	agent_history = run_result.filtered_history or run_result.history
 	summary_message = _summarize_history(agent_history)

@@ -4,13 +4,15 @@ from typing import Annotated
 
 # JP: エージェントの制御系 API
 # EN: Control endpoints for the agent
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
 from ..core.config import logger
 from ..core.exceptions import AgentControllerError
 from ..services.agent_runtime import get_controller_if_initialized, get_existing_controller
+from ..services.endpoint_guards import ip_rate_limit_guard
 from ..services.history_store import _reset_history
+from ..services.runtime_limits import _RUNTIME_SLOT_GUARD
 from .admin_auth import require_admin_api_token
 
 router = APIRouter()
@@ -19,11 +21,16 @@ router = APIRouter()
 # EN: Define function `reset_conversation`.
 # JP: 関数 `reset_conversation` を定義する。
 @router.post('/api/reset')
-def reset_conversation(_admin: Annotated[None, Depends(require_admin_api_token)] = None) -> JSONResponse:
+def reset_conversation(request: Request, _admin: Annotated[None, Depends(require_admin_api_token)] = None) -> JSONResponse:
 	# JP: 既存セッションをリセットし、履歴も初期化
 	# EN: Reset controller (if any) and clear history
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	controller = get_controller_if_initialized()
 	if controller is not None:
+		_RUNTIME_SLOT_GUARD.release()
 		try:
 			controller.reset()
 			# JP: リセット直後に開始ページへ戻し、余分なタブを閉じて初期表示を揃える
@@ -54,9 +61,13 @@ def reset_conversation(_admin: Annotated[None, Depends(require_admin_api_token)]
 # EN: Define function `pause_agent`.
 # JP: 関数 `pause_agent` を定義する。
 @router.post('/api/pause')
-def pause_agent(_admin: Annotated[None, Depends(require_admin_api_token)] = None) -> JSONResponse:
+def pause_agent(request: Request, _admin: Annotated[None, Depends(require_admin_api_token)] = None) -> JSONResponse:
 	# JP: 実行中のエージェントを一時停止
 	# EN: Pause a running agent
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	try:
 		controller = get_existing_controller()
 		controller.pause()
@@ -71,9 +82,13 @@ def pause_agent(_admin: Annotated[None, Depends(require_admin_api_token)] = None
 # EN: Define function `resume_agent`.
 # JP: 関数 `resume_agent` を定義する。
 @router.post('/api/resume')
-def resume_agent(_admin: Annotated[None, Depends(require_admin_api_token)] = None) -> JSONResponse:
+def resume_agent(request: Request, _admin: Annotated[None, Depends(require_admin_api_token)] = None) -> JSONResponse:
 	# JP: 一時停止中のエージェントを再開
 	# EN: Resume a paused agent
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	try:
 		controller = get_existing_controller()
 		controller.resume()

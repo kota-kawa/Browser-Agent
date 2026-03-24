@@ -96,6 +96,11 @@ cp secrets.env.example secrets.env
 ```
 Edit `secrets.env` and set keys such as `GOOGLE_API_KEY` or `OPENAI_API_KEY`.
 You can also set `LLM_MONTHLY_API_LIMIT` (default: `1000`) in either `secrets.env` or `.env` to cap LLM API requests per month.
+Production safety limits are enabled by default even without `.env` entries:
+- IP rate limit: `IP_RATE_LIMIT_REQUESTS=120` per `IP_RATE_LIMIT_WINDOW_SECONDS=60`
+- Concurrency cap: `AGENT_MAX_CONCURRENT_RUNS=1`
+- Timeouts: `AGENT_STEP_TIMEOUT_SECONDS=90`, `AGENT_RUN_TIMEOUT_SECONDS=900`
+- Daily LLM budget: `LLM_DAILY_API_LIMIT=300`, `LLM_DAILY_TOKEN_LIMIT=300000`, `LLM_DAILY_BUDGET_USD=10`
 Input/output caps are configurable with `LLM_INPUT_MAX_CHARS` (default: `10000`) and `LLM_MAX_OUTPUT_TOKENS` (default: `5000`).
 Set `ADMIN_API_TOKEN` to protect admin endpoints (`/api/agent-relay`, `/api/reset`, `/api/pause`, `/api/resume`, `/webarena/*`, `/model_settings`).
 For custom WebArena tasks, configure `WEBARENA_ALLOWED_CUSTOM_TASK_DOMAINS` to the domains you explicitly allow.
@@ -269,6 +274,11 @@ cp secrets.env.example secrets.env
 ```
 `secrets.env` を編集し、`GOOGLE_API_KEY` や `OPENAI_API_KEY` を設定してください。
 `LLM_MONTHLY_API_LIMIT`（デフォルト: `1000`）を `secrets.env` または `.env` に設定すると、LLM API呼び出しを月次で制限できます。
+本番向けの安全制限は `.env` 未設定でも既定で有効です：
+- IPレート制限: `IP_RATE_LIMIT_REQUESTS=120` / `IP_RATE_LIMIT_WINDOW_SECONDS=60`
+- 同時実行数制限: `AGENT_MAX_CONCURRENT_RUNS=1`
+- タイムアウト: `AGENT_STEP_TIMEOUT_SECONDS=90`, `AGENT_RUN_TIMEOUT_SECONDS=900`
+- LLM日次予算: `LLM_DAILY_API_LIMIT=300`, `LLM_DAILY_TOKEN_LIMIT=300000`, `LLM_DAILY_BUDGET_USD=10`
 `LLM_INPUT_MAX_CHARS`（デフォルト: `10000`）と `LLM_MAX_OUTPUT_TOKENS`（デフォルト: `5000`）で入力/出力上限も調整できます。
 `ADMIN_API_TOKEN` を設定すると、管理者向けエンドポイント（`/api/agent-relay`, `/api/reset`, `/api/pause`, `/api/resume`, `/webarena/*`, `/model_settings`）を保護できます。
 WebArena の custom task では、`WEBARENA_ALLOWED_CUSTOM_TASK_DOMAINS` に許可ドメインのみを設定してください。

@@ -1,5 +1,6 @@
-import fastapi_app.services.llm_factory as llm_factory
 import sys
+
+import fastapi_app.services.llm_factory as llm_factory
 
 
 # EN: Define class `_BaseStubChat`.

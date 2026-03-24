@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+
 # JP: 履歴・ステップ表示を整形するユーティリティ
 # EN: Utilities for formatting history and step outputs
 from pathlib import Path

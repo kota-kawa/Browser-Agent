@@ -15,17 +15,18 @@ from typing import Any
 
 from bubus import EventBus
 
-from ..core.env import _DEFAULT_START_URL, _env_int, _normalize_start_url
+from ..core.env import _AGENT_RUN_TIMEOUT_SECONDS, _AGENT_STEP_TIMEOUT_SECONDS, _DEFAULT_START_URL, _env_int, _normalize_start_url
 from ..core.exceptions import AgentControllerError
-from .formatting import _format_step_plan
-from .history_store import _append_history_message
-from .llm_factory import _create_selected_llm
 from ..prompts.system_prompt import (
 	_DEFAULT_MAX_ACTIONS_PER_STEP,
 	_LANGUAGE_EXTENSION,
 	_build_custom_system_prompt,
 	_should_disable_vision,
 )
+from .formatting import _format_step_plan
+from .history_store import _append_history_message
+from .llm_factory import _create_selected_llm
+from .runtime_limits import _RUNTIME_SLOT_GUARD
 
 try:
 	from browser_use import Agent, BrowserProfile, BrowserSession, Tools
@@ -119,19 +120,38 @@ class BrowserAgentController:
 		# EN: No timeout unless explicitly configured via env var
 		raw = os.environ.get('BROWSER_USE_STEP_TIMEOUT')
 		if raw is None:
-			# Default: disable step timeout to allow long-running tasks.
-			return None
+			return _AGENT_STEP_TIMEOUT_SECONDS
 
 		raw = raw.strip().lower()
 		if raw in {'', 'none', 'no', 'off', 'false', '0'}:
-			return None
+			return _AGENT_STEP_TIMEOUT_SECONDS
 
 		try:
 			value = int(raw)
-			return value if value > 0 else None
+			return value if value > 0 else _AGENT_STEP_TIMEOUT_SECONDS
 		except ValueError:
-			# Fall back to no timeout on invalid input.
-			return None
+			# Fall back to configured default on invalid input.
+			return _AGENT_STEP_TIMEOUT_SECONDS
+
+	# EN: Define function `_resolve_run_timeout`.
+	# JP: 関数 `_resolve_run_timeout` を定義する。
+	@staticmethod
+	def _resolve_run_timeout() -> int:
+		"""Resolve full-run timeout from environment with a safe default."""
+
+		raw = os.environ.get('BROWSER_USE_RUN_TIMEOUT')
+		if raw is None:
+			return _AGENT_RUN_TIMEOUT_SECONDS
+
+		normalized = raw.strip().lower()
+		if normalized in {'', 'none', 'no', 'off', 'false', '0'}:
+			return _AGENT_RUN_TIMEOUT_SECONDS
+
+		try:
+			value = int(normalized)
+			return value if value > 0 else _AGENT_RUN_TIMEOUT_SECONDS
+		except ValueError:
+			return _AGENT_RUN_TIMEOUT_SECONDS
 
 	# EN: Define function `_run_loop`.
 	# JP: 関数 `_run_loop` を定義する。
@@ -1120,9 +1140,16 @@ class BrowserAgentController:
 				return None
 
 			try:
-				return future.result()
+				return future.result(timeout=float(self._resolve_run_timeout()))
 			except AgentControllerError:
 				raise
+			except TimeoutError as exc:
+				with self._state_lock:
+					agent = self._current_agent
+				if agent is not None:
+					with suppress(Exception):
+						self._call_in_loop(agent.stop)
+				raise AgentControllerError('エージェント実行がタイムアウトしました。') from exc
 			except Exception as exc:
 				raise AgentControllerError(str(exc)) from exc
 
@@ -1204,3 +1231,4 @@ class BrowserAgentController:
 				self._cdp_cleanup()
 			finally:
 				self._cdp_cleanup = None
+		_RUNTIME_SLOT_GUARD.release()

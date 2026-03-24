@@ -48,6 +48,15 @@ class _FakeStreamingResponse:
         self.headers = headers or {}
 
 
+# EN: Define class `_FakeRequest`.
+# JP: クラス `_FakeRequest` を定義する。
+class _FakeRequest:
+    # EN: Define function `__init__`.
+    # JP: 関数 `__init__` を定義する。
+    def __init__(self):
+        self.client = type("C", (), {"host": "127.0.0.1"})()
+
+
 # EN: Define function `_body`.
 # JP: 関数 `_body` を定義する。
 def _body(response):
@@ -58,8 +67,9 @@ def _body(response):
 # JP: 関数 `test_history_returns_snapshot` を定義する。
 def test_history_returns_snapshot(monkeypatch):
     monkeypatch.setattr(api_history, '_copy_history', lambda: [{'id': 1, 'role': 'user', 'content': 'hello'}])
+    monkeypatch.setattr(api_history, "ip_rate_limit_guard", lambda _request: None)
 
-    response = api_history.history()
+    response = api_history.history(_FakeRequest())
 
     assert response.status_code == 200
     assert _body(response) == {'messages': [{'id': 1, 'role': 'user', 'content': 'hello'}]}
@@ -73,8 +83,9 @@ def test_stream_emits_sse_payload_and_unsubscribes_on_close(monkeypatch):
 
     monkeypatch.setattr(api_history, '_broadcaster', broadcaster)
     monkeypatch.setattr(api_history, 'StreamingResponse', _FakeStreamingResponse)
+    monkeypatch.setattr(api_history, "ip_rate_limit_guard", lambda _request: None)
 
-    response = api_history.stream()
+    response = api_history.stream(_FakeRequest())
 
     assert response.media_type == 'text/event-stream'
     assert response.headers['Cache-Control'] == 'no-cache'
@@ -85,3 +96,12 @@ def test_stream_emits_sse_payload_and_unsubscribes_on_close(monkeypatch):
 
     response.body_iterator.close()
     assert broadcaster.unsubscribed == [broadcaster._listener]
+
+
+# EN: Define function `test_history_returns_429_when_rate_limited`.
+# JP: 関数 `test_history_returns_429_when_rate_limited` を定義する。
+def test_history_returns_429_when_rate_limited(monkeypatch):
+    monkeypatch.setattr(api_history, "ip_rate_limit_guard", lambda _request: api_history.JSONResponse({"error": "limited"}, status_code=429))
+    response = api_history.history(_FakeRequest())
+    assert response.status_code == 429
+    assert _body(response)["error"] == "limited"

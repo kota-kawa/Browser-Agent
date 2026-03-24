@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
+from ..services.endpoint_guards import ip_rate_limit_guard
 from ..services.user_profile import load_user_profile, save_user_profile
 from .utils import read_json_payload
 
@@ -14,9 +15,13 @@ router = APIRouter()
 # EN: Define function `get_user_profile`.
 # JP: 関数 `get_user_profile` を定義する。
 @router.get('/api/user_profile')
-def get_user_profile() -> JSONResponse:
+def get_user_profile(request: Request) -> JSONResponse:
 	# JP: 保存済みプロフィールの取得
 	# EN: Retrieve stored profile
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	return JSONResponse({'text': load_user_profile()})
 
 
@@ -26,6 +31,10 @@ def get_user_profile() -> JSONResponse:
 async def update_user_profile(request: Request) -> JSONResponse:
 	# JP: プロフィールの更新
 	# EN: Update profile text
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	payload = await read_json_payload(request)
 	if not isinstance(payload, dict) or 'text' not in payload:
 		return JSONResponse({'error': 'text を指定してください。'}, status_code=400)

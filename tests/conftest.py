@@ -1,6 +1,6 @@
+import os
 import sys
 import types
-import os
 
 try:
     import psutil  # noqa: F401

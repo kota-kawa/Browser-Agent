@@ -26,8 +26,10 @@ from starlette.responses import Response
 
 from fastapi_app.core.config import APP_TEMPLATE_DIR
 from fastapi_app.core.env import _BROWSER_URL, _LLM_INPUT_MAX_CHARS, _WEBARENA_MAX_STEPS, _normalize_start_url
-from fastapi_app.routes.utils import is_prompt_too_long, read_json_payload
+from fastapi_app.routes.utils import is_prompt_too_long, read_json_payload, try_acquire_runtime_slot
+from fastapi_app.services.endpoint_guards import ip_rate_limit_guard
 from fastapi_app.services.formatting import _format_history_messages
+from fastapi_app.services.runtime_limits import _RUNTIME_SLOT_GUARD
 
 from . import router
 
@@ -279,6 +281,10 @@ DEFAULT_ENV_URLS = _build_default_env_urls()
 def index(request: Request) -> Response:
 	# JP: WebArena UI を返す
 	# EN: Serve the WebArena UI
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	return templates.TemplateResponse(
 		'webarena.html',
 		{
@@ -293,9 +299,13 @@ def index(request: Request) -> Response:
 # EN: Define function `get_tasks`.
 # JP: 関数 `get_tasks` を定義する。
 @router.get('/webarena/tasks')
-def get_tasks(page: int = 1, per_page: int = 50, site: str | None = None) -> JSONResponse:
+def get_tasks(request: Request, page: int = 1, per_page: int = 50, site: str | None = None) -> JSONResponse:
 	# JP: ページングされたタスク一覧を返す
 	# EN: Return a paginated list of tasks
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	site_filter = site
 
 	tasks = WEBARENA_TASKS
@@ -768,6 +778,10 @@ def _evaluate_result(
 async def run_task(request: Request) -> JSONResponse:
 	# JP: 単体タスクの実行エンドポイント
 	# EN: Endpoint to run a single task
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	data = cast(dict[str, Any], await read_json_payload(request))
 	task_id = data.get('task_id')
 	custom_task = cast(dict[str, Any] | None, data.get('custom_task'))
@@ -805,27 +819,36 @@ async def run_task(request: Request) -> JSONResponse:
 		if controller.is_running():
 			return JSONResponse({'error': 'エージェントは既に実行中です。'}, status_code=409)
 
+		slot_acquired, slot_error = try_acquire_runtime_slot(_RUNTIME_SLOT_GUARD)
+		if not slot_acquired:
+			return slot_error
+
 		start_override = _apply_start_page_override(selected_site, env_urls_override)
 
-		if custom_task:
-			# JP: custom_task はフィルタせずそのまま単発実行
-			# EN: Execute custom ad-hoc task directly without task-list filtering
-			try:
-				safe_start_url = _validate_custom_start_url(custom_task.get('start_url'))
-			except ValueError as exc:
-				return JSONResponse({'error': str(exc)}, status_code=400)
+		try:
+			if custom_task:
+				# JP: custom_task はフィルタせずそのまま単発実行
+				# EN: Execute custom ad-hoc task directly without task-list filtering
+				try:
+					safe_start_url = _validate_custom_start_url(custom_task.get('start_url'))
+				except ValueError as exc:
+					return JSONResponse({'error': str(exc)}, status_code=400)
 
-			temp_task = {
-				'task_id': 'custom',
-				'intent': custom_task.get('intent'),
-				'start_url': safe_start_url,
-				'require_login': False,
-			}
-			payload = _run_single_task(temp_task, controller, env_urls_override, start_override)
-		else:
-			if not current_task:
-				return JSONResponse({'error': '有効なタスクではありません。'}, status_code=400)
-			payload = _run_single_task(current_task, controller, env_urls_override, start_override)
+				temp_task = {
+					'task_id': 'custom',
+					'intent': custom_task.get('intent'),
+					'start_url': safe_start_url,
+					'require_login': False,
+				}
+				payload = _run_single_task(temp_task, controller, env_urls_override, start_override)
+			else:
+				if not current_task:
+					return JSONResponse({'error': '有効なタスクではありません。'}, status_code=400)
+				payload = _run_single_task(current_task, controller, env_urls_override, start_override)
+			slot_acquired = False
+		finally:
+			if slot_acquired:
+				_RUNTIME_SLOT_GUARD.release()
 
 		return JSONResponse(payload)
 
@@ -843,6 +866,10 @@ async def run_batch(request: Request) -> JSONResponse:
 	"""
 	# JP: タスクを順番に実行して集計結果を返す
 	# EN: Run tasks sequentially and return aggregate results
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	data = cast(dict[str, Any], await read_json_payload(request))
 	env_urls_override = cast(Mapping[str, str] | None, data.get('env_urls'))
 	selected_site = data.get('selected_site')
@@ -869,28 +896,38 @@ async def run_batch(request: Request) -> JSONResponse:
 	if controller.is_running():
 		return JSONResponse({'error': 'エージェントは既に実行中です。'}, status_code=409)
 
+	acquired, slot_error = try_acquire_runtime_slot(_RUNTIME_SLOT_GUARD)
+	if not acquired:
+		return slot_error
+	slot_acquired = True
+
 	start_override = _apply_start_page_override(selected_site, env_urls_override)
 
 	results: list[WebArenaTaskResult] = []
 	success_count = 0
 
-	for task in selected_tasks:
-		# JP: タスク単位で失敗してもバッチは継続
-		# EN: Continue batch even if a single task fails
-		try:
-			result = _run_single_task(task, controller, env_urls_override, start_override)
-			success_count += 1 if result.get('success') else 0
-			results.append(result)
-		except Exception as e:
-			results.append(
-				{
-					'task_id': task.get('task_id'),
-					'success': False,
-					'summary': f'Error: {e}',
-					'steps': [],
-					'evaluation': 'Batch runner caught an exception.',
-				}
-			)
+	try:
+		for task in selected_tasks:
+			# JP: タスク単位で失敗してもバッチは継続
+			# EN: Continue batch even if a single task fails
+			try:
+				result = _run_single_task(task, controller, env_urls_override, start_override)
+				success_count += 1 if result.get('success') else 0
+				results.append(result)
+			except Exception as e:
+				results.append(
+					{
+						'task_id': task.get('task_id'),
+						'success': False,
+						'summary': f'Error: {e}',
+						'steps': [],
+						'evaluation': 'Batch runner caught an exception.',
+					}
+				)
+		slot_acquired = False
+	finally:
+		if slot_acquired:
+			_RUNTIME_SLOT_GUARD.release()
 
 	total = len(selected_tasks)
 	score = round((success_count / total) * 100, 2)
@@ -930,6 +967,10 @@ async def run_batch(request: Request) -> JSONResponse:
 async def save_results(request: Request) -> JSONResponse:
 	# JP: UI から送信された結果を保存・再計算する
 	# EN: Save UI-submitted results and recompute metrics
+	rate_limit_response = ip_rate_limit_guard(request)
+	if rate_limit_response is not None:
+		return rate_limit_response
+
 	data = cast(dict[str, Any], await read_json_payload(request))
 	results = cast(list[WebArenaTaskResult], data.get('results', []))
 
