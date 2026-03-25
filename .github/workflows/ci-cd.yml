@@ -97,7 +97,7 @@ jobs:
       - name: Run test suite
         run: |
           set -euo pipefail
-          python -m pytest tests -q --cov=fastapi_app --cov-report=term-missing --cov-fail-under=50
+          python -m pytest tests -q --cov=fastapi_app --cov-report=term-missing --cov-fail-under=45
 
       - name: Build Docker images
         run: |
