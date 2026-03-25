@@ -21,6 +21,19 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 export const isErrorResponse = (value: unknown): value is ErrorResponse =>
   isRecord(value) && typeof value.error === 'string';
 
+// JP: ブラウザ環境でのみ管理者トークンを取得する
+// EN: Read admin token only when localStorage is available
+const getAdminToken = (): string | null => {
+  if (typeof globalThis === 'undefined' || !('localStorage' in globalThis)) {
+    return null;
+  }
+  try {
+    return globalThis.localStorage.getItem('admin-token');
+  } catch {
+    return null;
+  }
+};
+
 // JP: エラーメッセージの優先順位を決定
 // EN: Decide the error message to surface
 const resolveErrorMessage = (
@@ -66,13 +79,20 @@ export const requestJson = async <T>(
     parseJson = true,
   } = options;
 
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      ...(init?.headers || {}),
-      ...(localStorage.getItem('admin-token') ? { 'X-Admin-Token': localStorage.getItem('admin-token')! } : {}),
-    },
-  });
+  const adminToken = getAdminToken();
+  const requestInit = (() => {
+    if (!adminToken) {
+      return init;
+    }
+    const headers = new Headers(init?.headers);
+    headers.set('X-Admin-Token', adminToken);
+    return {
+      ...init,
+      headers,
+    };
+  })();
+
+  const response = await fetch(input, requestInit);
   const data = parseJson
     ? await readJson<T>(response, { fallback, throwOnParseError })
     : (fallback ?? ({} as T));
