@@ -2,6 +2,7 @@
 // EN: Entry point for the WebArena UI
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
+import DOMPurify from 'dompurify';
 import type {
   EnvUrls,
   ModelOption,
@@ -80,6 +81,10 @@ const formatSiteLabel = (site: string) => {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 };
+
+// JP: HTML を安全に表示するためにサニタイズ
+// EN: Sanitize HTML before rendering with dangerouslySetInnerHTML
+const sanitizeHtml = (html: string) => DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
 
 // JP: WebArena 管理画面のメインコンポーネント
 // EN: Main component for WebArena console
@@ -633,7 +638,7 @@ const App = () => {
             </div>
             <div
               dangerouslySetInnerHTML={{
-                __html: `<strong>Summary:</strong> ${result.summary || ''}`,
+                __html: sanitizeHtml(`<strong>Summary:</strong> ${result.summary || ''}`),
               }}
             ></div>
             {result.evaluation && (
@@ -645,7 +650,9 @@ const App = () => {
                   fontSize: '0.9em',
                 }}
                 dangerouslySetInnerHTML={{
-                  __html: `<strong>Details:</strong><br>${result.evaluation.replace(/\n/g, '<br>')}`,
+                  __html: sanitizeHtml(
+                    `<strong>Details:</strong><br>${result.evaluation.replace(/\n/g, '<br>')}`
+                  ),
                 }}
               ></div>
             )}
@@ -655,7 +662,9 @@ const App = () => {
               key={`${step.step}-${index}`}
               className="wa-step"
               dangerouslySetInnerHTML={{
-                __html: `<span class="wa-step-num">${step.step}.</span> ${step.content}`,
+                __html: sanitizeHtml(
+                  `<span class="wa-step-num">${step.step}.</span> ${step.content || ''}`
+                ),
               }}
             ></div>
           ))}
@@ -741,14 +750,14 @@ const App = () => {
               <div
                 className="wa-task-result__summary"
                 dangerouslySetInnerHTML={{
-                  __html: `<strong>Summary:</strong> ${result.summary || ''}`,
+                  __html: sanitizeHtml(`<strong>Summary:</strong> ${result.summary || ''}`),
                 }}
               ></div>
               {result.evaluation && (
                 <div
                   className="wa-task-result__evaluation"
                   dangerouslySetInnerHTML={{
-                    __html: result.evaluation.replace(/\n/g, '<br>'),
+                    __html: sanitizeHtml(result.evaluation.replace(/\n/g, '<br>')),
                   }}
                 ></div>
               )}
