@@ -104,6 +104,8 @@ async def update_model_settings(request: Request) -> JSONResponse:
 	applied: dict[str, Any] | None = None
 	try:
 		# Save selection to local_model_settings.json for persistence
+		# JP: 権限を 0600 に固定してローカル設定を保存
+		# EN: Persist local settings with strict file mode (0600)
 		local_path = Path('local_model_settings.json')
 		with os.fdopen(os.open(local_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w', encoding='utf-8') as f:
 			json.dump(selection, f, ensure_ascii=False, indent=2)
@@ -144,6 +146,8 @@ async def update_model_settings(request: Request) -> JSONResponse:
 				},
 			)
 	except Exception as exc:
+		# JP: 適用途中で失敗した場合は統一メッセージで500を返す
+		# EN: Return a standardized 500 when applying settings fails
 		logger.exception('Failed to apply model settings: %s', exc)
 		return JSONResponse({'error': 'モデル設定の更新に失敗しました。'}, status_code=500)
 	return JSONResponse({'status': 'ok', 'applied': applied if applied else selection or 'from_file'})

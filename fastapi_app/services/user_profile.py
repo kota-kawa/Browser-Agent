@@ -30,6 +30,8 @@ def load_user_profile() -> str:
 	# JP: ローカル JSON からユーザープロファイルを読み込む
 	# EN: Read the profile text from local JSON
 	try:
+		# JP: ファイル不在時は空文字を返す（未設定扱い）
+		# EN: Return empty string when file does not exist
 		if _USER_PROFILE_PATH.exists():
 			payload = json.loads(_USER_PROFILE_PATH.read_text(encoding='utf-8'))
 			if isinstance(payload, dict) and isinstance(payload.get('text'), str):
@@ -46,6 +48,8 @@ def save_user_profile(text: str | None) -> str:
 	# EN: Delete when empty; otherwise persist as JSON
 	normalized = _normalize_user_profile(text)
 	try:
+		# JP: 保存時は UTF-8 + pretty JSON で可読性を確保
+		# EN: Persist using UTF-8 and pretty JSON for readability
 		if normalized:
 			_USER_PROFILE_PATH.write_text(
 				json.dumps({'text': normalized}, ensure_ascii=False, indent=2),

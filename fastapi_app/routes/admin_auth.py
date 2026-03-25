@@ -44,7 +44,11 @@ def require_admin_api_token(
 			detail='管理者APIトークンが未設定です。ADMIN_API_TOKEN を設定してください。',
 		)
 
+	# JP: 専用ヘッダー優先、無ければ Bearer を確認
+	# EN: Prefer dedicated header, then fall back to Bearer token
 	provided = x_admin_token or _extract_bearer_token(authorization)
+	# JP: タイミング攻撃耐性のため compare_digest で比較
+	# EN: Use compare_digest for timing-safe token comparison
 	if not provided or not hmac.compare_digest(provided, expected):
 		raise HTTPException(
 			status_code=status.HTTP_403_FORBIDDEN,

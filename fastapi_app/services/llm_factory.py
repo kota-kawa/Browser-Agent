@@ -61,6 +61,8 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 
 	# JP: 出力トークン上限をプロバイダ別に渡す
 	# EN: Pass output token cap using provider-specific parameter names
+	# JP: 各SDKの引数名差異（max_output_tokens / max_tokens / max_completion_tokens）を吸収
+	# EN: Normalize SDK differences in output-token argument names
 	if provider == 'gemini':
 		llm_kwargs['max_output_tokens'] = _LLM_MAX_OUTPUT_TOKENS
 	elif provider == 'claude':
@@ -78,6 +80,8 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 			from browser_use.llm.google.chat import ChatGoogle
 		except ModuleNotFoundError as exc:
 			raise AgentControllerError('Gemini 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
+		# JP: 全プロバイダで同じ制限ポリシーになるようラップして返す
+		# EN: Wrap with the same limit policy for consistent behavior across providers
 		return apply_monthly_llm_limit(ChatGoogle(**llm_kwargs))
 	if provider == 'claude':
 		logger.info(f'Using Anthropic (Claude) model: {model}')

@@ -36,9 +36,13 @@ async def update_user_profile(request: Request) -> JSONResponse:
 		return rate_limit_response
 
 	payload = await read_json_payload(request)
+	# JP: text フィールド未指定は明示的に 400 を返す
+	# EN: Return 400 explicitly when text field is missing
 	if not isinstance(payload, dict) or 'text' not in payload:
 		return JSONResponse({'error': 'text を指定してください。'}, status_code=400)
 
 	text = payload.get('text') or ''
 	saved_text = save_user_profile(text)
+	# JP: 保存後の正規化済みテキストをそのまま返す
+	# EN: Return the normalized text that was actually saved
 	return JSONResponse({'status': 'ok', 'text': saved_text})

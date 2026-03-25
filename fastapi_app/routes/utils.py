@@ -30,6 +30,8 @@ async def read_json_payload(request: Request) -> dict[str, Any]:
 def is_prompt_too_long(prompt: str, limit: int) -> bool:
 	"""Return True when the prompt exceeds the configured character limit."""
 
+	# JP: 0以下は「上限なし」とみなして拒否しない
+	# EN: Treat non-positive limits as "no limit"
 	if limit <= 0:
 		return False
 	return len(prompt) > limit
@@ -44,8 +46,12 @@ def try_acquire_runtime_slot(
 ) -> tuple[bool, JSONResponse | None]:
 	"""Try to acquire a shared runtime slot and return a standardized 429 response on failure."""
 
+	# JP: 取得成功時はエラー応答なし（None）を返す
+	# EN: On success, return no error response (None)
 	acquired = guard.acquire()
 	if acquired:
 		return True, None
 
+	# JP: 取得失敗時はルート側でそのまま返せる429レスポンスを組み立てる
+	# EN: On failure, build a ready-to-return 429 response for route handlers
 	return False, JSONResponse({'error': error_message}, status_code=429)

@@ -7,8 +7,8 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
-# JP: LLM 呼び出し回数に日次制限を適用するラッパー
-# EN: Wrapper that applies a monthly limit to LLM calls
+# JP: LLM 呼び出しに月次/日次の制限を適用するラッパー
+# EN: Wrapper that applies monthly and daily limits to LLM calls
 from browser_use.llm.base import BaseChatModel
 from browser_use.llm.exceptions import ModelRateLimitError
 from browser_use.llm.messages import BaseMessage
@@ -38,6 +38,8 @@ class _MonthlyLimitState:
 	count: int
 
 
+# EN: Define class `_DailyBudgetState`.
+# JP: クラス `_DailyBudgetState` を定義する。
 @dataclass
 class _DailyBudgetState:
 	api_limit: int
@@ -70,6 +72,8 @@ def _current_year_month() -> tuple[int, int]:
 # EN: Define function `_current_year_month_day`.
 # JP: 関数 `_current_year_month_day` を定義する。
 def _current_year_month_day() -> tuple[int, int, int]:
+	# JP: 日次上限のリセット判定に使う年月日を返す
+	# EN: Return year/month/day for daily rollover checks
 	now = datetime.now()
 	return now.year, now.month, now.day
 
@@ -102,6 +106,8 @@ def _get_state() -> _MonthlyLimitState | None:
 # EN: Define function `_get_daily_state`.
 # JP: 関数 `_get_daily_state` を定義する。
 def _get_daily_state() -> _DailyBudgetState | None:
+	# JP: 初回アクセス時のみ日次制限状態を生成する
+	# EN: Lazily initialize daily limit state on first access
 	global _DAILY_STATE
 
 	if _DAILY_STATE is not None:
@@ -239,6 +245,8 @@ def apply_monthly_llm_limit(llm: BaseChatModel) -> BaseChatModel:
 		usage = getattr(completion, 'usage', None)
 		usage_total = int(getattr(usage, 'total_tokens', 0) or 0)
 		usage_completion = int(getattr(usage, 'completion_tokens', 0) or 0)
+		# JP: 応答後の実使用量で日次トークン/予算上限を評価
+		# EN: Enforce token/budget caps using post-call usage metrics
 		if daily_state is not None:
 			_record_daily_usage(daily_state, model_label, usage_total, usage_completion)
 
@@ -254,4 +262,6 @@ def apply_monthly_llm_limit(llm: BaseChatModel) -> BaseChatModel:
 def apply_daily_llm_limit(llm: BaseChatModel) -> BaseChatModel:
 	"""Backward-compatible alias for the previous function name."""
 
+	# JP: 旧API名の互換エイリアスとして同じラッパーを返す
+	# EN: Keep backward compatibility by delegating to the same wrapper
 	return apply_monthly_llm_limit(llm)

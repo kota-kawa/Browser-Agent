@@ -36,6 +36,8 @@ def _env_int(name: str, default: int) -> int:
 def _env_float(name: str, default: float) -> float:
 	"""Return a float environment variable with a fallback."""
 
+	# JP: 数値化できない値や0以下は既定値へフォールバック
+	# EN: Fall back to default for invalid or non-positive values
 	raw_value = os.environ.get(name)
 	if raw_value is None:
 		return default
@@ -52,6 +54,8 @@ def _env_float(name: str, default: float) -> float:
 def _env_bool(name: str, default: bool) -> bool:
 	"""Return a boolean environment variable with a fallback."""
 
+	# JP: 真偽値は一般的な文字列表現を許容して解釈
+	# EN: Accept common string representations for booleans
 	raw_value = os.environ.get(name)
 	if raw_value is None:
 		return default
@@ -83,6 +87,8 @@ def _normalize_embed_browser_url(value: str) -> str:
 	parsed = urlparse(value)
 	query_items = parse_qsl(parsed.query, keep_blank_values=True)
 
+	# JP: scale 未指定時は auto を補って初期表示を安定化
+	# EN: Inject scale=auto when missing to stabilize first render
 	has_scale = any(key == 'scale' for key, _ in query_items)
 	if not has_scale:
 		query_items.append(('scale', 'auto'))
@@ -136,6 +142,8 @@ def _normalize_start_url(value: str | None) -> str | None:
 	if lowered in {'none', 'off', 'false'}:
 		return None
 
+	# JP: スキームなしのURLは https:// を補って扱う
+	# EN: Assume https:// for URLs without an explicit scheme
 	if normalized.startswith('//'):
 		normalized = normalized[2:]
 

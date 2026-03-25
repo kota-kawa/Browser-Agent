@@ -23,6 +23,8 @@ else:
 _DEFAULT_SAFETY_GUARD_MODEL = 'openai/gpt-oss-safeguard-20b'
 _SAFETY_TAG_RE = re.compile(r'S\d+')
 
+# JP: JSON出力を前提とした安全性分類ポリシー
+# EN: Safety classification policy designed for JSON-only outputs
 _SAFETY_POLICY = """You are a content moderation assistant.
 Classify the USER content according to the policy categories below.
 Return JSON only with keys:
@@ -105,6 +107,8 @@ def _get_guard_client() -> AsyncGroq:
 	if not api_key:
 		raise InputGuardError('GROQ_API_KEY が設定されていません。')
 
+	# JP: OpenAI互換URLが指定されていても Groq 形式へ正規化して接続
+	# EN: Normalize OpenAI-compatible URL forms back to native Groq base URL
 	base_url = _normalize_groq_base_url(os.getenv('GROQ_API_BASE'))
 	_guard_client = AsyncGroq(api_key=api_key, base_url=base_url)
 	return _guard_client
@@ -132,6 +136,8 @@ def _parse_guard_output(output: str | None) -> InputGuardResult:
 				payload = None
 
 	if not isinstance(payload, dict):
+		# JP: 非JSON応答は簡易ルールで safe/unsafe を推定する
+		# EN: For non-JSON output, apply heuristic safe/unsafe parsing
 		lines = [line.strip() for line in text.splitlines() if line.strip()]
 		first_line = lines[0].lower() if lines else ''
 		first_token = first_line.split(maxsplit=1)[0]
@@ -177,6 +183,8 @@ async def check_prompt_safety(prompt: str) -> InputGuardResult:
 	client = _get_guard_client()
 
 	try:
+		# JP: Llama Guard系は素の user 入力、他モデルは system policy + JSON モードで判定
+		# EN: Use plain user input for Llama Guard; policy+JSON mode for other models
 		if _is_llama_guard_model(model):
 			response = await client.chat.completions.create(
 				model=model,
