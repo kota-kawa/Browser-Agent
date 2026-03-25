@@ -57,6 +57,10 @@ Browser-Agent combines the `browser_use` library with a FastAPI backend to provi
 
 ## 🏗️ Architecture
 
+<p align="center">
+  <img src="assets/images/browser-agent-architecture.png" width="900" alt="Browser-Agent Architecture">
+</p>
+
 ```mermaid
 flowchart TB
     user["User"] --> ui["Web UI<br/>(React + Vite)<br/>Chat + noVNC"]
@@ -250,6 +254,10 @@ See [LICENSE.md](LICENSE.md) for details.
 - **拡張可能な構成**: コアエージェント、API、UIを分離。
 
 ## 🏗️ アーキテクチャ図
+
+<p align="center">
+  <img src="assets/images/browser-agent-architecture.png" width="900" alt="Browser-Agent アーキテクチャ図">
+</p>
 
 ```mermaid
 flowchart TB
