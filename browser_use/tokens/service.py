@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import aiofiles
+import anyio
 import httpx
 
 from browser_use.env_loader import load_secrets_env
@@ -123,7 +124,7 @@ class TokenCost:
 	async def _is_cache_valid(self, cache_file: Path) -> bool:
 		"""Check if a specific cache file is valid and not expired"""
 		try:
-			if not cache_file.exists():
+			if not await anyio.Path(cache_file).exists():
 				return False
 
 			# Read the cached data

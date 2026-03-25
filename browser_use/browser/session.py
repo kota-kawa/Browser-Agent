@@ -6,6 +6,8 @@ import os
 from contextlib import suppress
 from functools import cached_property
 from pathlib import Path
+
+import anyio
 from typing import Any, Literal, Self, cast
 
 import httpx
@@ -2960,7 +2962,7 @@ class BrowserSession(BaseModel):
 		screenshot_data = base64.b64decode(result['data'])
 
 		if path:
-			Path(path).write_bytes(screenshot_data)
+			await anyio.Path(path).write_bytes(screenshot_data)
 
 		return screenshot_data
 

@@ -45,8 +45,8 @@ class ScreenshotService:
 		if not screenshot_path:
 			return None
 
-		path = Path(screenshot_path)
-		if not path.exists():
+		path = anyio.Path(screenshot_path)
+		if not await path.exists():
 			return None
 
 		# Load from disk and encode to base64

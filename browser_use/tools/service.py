@@ -2,7 +2,8 @@ import asyncio
 import enum
 import json
 import logging
-import os
+
+import anyio
 from typing import Any, Generic, TypeVar
 
 try:
@@ -454,7 +455,7 @@ class Tools(Generic[Context]):
 
 			# For local browsers, ensure the file exists on the local filesystem
 			if browser_session.is_local:
-				if not os.path.exists(params.path):
+				if not await anyio.Path(params.path).exists():
 					msg = f'File {params.path} does not exist'
 					return ActionResult(error=msg)
 

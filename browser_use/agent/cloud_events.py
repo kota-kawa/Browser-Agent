@@ -1,7 +1,5 @@
 import base64
-import os
 from datetime import datetime, timezone
-from pathlib import Path
 
 import anyio
 from bubus import BaseEvent
@@ -97,11 +95,11 @@ class CreateAgentOutputFileEvent(BaseEvent):
 	async def from_agent_and_file(cls, agent, output_path: str) -> 'CreateAgentOutputFileEvent':
 		"""Create a CreateAgentOutputFileEvent from a file path"""
 
-		gif_path = Path(output_path)
-		if not gif_path.exists():
+		gif_path = anyio.Path(output_path)
+		if not await gif_path.exists():
 			raise FileNotFoundError(f'File not found: {output_path}')
 
-		gif_size = os.path.getsize(gif_path)
+		gif_size = (await gif_path.stat()).st_size
 
 		# Read GIF content for base64 encoding if needed
 		gif_content = None

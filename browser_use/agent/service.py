@@ -9,6 +9,8 @@ import time
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
+
+import anyio
 from typing import Any, ClassVar, Generic, Literal, TypeVar
 from urllib.parse import urlparse
 
@@ -2253,7 +2255,7 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 				create_history_gif(task=self.task, history=self.history, output_path=output_path)
 
 				# Only emit output file event if GIF was actually created
-				if Path(output_path).exists():
+				if await anyio.Path(output_path).exists():
 					output_event = await CreateAgentOutputFileEvent.from_agent_and_file(self, output_path)
 					self.eventbus.dispatch(output_event)
 
