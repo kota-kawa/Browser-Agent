@@ -76,6 +76,49 @@ flowchart TB
 - **In-memory state over Redis (current scope)**: History/event broadcasting is intentionally in-process for low operational overhead in single-node deployments; Redis is a scale-out option when multi-instance coordination becomes necessary.
 - **Security-first defaults**: Rate limiting, admin token auth, and localhost-only CDP/VNC binding are enforced out of the box—preventing external browser takeover and API abuse without requiring explicit opt-in.
 
+## 📊 WebArena Browser Agent Evaluation
+
+These results were obtained by running the Browser-Agent on WebArena Shopping tasks (N=187).
+
+| Model | Success / Total | Score |
+| --- | --- | --- |
+| GPT-5.1 | 61 / 187 | 32.6% |
+| Qwen 32B | 43 / 187 | 23% |
+| GPT-OSS 20B | 49 / 187 | 26% |
+
+> **Reference baselines:** The original WebArena paper reports human-level performance at ~78%. Early rule-based agent baselines scored in the 10–15% range. These results reflect current GPT-class LLMs with no task-specific fine-tuning.
+
+### Browser Agent
+
+**Role**
+The Browser Agent autonomously performs multi-step web tasks such as search, navigation, filtering, and form interaction.
+
+**Evaluation Protocol**
+I evaluated the Browser Agent on the **WebArena Shopping environment**, using three automatic criteria:
+- URL match
+- string match
+- DOM state verification
+
+**Failure Analysis**
+The main bottlenecks were dynamic widgets, branching exploration, and visually structured UI interactions that are difficult to solve from DOM text alone.
+
+**Why this matters**
+Rather than hiding failures, I explicitly quantified them to identify where current LLM-based browser agents still break in realistic environments.
+
+## 📂 Project Structure
+
+```
+/
+├── browser_use/       # Core agent logic, DOM manipulation, tools
+├── fastapi_app/         # FastAPI web server, API routes, UI templates
+│   ├── core/          # Config and environment setup
+│   ├── services/      # Business logic (Agent Controller, History)
+│   ├── routes/        # API endpoints
+│   └── frontend/      # React + Vite frontend
+├── docker-compose.yml # Container orchestration
+└── secrets.env        # API keys and configuration
+```
+
 ## 🛠️ Quick Start (Docker Compose only)
 
 ### Prerequisites
@@ -147,49 +190,6 @@ The repository also includes a CI/CD workflow at `.github/workflows/ci-cd.yml`.
 - Deploys only on `push` to `main` after all checks pass.
 - Deploys over SSH, then runs `./up.sh -d` on the server and verifies service health.
 - Performs diagnostics + rollback to the previous commit if deployment fails.
-
-## 📊 WebArena Browser Agent Evaluation
-
-These results were obtained by running the Browser-Agent on WebArena Shopping tasks (N=187).
-
-| Model | Success / Total | Score |
-| --- | --- | --- |
-| GPT-5.1 | 61 / 187 | 32.6% |
-| Qwen 32B | 43 / 187 | 23% |
-| GPT-OSS 20B | 49 / 187 | 26% |
-
-> **Reference baselines:** The original WebArena paper reports human-level performance at ~78%. Early rule-based agent baselines scored in the 10–15% range. These results reflect current GPT-class LLMs with no task-specific fine-tuning.
-
-### Browser Agent
-
-**Role**
-The Browser Agent autonomously performs multi-step web tasks such as search, navigation, filtering, and form interaction.
-
-**Evaluation Protocol**
-I evaluated the Browser Agent on the **WebArena Shopping environment**, using three automatic criteria:
-- URL match
-- string match
-- DOM state verification
-
-**Failure Analysis**
-The main bottlenecks were dynamic widgets, branching exploration, and visually structured UI interactions that are difficult to solve from DOM text alone.
-
-**Why this matters**
-Rather than hiding failures, I explicitly quantified them to identify where current LLM-based browser agents still break in realistic environments.
-
-## 📂 Project Structure
-
-```
-/
-├── browser_use/       # Core agent logic, DOM manipulation, tools
-├── fastapi_app/         # FastAPI web server, API routes, UI templates
-│   ├── core/          # Config and environment setup
-│   ├── services/      # Business logic (Agent Controller, History)
-│   ├── routes/        # API endpoints
-│   └── frontend/      # React + Vite frontend
-├── docker-compose.yml # Container orchestration
-└── secrets.env        # API keys and configuration
-```
 
 ## 📄 License
 
@@ -270,6 +270,49 @@ flowchart TB
 - **Redisではなくインメモリ状態管理（現スコープ）**: 単一ノード運用では依存を減らして運用コストを下げることを優先。将来のマルチインスタンス化ではRedis連携を拡張候補として想定。
 - **セキュリティのデフォルト有効化**: IPレート制限・管理者トークン認証・CDPとVNCのlocalhostバインドを設定なしで適用。外部からのブラウザ乗っ取りや不正なAPI呼び出しを防止する。
 
+## 📊 WebArenaでのBrowserエージェント評価
+
+この結果は、WebArenaのShoppingタスクでBrowser-Agentを実行したものです（N=187）。
+
+| モデル | 成功数 / 総数 | スコア |
+| --- | --- | --- |
+| GPT-5.1 | 61 / 187 | 32.6% |
+| Qwen 32B | 43 / 187 | 23% |
+| GPT-OSS 20B | 49 / 187 | 26% |
+
+> **参考ベースライン:** WebArena論文における人間のスコアは約78%。初期のルールベースエージェントは10〜15%程度。これらの結果はタスク固有のファインチューニングなしのGPTクラスモデルによるものです。
+
+### Browser Agent
+
+**役割**
+Browser Agentは、検索・ナビゲーション・フィルタリング・フォーム操作などのマルチステップWebタスクを自律的に実行します。
+
+**評価プロトコル**
+**WebArena Shoppingenv** で3種類の自動評価基準を用いてBrowser Agentを評価しました。
+- URLマッチ
+- 文字列マッチ
+- DOM状態検証
+
+**失敗分析**
+主なボトルネックは、動的ウィジェット、分岐探索、およびDOMテキストだけでは解決が難しい視覚的に構造化されたUIインタラクションでした。
+
+**なぜこれが重要か**
+失敗を隠すのではなく、現在のLLMベースのブラウザエージェントが現実的な環境でどこで壊れるかを特定するために、明示的に数値化しました。
+
+## 📂 プロジェクト構成
+
+```
+/
+├── browser_use/       # コアエージェントロジック、DOM操作、ツール
+├── fastapi_app/         # FastAPI Webサーバー、APIルート、UIテンプレート
+│   ├── core/          # 設定と環境構築
+│   ├── services/      # ビジネスロジック（Agent Controller, History）
+│   ├── routes/        # APIエンドポイント
+│   └── frontend/      # React + Vite フロントエンド
+├── docker-compose.yml # コンテナオーケストレーション
+└── secrets.env        # APIキーと設定
+```
+
 ## 🛠️ クイックスタート（Docker Composeのみ）
 
 ### 前提条件
@@ -341,49 +384,6 @@ npm run test
 - すべて成功した場合のみ、`main` ブランチへの push でデプロイ実行
 - サーバーへ SSH 接続し、`./up.sh -d` で更新後にサービスヘルスを確認
 - 失敗時は診断ログを出力し、直前コミットへロールバック
-
-## 📊 WebArenaでのBrowserエージェント評価
-
-この結果は、WebArenaのShoppingタスクでBrowser-Agentを実行したものです（N=187）。
-
-| モデル | 成功数 / 総数 | スコア |
-| --- | --- | --- |
-| GPT-5.1 | 61 / 187 | 32.6% |
-| Qwen 32B | 43 / 187 | 23% |
-| GPT-OSS 20B | 49 / 187 | 26% |
-
-> **参考ベースライン:** WebArena論文における人間のスコアは約78%。初期のルールベースエージェントは10〜15%程度。これらの結果はタスク固有のファインチューニングなしのGPTクラスモデルによるものです。
-
-### Browser Agent
-
-**役割**
-Browser Agentは、検索・ナビゲーション・フィルタリング・フォーム操作などのマルチステップWebタスクを自律的に実行します。
-
-**評価プロトコル**
-**WebArena Shoppingenv** で3種類の自動評価基準を用いてBrowser Agentを評価しました。
-- URLマッチ
-- 文字列マッチ
-- DOM状態検証
-
-**失敗分析**
-主なボトルネックは、動的ウィジェット、分岐探索、およびDOMテキストだけでは解決が難しい視覚的に構造化されたUIインタラクションでした。
-
-**なぜこれが重要か**
-失敗を隠すのではなく、現在のLLMベースのブラウザエージェントが現実的な環境でどこで壊れるかを特定するために、明示的に数値化しました。
-
-## 📂 プロジェクト構成
-
-```
-/
-├── browser_use/       # コアエージェントロジック、DOM操作、ツール
-├── fastapi_app/         # FastAPI Webサーバー、APIルート、UIテンプレート
-│   ├── core/          # 設定と環境構築
-│   ├── services/      # ビジネスロジック（Agent Controller, History）
-│   ├── routes/        # APIエンドポイント
-│   └── frontend/      # React + Vite フロントエンド
-├── docker-compose.yml # コンテナオーケストレーション
-└── secrets.env        # APIキーと設定
-```
 
 ## 📄 ライセンス
 
