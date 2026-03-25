@@ -161,6 +161,30 @@ These results were obtained by running the Browser-Agent on WebArena Shopping ta
 | Qwen 32B | 43 / 187 | 23% |
 | GPT-OSS 20B | 49 / 187 | 26% |
 
+### Browser Agent
+
+**Role**
+The Browser Agent autonomously performs multi-step web tasks such as search, navigation, filtering, and form interaction.
+
+**Evaluation Protocol**
+I evaluated the Browser Agent on the **WebArena Shopping environment**, using three automatic criteria:
+- URL match
+- string match
+- DOM state verification
+
+**Result**
+- **GPT-5.1**: 46 / 187 (**24.6%**)
+- **Qwen 32B**: 28 / 187 (**14.97%**)
+- **GPT-OSS 20B**: 34 / 187 (**18.18%**)
+
+Although frontier models performed best overall, the success rate remained limited on complex UI workflows. This indicates that browser-agent performance is constrained not only by reasoning quality, but also by DOM-grounding stability and tool-use robustness.
+
+**Failure Analysis**
+The main bottlenecks were dynamic widgets, branching exploration, and visually structured UI interactions that are difficult to solve from DOM text alone.
+
+**Why this matters**
+Rather than hiding failures, I explicitly quantified them to identify where current LLM-based browser agents still break in realistic environments.
+
 ## 📂 Project Structure
 
 ```
@@ -338,6 +362,30 @@ npm run test
 | GPT-5.1 | 61 / 187 | 32.6% |
 | Qwen 32B | 43 / 187 | 23% |
 | GPT-OSS 20B | 49 / 187 | 26% |
+
+### Browser Agent
+
+**役割**
+Browser Agentは、検索・ナビゲーション・フィルタリング・フォーム操作などのマルチステップWebタスクを自律的に実行します。
+
+**評価プロトコル**
+**WebArena Shoppingenv** で3種類の自動評価基準を用いてBrowser Agentを評価しました。
+- URLマッチ
+- 文字列マッチ
+- DOM状態検証
+
+**結果**
+- **GPT-5.1**: 46 / 187 (**24.6%**)
+- **Qwen 32B**: 28 / 187 (**14.97%**)
+- **GPT-OSS 20B**: 34 / 187 (**18.18%**)
+
+フロンティアモデルが全体的に最も高い成績でしたが、複雑なUIワークフローでは成功率に限界がありました。これは、ブラウザエージェントの性能が推論品質だけでなく、DOMグラウンディングの安定性やツール利用の堅牢性にも制約されることを示しています。
+
+**失敗分析**
+主なボトルネックは、動的ウィジェット、分岐探索、およびDOMテキストだけでは解決が難しい視覚的に構造化されたUIインタラクションでした。
+
+**なぜこれが重要か**
+失敗を隠すのではなく、現在のLLMベースのブラウザエージェントが現実的な環境でどこで壊れるかを特定するために、明示的に数値化しました。
 
 ## 📂 プロジェクト構成
 
