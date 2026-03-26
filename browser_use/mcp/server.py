@@ -37,6 +37,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+import anyio
+
 # Configure logging for MCP mode - redirect to stderr but preserve critical diagnostics
 logging.basicConfig(
 	stream=sys.stderr, level=logging.WARNING, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', force=True
@@ -585,7 +587,7 @@ class BrowserUseServer:
 
 		# Initialize FileSystem for extraction actions
 		file_system_path = profile_config.get('file_system_path', '~/.browser-use-mcp')
-		self.file_system = FileSystem(base_dir=Path(file_system_path).expanduser())
+		self.file_system = FileSystem(base_dir=str(anyio.Path(file_system_path).expanduser()))
 
 		logger.debug('Browser session initialized')
 

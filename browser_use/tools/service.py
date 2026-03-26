@@ -2,9 +2,9 @@ import asyncio
 import enum
 import json
 import logging
+from typing import Any, Generic, TypeVar
 
 import anyio
-from typing import Any, Generic, TypeVar
 
 try:
 	from lmnr import Laminar  # type: ignore

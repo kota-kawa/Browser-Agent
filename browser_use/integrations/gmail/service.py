@@ -6,11 +6,11 @@ This service provides a clean interface for agents to interact with Gmail.
 
 import base64
 import logging
-import os
 from pathlib import Path
 from typing import Any
 
 import aiofiles
+import anyio
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -104,7 +104,7 @@ class GmailService:
 
 			# Original file-based authentication flow
 			# Try to load existing tokens
-			if os.path.exists(self.token_file):
+			if await anyio.Path(self.token_file).exists():
 				self.creds = Credentials.from_authorized_user_file(str(self.token_file), self.SCOPES)
 				logger.debug('📁 Loaded existing tokens')
 
@@ -115,7 +115,7 @@ class GmailService:
 					self.creds.refresh(Request())
 				else:
 					logger.info('🌐 Starting OAuth flow...')
-					if not os.path.exists(self.credentials_file):
+					if not await anyio.Path(self.credentials_file).exists():
 						logger.error(
 							f'❌ Gmail credentials file not found: {self.credentials_file}\n'
 							'Please download it from Google Cloud Console:\n'

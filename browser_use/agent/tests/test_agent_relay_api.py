@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import sys
 import types
 import typing
-
-import asyncio
-import json
 
 import pytest
 from starlette.requests import Request

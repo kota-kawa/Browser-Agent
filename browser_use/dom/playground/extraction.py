@@ -229,7 +229,7 @@ async def test_focus_vs_all_elements():
 				# print('Clickable elements written to ./tmp/clickable_elements.json')
 
 				website_list = get_website_list_for_prompt()
-				answer = input(
+				answer = input(  # noqa: ASYNC250
 					"🎮 Enter: element index | 'index' click (clickable) | 'index,text' input | 'c,index' copy | Enter re-run | 'n' next | 'q' quit: "
 				)
 

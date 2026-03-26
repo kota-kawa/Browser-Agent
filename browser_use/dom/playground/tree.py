@@ -3,9 +3,9 @@ import json
 import time
 
 import aiofiles
+from browser_use.browser.types import ViewportSize
 
 from browser_use.browser import BrowserProfile, BrowserSession
-from browser_use.browser.types import ViewportSize
 from browser_use.dom.service import DomService
 from browser_use.dom.views import EnhancedDOMTreeNode
 
@@ -123,7 +123,7 @@ async def main():
 			print('saved snapshot to tmp/snapshot.json')
 			print('saved ax tree to tmp/ax_tree.json')
 
-			input('Done. Press Enter to continue...')
+			input('Done. Press Enter to continue...')  # noqa: ASYNC250
 
 
 if __name__ == '__main__':

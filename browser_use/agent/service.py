@@ -9,11 +9,10 @@ import time
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
-
-import anyio
 from typing import Any, ClassVar, Generic, Literal, TypeVar
 from urllib.parse import urlparse
 
+import anyio
 from bubus import EventBus
 
 from browser_use.agent.cloud_events import (

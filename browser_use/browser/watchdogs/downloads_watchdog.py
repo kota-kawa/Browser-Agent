@@ -66,8 +66,8 @@ class DownloadsWatchdog(BaseWatchdog):
 		# Ensure downloads directory exists
 		downloads_path = self.browser_session.browser_profile.downloads_path
 		if downloads_path:
-			expanded_path = Path(downloads_path).expanduser().resolve()
-			expanded_path.mkdir(parents=True, exist_ok=True)
+			expanded_path = await anyio.Path(downloads_path).expanduser().resolve()
+			await expanded_path.mkdir(parents=True, exist_ok=True)
 			self.logger.debug(f'[DownloadsWatchdog] Ensured downloads directory exists: {expanded_path}')
 
 	# EN: Define async function `on_TabCreatedEvent`.
@@ -270,7 +270,7 @@ class DownloadsWatchdog(BaseWatchdog):
 					self.logger.warning('[DownloadsWatchdog] No downloads path configured, skipping CDP download setup')
 					return
 				# Ensure path is properly expanded (~ -> absolute path)
-				expanded_downloads_path = Path(downloads_path).expanduser().resolve()
+				expanded_downloads_path = await anyio.Path(downloads_path).expanduser().resolve()
 				await cdp_client.send.Browser.setDownloadBehavior(
 					params={
 						'behavior': 'allow',
@@ -329,8 +329,8 @@ class DownloadsWatchdog(BaseWatchdog):
 		self, event: DownloadWillBeginEvent, target_id: TargetID, session_id: SessionID | None
 	) -> None:
 		"""Handle a CDP Page.downloadWillBegin event."""
-		downloads_dir = (
-			Path(
+		downloads_dir = await (
+			anyio.Path(
 				self.browser_session.browser_profile.downloads_path
 				or f'{tempfile.gettempdir()}/browser_use_downloads.{str(self.browser_session.id)[-4:]}'
 			)
@@ -417,8 +417,6 @@ class DownloadsWatchdog(BaseWatchdog):
 						final_path = downloads_dir / unique_filename
 
 						# Write the file
-						import anyio
-
 						async with await anyio.open_file(final_path, 'wb') as f:
 							await f.write(file_data)
 
@@ -467,9 +465,9 @@ class DownloadsWatchdog(BaseWatchdog):
 
 		# Get initial list of files in downloads directory
 		initial_files = set()
-		if Path(downloads_dir).exists():
-			for f in Path(downloads_dir).iterdir():
-				if f.is_file() and not f.name.startswith('.'):
+		if await downloads_dir.exists():
+			async for f in downloads_dir.iterdir():
+				if await f.is_file() and not f.name.startswith('.'):
 					initial_files.add(f.name)
 
 		# Poll for new files
@@ -479,13 +477,13 @@ class DownloadsWatchdog(BaseWatchdog):
 		while asyncio.get_event_loop().time() - start_time < max_wait:
 			await asyncio.sleep(5.0)  # Check every 5 seconds
 
-			if Path(downloads_dir).exists():
-				for file_path in Path(downloads_dir).iterdir():
+			if await downloads_dir.exists():
+				async for file_path in downloads_dir.iterdir():
 					# Skip hidden files and files that were already there
-					if file_path.is_file() and not file_path.name.startswith('.') and file_path.name not in initial_files:
+					if await file_path.is_file() and not file_path.name.startswith('.') and file_path.name not in initial_files:
 						# Check if file has content (> 4 bytes)
 						try:
-							file_size = file_path.stat().st_size
+							file_size = (await file_path.stat()).st_size
 							if file_size > 4:
 								# Found a new download!
 								self.logger.debug(
@@ -841,7 +839,7 @@ class DownloadsWatchdog(BaseWatchdog):
 
 			# Check if already downloaded by looking in the downloads directory
 			downloads_dir = str(self.browser_session.browser_profile.downloads_path)
-			if os.path.exists(downloads_dir):
+			if await anyio.Path(downloads_dir).exists():
 				existing_files = os.listdir(downloads_dir)
 				if pdf_filename in existing_files:
 					self.logger.debug(f'[DownloadsWatchdog] PDF already downloaded: {pdf_filename}')
@@ -908,8 +906,9 @@ class DownloadsWatchdog(BaseWatchdog):
 						await f.write(bytes(download_result['data']))
 
 					# Verify file was written successfully
-					if os.path.exists(download_path):
-						actual_size = os.path.getsize(download_path)
+					_dp = anyio.Path(download_path)
+					if await _dp.exists():
+						actual_size = (await _dp.stat()).st_size
 						self.logger.debug(
 							f'[DownloadsWatchdog] PDF file written successfully: {download_path} ({actual_size} bytes)'
 						)
@@ -964,7 +963,7 @@ class DownloadsWatchdog(BaseWatchdog):
 		base, ext = os.path.splitext(filename)
 		counter = 1
 		new_filename = filename
-		while os.path.exists(os.path.join(directory, new_filename)):
+		while await anyio.Path(os.path.join(directory, new_filename)).exists():
 			new_filename = f'{base} ({counter}){ext}'
 			counter += 1
 		return new_filename

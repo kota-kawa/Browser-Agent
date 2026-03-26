@@ -2,10 +2,9 @@
 
 import asyncio
 import json
-import os
-from pathlib import Path
 from typing import Any, ClassVar
 
+import anyio
 from bubus import BaseEvent
 from cdp_use.cdp.network import Cookie
 from pydantic import Field, PrivateAttr
@@ -225,29 +224,29 @@ class StorageStateWatchdog(BaseWatchdog):
 				self._last_cookie_state = storage_state.get('cookies', []).copy()
 
 				# Convert path to Path object
-				json_path = Path(save_path).expanduser().resolve()
-				json_path.parent.mkdir(parents=True, exist_ok=True)
+				json_path = await anyio.Path(save_path).expanduser().resolve()
+				await json_path.parent.mkdir(parents=True, exist_ok=True)
 
 				# Merge with existing state if file exists
 				merged_state = storage_state
-				if json_path.exists():
+				if await json_path.exists():
 					try:
-						existing_state = json.loads(json_path.read_text())
+						existing_state = json.loads(await json_path.read_text())
 						merged_state = self._merge_storage_states(existing_state, dict(storage_state))
 					except Exception as e:
 						self.logger.error(f'[StorageStateWatchdog] Failed to merge with existing state: {e}')
 
 				# Write atomically
 				temp_path = json_path.with_suffix('.json.tmp')
-				temp_path.write_text(json.dumps(merged_state, indent=4))
+				await temp_path.write_text(json.dumps(merged_state, indent=4))
 
 				# Backup existing file
-				if json_path.exists():
+				if await json_path.exists():
 					backup_path = json_path.with_suffix('.json.bak')
-					json_path.replace(backup_path)
+					await json_path.replace(backup_path)
 
 				# Move temp to final
-				temp_path.replace(json_path)
+				await temp_path.replace(json_path)
 
 				# Emit success event
 				self.event_bus.dispatch(
@@ -276,13 +275,11 @@ class StorageStateWatchdog(BaseWatchdog):
 			return
 
 		load_path = path or self.browser_session.browser_profile.storage_state
-		if not load_path or not os.path.exists(str(load_path)):
+		if not load_path or not await anyio.Path(str(load_path)).exists():
 			return
 
 		try:
 			# Read the storage state file asynchronously
-			import anyio
-
 			content = await anyio.Path(str(load_path)).read_text()
 			storage = json.loads(content)
 

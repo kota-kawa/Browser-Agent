@@ -6,10 +6,9 @@ import os
 from contextlib import suppress
 from functools import cached_property
 from pathlib import Path
-
-import anyio
 from typing import Any, Literal, Self, cast
 
+import anyio
 import httpx
 from bubus import EventBus
 from cdp_use import CDPClient
