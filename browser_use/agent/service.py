@@ -1249,7 +1249,6 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 				self._get_model_output_with_retry(input_messages), timeout=self.settings.llm_timeout
 			)
 		except TimeoutError:
-
 			# EN: Define async function `_log_model_input_to_lmnr`.
 			# JP: 非同期関数 `_log_model_input_to_lmnr` を定義する。
 			@observe(name='_llm_call_timed_out_with_input')

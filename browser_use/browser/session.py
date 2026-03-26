@@ -1803,7 +1803,6 @@ class BrowserSession(BaseModel):
 				source = (challenge.get('source') or '').lower()
 				# Only respond to proxy challenges
 				if source == 'proxy' and request_id:
-
 					# EN: Define async function `_respond`.
 					# JP: 非同期関数 `_respond` を定義する。
 					async def _respond():

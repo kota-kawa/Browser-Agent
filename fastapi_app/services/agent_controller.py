@@ -1122,7 +1122,6 @@ class BrowserAgentController:
 				self._initial_prompt_handled = True
 
 			if background:
-
 				# EN: Define function `_on_complete`.
 				# JP: 関数 `_on_complete` を定義する。
 				def _on_complete(f: Any) -> None:

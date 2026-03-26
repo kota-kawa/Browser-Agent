@@ -1338,7 +1338,6 @@ You can also use it to explore the website.
 				)
 
 		else:
-
 			# EN: Define async function `done`.
 			# JP: 非同期関数 `done` を定義する。
 			@self.registry.action(

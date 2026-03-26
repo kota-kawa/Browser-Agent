@@ -79,7 +79,9 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 		try:
 			from browser_use.llm.google.chat import ChatGoogle
 		except ModuleNotFoundError as exc:
-			raise AgentControllerError('Gemini 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
+			raise AgentControllerError(
+				'Gemini 用の依存関係が見つかりません。必要なライブラリをインストールしてください。'
+			) from exc
 		# JP: 全プロバイダで同じ制限ポリシーになるようラップして返す
 		# EN: Wrap with the same limit policy for consistent behavior across providers
 		return apply_monthly_llm_limit(ChatGoogle(**llm_kwargs))
@@ -88,7 +90,9 @@ def _create_selected_llm(selection_override: dict | None = None) -> BaseChatMode
 		try:
 			from browser_use.llm.anthropic.chat import ChatAnthropic
 		except ModuleNotFoundError as exc:
-			raise AgentControllerError('Claude 用の依存関係が見つかりません。必要なライブラリをインストールしてください。') from exc
+			raise AgentControllerError(
+				'Claude 用の依存関係が見つかりません。必要なライブラリをインストールしてください。'
+			) from exc
 		return apply_monthly_llm_limit(ChatAnthropic(**llm_kwargs))
 	if provider == 'groq':
 		logger.info(f'Using Groq model: {model}')

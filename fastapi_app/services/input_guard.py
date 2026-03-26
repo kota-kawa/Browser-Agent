@@ -176,10 +176,7 @@ async def check_prompt_safety(prompt: str) -> InputGuardResult:
 	"""
 	# JP: モデル選択とプロンプト送信（例外は InputGuardError に変換）
 	# EN: Select model and submit prompt; map failures to InputGuardError
-	model = (
-		(os.getenv('SAFETY_GUARD_MODEL') or os.getenv('LLAMA_GUARD_MODEL') or '').strip()
-		or _DEFAULT_SAFETY_GUARD_MODEL
-	)
+	model = (os.getenv('SAFETY_GUARD_MODEL') or os.getenv('LLAMA_GUARD_MODEL') or '').strip() or _DEFAULT_SAFETY_GUARD_MODEL
 	client = _get_guard_client()
 
 	try:

@@ -553,7 +553,6 @@ async def create_highlighted_screenshot_async(
 
 	filename = os.getenv('BROWSER_USE_SCREENSHOT_FILE')
 	if filename:
-
 		# EN: Define function `_write_screenshot`.
 		# JP: 関数 `_write_screenshot` を定義する。
 		def _write_screenshot():

@@ -37,6 +37,7 @@ app.mount('/static', StaticFiles(directory=str(APP_STATIC_DIR)), name='static')
 app.include_router(webarena_router)
 register_routes(app)
 
+
 # EN: Define function `_get_agent_controller`.
 # JP: 関数 `_get_agent_controller` を定義する。
 def _get_agent_controller() -> BrowserAgentController:

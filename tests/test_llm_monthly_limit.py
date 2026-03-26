@@ -10,7 +10,7 @@ from browser_use.llm.exceptions import ModelRateLimitError
 # EN: Define class `_DummyCompletion`.
 # JP: クラス `_DummyCompletion` を定義する。
 class _DummyCompletion:
-	def __init__(self, completion="ok"):
+	def __init__(self, completion='ok'):
 		self.completion = completion
 
 

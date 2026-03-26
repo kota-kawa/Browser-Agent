@@ -70,6 +70,7 @@ class WebArenaTaskResult(TypedDict):
 	steps: list[WebArenaStep]
 	evaluation: str
 
+
 # JP: ローカルで利用可能な環境のみ許可
 # EN: Only these environments are provisioned locally
 SUPPORTED_SITES = {'shopping', 'shopping_admin', 'reddit', 'gitlab'}
@@ -792,6 +793,7 @@ async def run_task(request: Request) -> JSONResponse:
 		# JP: 循環 import を避けるため関数内で読み込む
 		# EN: Import inside function to avoid circular dependency
 		from fastapi_app.services.agent_runtime import get_agent_controller
+
 		controller = get_agent_controller()
 
 		intent = ''
